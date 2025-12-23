@@ -430,8 +430,19 @@ Output: x* (optimal point minimizing f)
             document.getElementById('gd-final').innerText = gdFinal.toFixed(4);
             document.getElementById('full-final').innerText = fullFinal.toFixed(4);
 
-            const improvement = ((gdFinal - fullFinal) / gdFinal * 100).toFixed(1);
-            document.getElementById('improvement').innerText = (improvement > 0 ? '+' : '') + improvement + '%';
+            // Clear winner display: lower f(x) = better
+            if (fullFinal < gdFinal) {
+                const pctBetter = ((gdFinal - fullFinal) / gdFinal * 100).toFixed(1);
+                document.getElementById('improvement').innerText = 'Full wins by ' + pctBetter + '%';
+                document.getElementById('improvement').style.color = '#d4af37';
+            } else if (gdFinal < fullFinal) {
+                const pctBetter = ((fullFinal - gdFinal) / fullFinal * 100).toFixed(1);
+                document.getElementById('improvement').innerText = 'GD wins by ' + pctBetter + '%';
+                document.getElementById('improvement').style.color = '#f85149';
+            } else {
+                document.getElementById('improvement').innerText = 'Tie';
+                document.getElementById('improvement').style.color = '#fff';
+            }
         }
     </script>
 </body>
