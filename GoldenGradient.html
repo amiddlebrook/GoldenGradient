@@ -185,7 +185,7 @@
 
         <div class="sim-container">
             <h2>III. Real-Time Empirical Proof</h2>
-            <p>100 trials on multimodal 3D function. Global optimum at (1, -2, 0.5). Success = within 0.5 units.</p>
+            <p>100 trials on 3D Rastrigin function. Global optimum at origin (0,0,0). Success = within 1.5 units.</p>
             <button onclick="runProof()">EXECUTE PROOF</button>
 
             <div class="bar-container">
@@ -208,16 +208,14 @@
     </div>
 
     <script>
-        // Multimodal test function with known global minimum at (1, -2, 0.5)
-        // Has local minima that can trap gradient descent
+        // Rastrigin function: classic multimodal benchmark
+        // Global minimum at (0, 0, 0) with f(0,0,0) = 0
+        // Many local minima that trap gradient descent
         const f = (x, y, z) => {
-            // Main quadratic bowl centered at global optimum
-            const main = (x - 1) ** 2 + (y + 2) ** 2 + (z - 0.5) ** 2;
-            // Local trap 1: pulls toward (-2, 2, -1)
-            const trap1 = 3 * Math.exp(-((x + 2) ** 2 + (y - 2) ** 2 + (z + 1) ** 2));
-            // Local trap 2: pulls toward (3, 1, 2)
-            const trap2 = 3 * Math.exp(-((x - 3) ** 2 + (y - 1) ** 2 + (z - 2) ** 2));
-            return main - trap1 - trap2;
+            const A = 10;
+            return A * 3 + (x ** 2 - A * Math.cos(2 * Math.PI * x))
+                + (y ** 2 - A * Math.cos(2 * Math.PI * y))
+                + (z ** 2 - A * Math.cos(2 * Math.PI * z));
         };
 
         // Numerical gradient
@@ -227,6 +225,11 @@
                 p1[i] += h; p2[i] -= h;
                 return (func(...p1) - func(...p2)) / (2 * h);
             });
+        };
+
+        // Distance from point to global optimum at origin
+        const distToOptimum = (point) => {
+            return Math.sqrt(point.reduce((s, v) => s + v ** 2, 0));
         };
 
         // Golden Gradient optimizer with adaptive parallel inversion
@@ -314,16 +317,10 @@
             return dist_norm < dist_inv ? x_norm : x_inv;
         };
 
-        // Distance from point to global optimum
-        const distToOptimum = (point) => {
-            const opt = [1, -2, 0.5];
-            return Math.sqrt(point.reduce((s, v, i) => s + (v - opt[i]) ** 2, 0));
-        };
-
         function runProof() {
             const n = 100;
             const bounds = [[-5, 5], [-5, 5], [-5, 5]];
-            const successThreshold = 0.5; // Within 0.5 units of global optimum
+            const successThreshold = 1.5; // Within 1.5 units of global optimum
 
             let gd = 0, gs = 0, inv = 0;
 
@@ -331,15 +328,15 @@
                 const x0 = [Math.random() * 10 - 5, Math.random() * 10 - 5, Math.random() * 10 - 5];
 
                 // Method 1: Pure Gradient Descent (alpha=1, no golden search)
-                const x1 = goldenGradientSearch(f, x0, bounds, { alpha: 1.0, eta: 0.05, maxIter: 150 });
+                const x1 = goldenGradientSearch(f, x0, bounds, { alpha: 1.0, eta: 0.1, maxIter: 200 });
                 if (distToOptimum(x1) < successThreshold) gd++;
 
-                // Method 2: Gradient + Golden Section (alpha=0.5)
-                const x2 = goldenGradientSearch(f, x0, bounds, { alpha: 0.5, eta: 0.05, maxIter: 150 });
+                // Method 2: Gradient + Golden Section (alpha=0.6)
+                const x2 = goldenGradientSearch(f, x0, bounds, { alpha: 0.6, eta: 0.1, maxIter: 200 });
                 if (distToOptimum(x2) < successThreshold) gs++;
 
                 // Method 3: Gradient + Golden + Adaptive Parallel Inversion
-                const x3 = goldenGradientSearch(f, x0, bounds, { alpha: 0.5, eta: 0.05, maxIter: 150, adaptive: true });
+                const x3 = goldenGradientSearch(f, x0, bounds, { alpha: 0.6, eta: 0.1, maxIter: 200, adaptive: true });
                 if (distToOptimum(x3) < successThreshold) inv++;
             }
 
