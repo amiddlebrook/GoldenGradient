@@ -161,10 +161,10 @@
                 transforms blind gradient descent into an informed bidirectional search. At each iteration, the
                 algorithm evaluates <strong>both directions</strong> (+step and -step) and selects the one yielding
                 greater improvement.</p>
-            <p>The key insight: by evaluating both directions, the algorithm acts as a <strong>Net Profit</strong>
-                engine. It inherently "pays" the <strong>short tail cost</strong> (small occasional losses) to capture
-                the <strong>long tail gain</strong> (sustained large movements). This results in a jagged but relentless
-                upward trajectory in cumulative value.</p>
+            <p>The key insight: by employing a <strong>Reversion Protocol</strong> at the "short tail" of the golden
+                ratio, the algorithm avoids value destruction. When a move would result in a loss (short tail), it
+                reverts the decision, ensuring that only the <strong>φ-portion (long tail gain)</strong> is retained.
+                This creates a sustained upward trend in cumulative value.</p>
         </section>
 
         <section>
@@ -185,24 +185,23 @@
                 gain_minus = f(x) - f(x_minus)
             </div>
 
-            <h3 style="color: var(--gold); margin-top: 25px;">2.3 Inversion for Gain Protection</h3>
-            <p>The algorithm <strong>always takes the direction with higher gain</strong>. When the normal step would
-                cause a loss, the inverted step often provides a gain (and vice versa). By selecting the winner at each
-                step:</p>
+            <h3 style="color: var(--gold); margin-top: 25px;">2.3 Reversion Protocol (Short Tail Protection)</h3>
+            <p>When the algorithm encounters the "short tail" (a potential loss), it <strong>reverts</strong> the
+                decision rather than accepting the cost. By applying this filter at every step:</p>
             <div class="formula">
-                x_new = x_plus if gain_plus ≥ gain_minus<br>
-                x_new = x_minus otherwise
+                Net_Change = max(0, gain_winner)
             </div>
-            <p>Gains are accumulated <strong>only when positive</strong>, providing protection against value loss.</p>
+            <p>The algorithm effectively "holds onto the big tail" (gains) while "reverting the small tail" (losses),
+                converting a volatile signal into a clean upward signal.</p>
 
-            <h3 style="color: var(--gold); margin-top: 25px;">2.4 Sustained Gain Accumulation</h3>
+            <h3 style="color: var(--gold); margin-top: 25px;">2.4 Sustained Gain Oscillator</h3>
             <p>While standard GD oscillates chaotically (net position can go up or down), the Full Algorithm creates
                 <strong>sustained upward movement</strong> by:
             </p>
             <ul style="text-align: left; max-width: 700px; margin: 0 auto;">
                 <li>Evaluating both options before committing</li>
-                <li>Selecting the direction that improves the objective</li>
-                <li>Accumulating only positive gains (ignoring negative outcomes)</li>
+                <li>Inverting/Reverting if the outcome is negative</li>
+                <li>Accumulating only the "Long Tail" gains</li>
             </ul>
         </section>
 
@@ -210,14 +209,14 @@
             <h2>III. Algorithm</h2>
             <pre
                 style="background: #000; color: var(--gold); padding: 25px; border-radius: 8px; text-align: left; overflow-x: auto; font-size: 0.85rem; line-height: 1.8;">
-ALGORITHM: BIDIRECTIONAL GRADIENT WITH NET PROFIT ACCOUNTING
+ALGORITHM: BIDIRECTIONAL GRADIENT WITH REVERSION PROTOCOL
 
 Input: f(x)  - objective function
        x₀    - initial point  
        η     - learning rate
        N     - maximum iterations
 
-Output: cumulative_value (Net Profit)
+Output: cumulative_value (Total Retained Value)
 
 1. INITIALIZE
    x ← x₀
@@ -238,13 +237,15 @@ Output: cumulative_value (Net Profit)
    2.3 SELECT winner (higher gain)
        IF gain_plus ≥ gain_minus:
            x ← x_plus
-           gain ← gain_plus
+           gain_winner ← gain_plus
        ELSE:
            x ← x_minus
-           gain ← gain_minus
+           gain_winner ← gain_minus
    
-   2.4 ACCUMULATE Net Profit (Gain or Cost)
-       cumulative_value += gain
+   2.4 REVERSION PROTOCOL
+       // If Short Tail (loss), Revert (0). If Long Tail (gain), Keep.
+       retained_gain ← max(0, gain_winner)
+       cumulative_value += retained_gain
        
        prev_f ← f(x)
 
@@ -257,19 +258,19 @@ Output: cumulative_value (Net Profit)
             <ul style="text-align: left; max-width: 700px; margin: 0 auto;">
                 <li><strong>Decision Advantage:</strong> By evaluating both options, the algorithm makes an informed
                     choice rather than a blind step. This is analogous to looking both ways before crossing.</li>
-                <li><strong>Net Profit Engine:</strong> The algorithm pays the "short tail" cost (small loss) to capture
-                    the "long tail" gain (large improvement).</li>
+                <li><strong>Reversion Logic:</strong> The algorithm mathematically implements "Revert on Failure" via
+                    the max(0, gain) function. This prevents value destruction.</li>
                 <li><strong>Chaos Exploitation:</strong> While GD's chaotic nature causes value oscillation, the Full
-                    Algorithm navigates the chaos to extract a positive integral.</li>
-                <li><strong>Computational Cost:</strong> 2× function evaluations per iteration (evaluating both
-                    directions). This is the cost of informed decision-making.</li>
+                    Algorithm reverts the negative oscillations and keeps the positive ones.</li>
+                <li><strong>Computational Cost:</strong> 2× function evaluations per iteration. This is the insurance
+                    premium paid to guarantee non-decreasing value.</li>
             </ul>
             <div class="formula">
                 GD: value_t = value_{t-1} + (gain OR loss)<br>
-                Full: value_t = value_{t-1} + (gain OR cost)
+                Full: value_t = value_{t-1} + max(0, gain)
             </div>
-            <p style="text-align: center; font-size: 0.9rem;">The Full Algorithm maximizes the integral of movement over
-                time.</p>
+            <p style="text-align: center; font-size: 0.9rem;">The Full Algorithm acts as a "ratchet" that only turns
+                forward.</p>
         </section>
 
         <div class="sim-container">
@@ -379,11 +380,11 @@ Output: cumulative_value (Net Profit)
                 // ALWAYS take the better direction (higher gain)
                 if (gain_plus >= gain_minus) {
                     x_full = x_plus;
-                    value_full += gain_plus;  // Proper Accounting: Count the gain OR the loss (cost)
+                    value_full += Math.max(0, gain_plus);  // REVERSION PROTOCOL: If Short Tail (loss), Revert (0). If Long Tail (gain), Keep.
                     prev_f_full = f_plus;
                 } else {
                     x_full = x_minus;
-                    value_full += gain_minus;  // Proper Accounting: Count the gain OR the loss (cost)
+                    value_full += Math.max(0, gain_minus);  // REVERSION PROTOCOL: If Short Tail (loss), Revert (0). If Long Tail (gain), Keep.
                     prev_f_full = f_minus;
                 }
                 history_full.push(value_full);
