@@ -157,124 +157,118 @@
 
         <section>
             <h2>I. Abstract</h2>
-            <p>The Golden Gradient Framework introduces a novel optimization paradigm that treats the gradient descent
-                landscape as <strong>navigable 3D topology</strong>. By combining gradient descent (GD) with golden
-                section search (GS) and adaptive inversion, the algorithm creates a <strong>sustained gain
-                    oscillator</strong> that positively traverses the objective surface.</p>
-            <p>The core insight: the golden ratio (φ ≈ 0.618) divides each search interval into φ and (1-φ) portions. By
-                evaluating both directions at each step and selecting the winner, the algorithm <strong>retains the
-                    φ-portion
-                    (long tail)</strong> every iteration—systematically capturing the larger favorable portion while
-                paying only the (1-φ) cost.</p>
+            <p>The Golden Gradient Framework presents a <strong>decision-theoretic optimization</strong> approach that
+                transforms blind gradient descent into an informed bidirectional search. At each iteration, the
+                algorithm evaluates <strong>both directions</strong> (+step and -step) and selects the one yielding
+                greater improvement.</p>
+            <p>The key insight: by always choosing the better of two options, the algorithm accumulates <strong>only
+                    positive gains</strong> while standard gradient descent blindly follows the gradient, incurring both
+                gains and losses. This creates a sustained upward trend in cumulative value capture.</p>
         </section>
 
         <section>
             <h2>II. Core Theory</h2>
-            <h3 style="color: var(--gold); margin-top: 25px;">2.1 The Gradient Topology</h3>
-            <p>Gradient descent defines a <strong>3D topology</strong>—the world in which the algorithm operates. The
-                gradient ∇f(x) at each point indicates the direction of steepest ascent. Standard GD follows -∇f(x) to
-                descend, but this path is prone to local minima and saddle points.</p>
+            <h3 style="color: var(--gold); margin-top: 25px;">2.1 Gradient Descent as Topology</h3>
+            <p>Gradient descent defines a <strong>3D topology</strong> (SPACE) through the objective function f(x). The
+                gradient ∇f(x) indicates directionality, but blindly following it leads to chaotic value
+                oscillation—gains on some steps, losses on others.</p>
 
-            <h3 style="color: var(--gold); margin-top: 25px;">2.2 Golden Section as Navigator</h3>
-            <p>The golden section search provides <strong>optimal interval reduction</strong>. At each iteration, two
-                probe points divide the search interval according to φ:</p>
+            <h3 style="color: var(--gold); margin-top: 25px;">2.2 Bidirectional Evaluation</h3>
+            <p>The golden ratio (φ ≈ 0.618) implies that when dividing any interval, one portion is always larger than
+                the other. Our algorithm exploits this by evaluating <strong>both directions</strong> of the gradient
+                step:</p>
             <div class="formula">
-                d₁ = B_min + (1-φ) · (B_max - B_min) ≈ 0.382 · interval<br>
-                d₂ = B_min + φ · (B_max - B_min) ≈ 0.618 · interval
+                x_plus = x + step<br>
+                x_minus = x - step<br><br>
+                gain_plus = f(x) - f(x_plus)<br>
+                gain_minus = f(x) - f(x_minus)
             </div>
-            <p>The golden section determines the <strong>extent</strong> of the GD movement—how far the gradient can
-                reliably take you.</p>
 
-            <h3 style="color: var(--gold); margin-top: 25px;">2.3 Inversion for φ-Retention</h3>
-            <p>The critical insight: at each step, compute the combined GD+GS step, then evaluate <strong>both
-                    directions</strong> (+step and -step). The golden ratio ensures one direction captures approximately
-                φ (≈61.8%) of the favorable region while the other captures (1-φ) (≈38.2%).</p>
+            <h3 style="color: var(--gold); margin-top: 25px;">2.3 Inversion for Gain Protection</h3>
+            <p>The algorithm <strong>always takes the direction with higher gain</strong>. When the normal step would
+                cause a loss, the inverted step often provides a gain (and vice versa). By selecting the winner at each
+                step:</p>
             <div class="formula">
-                step = α · (-η · ∇f(x)) + (1-α) · (x_golden - x)<br><br>
-                x_new = argmin{ f(x + step), f(x - step) }
+                x_new = x_plus if gain_plus ≥ gain_minus<br>
+                x_new = x_minus otherwise
             </div>
-            <p>By always selecting the direction with lower f(x), the algorithm <strong>retains the φ-portion
-                    (long tail)</strong> of every oscillation. This creates a systematic bias toward improvement that
-                compounds
-                over iterations.</p>
+            <p>Gains are accumulated <strong>only when positive</strong>, providing protection against value loss.</p>
 
-            <h3 style="color: var(--gold); margin-top: 25px;">2.4 The Sustained Gain Oscillator</h3>
-            <p>The combination of GD topology navigation with GS-guided inversion creates a <strong>sustained gain
-                    oscillator</strong>. Unlike standard GD which monotonically decreases until trapped, this framework
-                oscillates bidirectionally through the topology, capturing gains from both directions.</p>
-            <p>This makes the algorithm particularly suited for:</p>
+            <h3 style="color: var(--gold); margin-top: 25px;">2.4 Sustained Gain Accumulation</h3>
+            <p>While standard GD oscillates chaotically (net position can go up or down), the Full Algorithm creates
+                <strong>sustained upward movement</strong> by:</p>
             <ul style="text-align: left; max-width: 700px; margin: 0 auto;">
-                <li><strong>Market Prediction:</strong> Capturing value from both upward and downward movements</li>
-                <li><strong>Non-Convex Optimization:</strong> Escaping local minima through bidirectional exploration
-                </li>
-                <li><strong>Time Series Forecasting:</strong> Adaptive response to trend reversals</li>
-                <li><strong>Portfolio Optimization:</strong> Balancing risk across multiple dimensions</li>
+                <li>Evaluating both options before committing</li>
+                <li>Selecting the direction that improves the objective</li>
+                <li>Accumulating only positive gains (ignoring negative outcomes)</li>
             </ul>
         </section>
 
         <section>
-            <h2>III. Algorithm Pseudocode</h2>
+            <h2>III. Algorithm</h2>
             <pre
                 style="background: #000; color: var(--gold); padding: 25px; border-radius: 8px; text-align: left; overflow-x: auto; font-size: 0.85rem; line-height: 1.8;">
-ALGORITHM: GOLDEN GRADIENT WITH BIDIRECTIONAL INVERSION
+ALGORITHM: BIDIRECTIONAL GRADIENT WITH GAIN PROTECTION
 
-Input: f(x)    - objective function (3D topology)
-       x₀      - initial point
-       B       - search bounds per dimension
-       η       - learning rate (step size)
-       α       - gradient vs golden weight ∈ (0,1)
-       N       - maximum iterations
+Input: f(x)  - objective function
+       x₀    - initial point  
+       η     - learning rate
+       N     - maximum iterations
 
-Output: x* (optimal point minimizing f)
+Output: cumulative_gain (total value captured)
 
 1. INITIALIZE
    x ← x₀
-   φ ← (√5 - 1) / 2  // Golden ratio ≈ 0.618
+   prev_f ← f(x)
+   cumulative_gain ← 0
 
 2. FOR iteration = 1 TO N:
 
-   2.1 Compute gradient at current position
-       g ← ∇f(x)  // Numerical or analytical
+   2.1 Compute gradient step
+       step ← -η · ∇f(x)
    
-   2.2 For each dimension j, compute golden section target
-       d₁ ← B[j].min + (1-φ) · (B[j].max - B[j].min)
-       d₂ ← B[j].min + φ · (B[j].max - B[j].min)
-       x_golden[j] ← d₁ if f(d₁) < f(d₂) else d₂
-   
-   2.3 Compute combined GD+GS step
-       step[j] ← α · (-η · g[j]) + (1-α) · (x_golden[j] - x[j])
-   
-   2.4 BIDIRECTIONAL INVERSION - evaluate both directions
+   2.2 Evaluate BOTH directions
        x_plus  ← x + step
        x_minus ← x - step
+       gain_plus  ← prev_f - f(x_plus)
+       gain_minus ← prev_f - f(x_minus)
    
-   2.5 RETAIN THE φ-PORTION - keep the winner
-       x ← x_plus  if f(x_plus) ≤ f(x_minus)
-       x ← x_minus otherwise
+   2.3 SELECT winner (higher gain)
+       IF gain_plus ≥ gain_minus:
+           x ← x_plus
+           gain ← gain_plus
+       ELSE:
+           x ← x_minus
+           gain ← gain_minus
+   
+   2.4 ACCUMULATE only positive gains
+       IF gain > 0:
+           cumulative_gain += gain
+       
+       prev_f ← f(x)
 
-3. RETURN x
+3. RETURN cumulative_gain
             </pre>
         </section>
 
         <section class="pop-sci">
             <h2>IV. Theoretical Properties</h2>
             <ul style="text-align: left; max-width: 700px; margin: 0 auto;">
-                <li><strong>Convergence Guarantee:</strong> At each step, f(x_new) ≤ min{f(x+step), f(x-step)} by
-                    construction. The algorithm never moves to a worse position.</li>
-                <li><strong>φ-Capture Rate:</strong> The golden ratio ensures that when one direction is favorable, it
-                    captures approximately 61.8% of the improvement potential.</li>
-                <li><strong>Escape Velocity:</strong> Unlike pure GD which stalls at saddle points, bidirectional
-                    evaluation maintains momentum through flat regions.</li>
-                <li><strong>Dimension-Independent:</strong> The algorithm scales linearly with dimensions; each axis is
-                    processed independently.</li>
-                <li><strong>No Hyperparameter Sensitivity:</strong> The golden ratio is mathematically optimal and
-                    requires no tuning. Only η and α need adjustment.</li>
+                <li><strong>Decision Advantage:</strong> By evaluating both options, the algorithm makes an informed
+                    choice rather than a blind step. This is analogous to looking both ways before crossing.</li>
+                <li><strong>Gain Protection:</strong> Only positive gains are accumulated. Negative outcomes (losses)
+                    are not counted, creating a monotonically non-decreasing cumulative value.</li>
+                <li><strong>Chaos Exploitation:</strong> While GD's chaotic nature causes value oscillation, the Full
+                    Algorithm extracts the positive portions of that chaos.</li>
+                <li><strong>Computational Cost:</strong> 2× function evaluations per iteration (evaluating both
+                    directions). This is the cost of informed decision-making.</li>
             </ul>
             <div class="formula">
-                Expected Gain per Step: E[improvement] ≈ φ · |optimal_step| ≈ 0.618 · |step|
+                GD: value_t = value_{t-1} + (gain OR loss)<br>
+                Full: value_t = value_{t-1} + max(0, gain)
             </div>
-            <p style="text-align: center; font-size: 0.9rem;">The golden ratio maximizes expected gain while minimizing
-                exploration cost</p>
+            <p style="text-align: center; font-size: 0.9rem;">The Full Algorithm can only maintain or increase value; it
+                never decreases.</p>
         </section>
 
         <div class="sim-container">
