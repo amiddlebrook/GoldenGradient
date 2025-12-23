@@ -169,40 +169,31 @@
 
         <section>
             <h2>II. Core Theory</h2>
-            <h3 style="color: var(--gold); margin-top: 25px;">2.1 Gradient Descent as Topology</h3>
-            <p>Gradient descent defines a <strong>3D topology</strong> (SPACE) through the objective function f(x). The
-                gradient ∇f(x) indicates directionality, but blindly following it leads to chaotic value
-                oscillation—gains on some steps, losses on others.</p>
-
-            <h3 style="color: var(--gold); margin-top: 25px;">2.2 Bidirectional Evaluation</h3>
-            <p>The golden ratio (φ ≈ 0.618) implies that when dividing any interval, one portion is always larger than
-                the other. Our algorithm exploits this by evaluating <strong>both directions</strong> of the gradient
-                step:</p>
-            <div class="formula">
-                x_plus = x + step<br>
-                x_minus = x - step<br><br>
-                gain_plus = f(x) - f(x_plus)<br>
-                gain_minus = f(x) - f(x_minus)
-            </div>
-
-            <h3 style="color: var(--gold); margin-top: 25px;">2.3 Reversion Protocol (Short Tail Protection)</h3>
-            <p>When the algorithm encounters the "short tail" (a potential loss), it <strong>reverts</strong> the
-                decision rather than accepting the cost. By applying this filter at every step:</p>
-            <div class="formula">
-                Net_Change = max(0, gain_winner)
-            </div>
-            <p>The algorithm effectively "holds onto the big tail" (gains) while "reverting the small tail" (losses),
-                converting a volatile signal into a clean upward signal.</p>
-
-            <h3 style="color: var(--gold); margin-top: 25px;">2.4 Sustained Gain Oscillator</h3>
-            <p>While standard GD oscillates chaotically (net position can go up or down), the Full Algorithm creates
-                <strong>sustained upward movement</strong> by:
-            </p>
+            <h3 style="color: var(--gold); margin-top: 25px;">2.1 The Two Tails of the Golden Ratio</h3>
+            <p>The Golden Ratio divides every spectrum of movement into <strong>two tails</strong>:</p>
             <ul style="text-align: left; max-width: 700px; margin: 0 auto;">
-                <li>Evaluating both options before committing</li>
-                <li>Inverting/Reverting if the outcome is negative</li>
-                <li>Accumulating only the "Long Tail" gains</li>
+                <li><strong>The Long Tail (φ ≈ 0.618):</strong> The path of expansion, gain, and forward momentum.</li>
+                <li><strong>The Short Tail (1-φ ≈ 0.382):</strong> The path of contraction, cost, and reversion.</li>
             </ul>
+
+            <h3 style="color: var(--gold); margin-top: 25px;">2.2 GS Applied to GD</h3>
+            <p>At each iteration, we apply <strong>Golden Section (GS) logic to Gradient Descent (GD)</strong>. The GS
+                determines the optimal cut of the search interval. Standard GD blindly accepts whatever tail it lands
+                on, often getting stuck in the "Short Tail" of chaos.</p>
+
+            <h3 style="color: var(--gold); margin-top: 25px;">2.3 The "GS + Inv" Protocol</h3>
+            <p>The Full Algorithm adds intelligence to the topology. If the move lands on the Short Tail (loss):</p>
+            <div class="formula">
+                <strong>GS + Inv (Invert/Revert)</strong>
+            </div>
+            <p>We effectively say: "This is the short tail. Invert the decision." By reverting the loss (outcome = 0)
+                and holding the long tail (gain), we act as a ratchet that turns chaotic space-time movement into
+                sustained value capture.</p>
+
+            <h3 style="color: var(--gold); margin-top: 25px;">2.4 The Result: Ratchet Effect</h3>
+            <p><strong>Recursion:</strong> Each iteration is a new GS applied to the GD topology. By systematically
+                filtering the Short Tail via GS+Inv, the algorithm extracts a smooth, climbing signal from a noisy 3D
+                environment.</p>
         </section>
 
         <section>
