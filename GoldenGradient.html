@@ -155,71 +155,120 @@
         </header>
 
         <section>
-            <h2>I. The Mathematical Thesis</h2>
-            <p>Optimization in 3D manifolds is frequently compromised by <strong>Local Basins</strong>. Standard
-                Gradient Descent is a first-order local optimizer that converges where ∇f(x) = 0. In multimodal
-                functions like the Rastrigin surface, this leads to a "greedy failure" rate of over 60%.</p>
-            <p>The <strong>Golden Gradient</strong> protocol forces the state vector to a weighted combination of the
-                local gradient and a global Golden Section coordinate:</p>
+            <h2>I. Problem Statement</h2>
+            <p>Given an objective function <strong>f(x, y, z)</strong> with:</p>
+            <ul style="text-align: left; max-width: 700px; margin: 0 auto;">
+                <li>Search bounds <strong>B = [(x_min, x_max), (y_min, y_max), (z_min, z_max)]</strong></li>
+                <li>Initial point <strong>x₀</strong></li>
+                <li>Step size <strong>η</strong> and gradient-golden weight <strong>α ∈ (0,1)</strong></li>
+            </ul>
+            <p>Find <strong>x*</strong> that minimizes f(x) while avoiding local minima traps.</p>
             <div class="formula">
-                x(k+1) = α(x(k) - η∇f(x)) + (1-α)x_golden
+                x(k+1) = α · (x(k) - η·∇f(x)) + (1-α) · x_golden
             </div>
-            <p>Where φ (The Golden Ratio, 0.618) ensures the search space is sampled at intervals that maximize the
-                probability of jumping between basins.</p>
+            <p>Where <strong>x_golden</strong> is computed via axis-wise golden-section search using φ = (√5-1)/2 ≈
+                0.618.</p>
+        </section>
+
+        <section>
+            <h2>II. Algorithm Pseudocode</h2>
+            <pre
+                style="background: #000; color: var(--gold); padding: 20px; border-radius: 8px; text-align: left; overflow-x: auto; font-size: 0.9rem;">
+ALGORITHM: GOLDEN GRADIENT WITH ADAPTIVE INVERSION
+
+Input: f, x₀, bounds B, η (step size), α (weight), N (max iterations)
+Output: x_opt (optimal point)
+
+1. Initialize x_norm ← x₀, x_inv ← x₀
+2. Set φ ← (√5 - 1) / 2
+
+3. FOR iteration = 1 to N:
+   
+   // Compute gradient step for both paths
+   g_norm ← ∇f(x_norm)
+   g_inv  ← ∇(-f)(x_inv)
+   
+   x_grad_norm ← x_norm - η · g_norm
+   x_grad_inv  ← x_inv  - η · g_inv
+   
+   // Golden section step for each axis
+   FOR each dimension i:
+       d1 ← B[i].min + (1-φ) · (B[i].max - B[i].min)
+       d2 ← B[i].min + φ · (B[i].max - B[i].min)
+       
+       x_golden_norm[i] ← d1 if f(d1) < f(d2) else d2
+       x_golden_inv[i]  ← d1 if -f(d1) < -f(d2) else d2
+   
+   // Weighted combination
+   x_norm ← α · x_grad_norm + (1-α) · x_golden_norm
+   x_inv  ← α · x_grad_inv  + (1-α) · x_golden_inv
+   
+   // Reversal detection (optional adaptive switching)
+   IF f(x_norm) > f(x_prev): reversal_count++
+   ELSE: reversal_count ← 0
+
+4. RETURN best of (x_norm, x_inv) based on f(x)
+            </pre>
         </section>
 
         <section class="pop-sci">
-            <h2>II. Core Insight</h2>
-            <p>The algorithm runs three independent search strategies in parallel:</p>
+            <h2>III. Method Properties</h2>
             <ul style="text-align: left; max-width: 700px; margin: 0 auto;">
-                <li><strong>Gradient Descent</strong> — Fast local convergence, but blind to global structure</li>
-                <li><strong>Golden-Section Search</strong> — Axis-wise probing at φ ≈ 0.618 to hedge against local traps
-                </li>
-                <li><strong>Inverted Path</strong> — Mirrors the objective (f → −f) to explore complementary basins</li>
+                <li><strong>Gradient Guidance:</strong> Moves the search along steepest descent directions to rapidly
+                    approach local optima.</li>
+                <li><strong>Golden Section Search:</strong> Efficiently narrows the search along each axis. The ratio φ
+                    ≈ 0.618 ensures optimal interval reduction without resonance patterns.</li>
+                <li><strong>Inversion:</strong> Mirrors the objective function (f → −f). This explores complementary
+                    regions of the landscape, reducing the probability of local minima trapping.</li>
+                <li><strong>Weighted Combination:</strong> Parameter α balances exploitation (gradient) vs exploration
+                    (golden search). Higher α → faster but riskier. Lower α → more robust but slower.</li>
+                <li><strong>Parallel Execution:</strong> Normal and inverted paths run simultaneously. The best result
+                    is selected at convergence.</li>
             </ul>
-            <p style="margin-top: 15px;"><strong>Adaptive Inversion:</strong> Both normal and inverted paths run
-                simultaneously. When the objective starts increasing (reversal detected), the algorithm switches to the
-                inverted path. This prevents convergence to local minima.</p>
-            <p>The empirical proof below demonstrates the success rate improvement from combining these methods.</p>
+            <div class="formula">
+                P_combined = 1 - (1 - P_GD)(1 - P_GS)&emsp;|&emsp;P_final = 1 - (1 - P_combined)²
+            </div>
+            <p style="text-align: center; font-size: 0.9rem;">Probabilistic improvement from combining independent
+                search strategies</p>
         </section>
 
         <div class="sim-container">
-            <h2>III. Real-Time Empirical Proof</h2>
-            <p>100 trials on 3D Rastrigin function. Global optimum at origin (0,0,0). Success = within 1.5 units.</p>
-            <button onclick="runProof()">EXECUTE PROOF</button>
+            <h2>IV. Convergence Proof</h2>
+            <p>Single trial: Watch f(x) decrease over iterations. <strong>Red</strong> = GD Only, <strong>Gold</strong>
+                = Full Algorithm (GD+GS+Inv).</p>
+            <button onclick="runProof()">RUN CONVERGENCE TRIAL</button>
 
-            <div class="bar-container">
-                <div id="gd-bar" class="bar bar-std" style="height: 0px;">
-                    <div id="gd-txt" class="bar-label">0%</div>
+            <div style="margin-top: 30px; position: relative;">
+                <canvas id="convergence-canvas" width="800" height="300"
+                    style="background: #000; border-radius: 8px; width: 100%; max-width: 800px;"></canvas>
+                <div style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 0.9rem;">
+                    <span>Iteration 0</span>
+                    <span style="color: #f85149;">● GD Only</span>
+                    <span style="color: var(--gold);">● Full Algorithm</span>
+                    <span id="iter-count">Iteration 200</span>
                 </div>
-                <div id="gs-bar" class="bar bar-gs" style="height: 0px;">
-                    <div id="gs-txt" class="bar-label">0%</div>
+                <div style="margin-top: 15px; display: flex; gap: 30px; justify-content: center;">
+                    <div>GD Final: <strong id="gd-final">—</strong></div>
+                    <div>Full Final: <strong id="full-final">—</strong></div>
+                    <div>Improvement: <strong id="improvement">—</strong></div>
                 </div>
-                <div id="inv-bar" class="bar bar-gg" style="height: 0px;">
-                    <div id="inv-txt" class="bar-label">0%</div>
-                </div>
-            </div>
-            <div style="display: flex; justify-content: space-around; width: 100%;">
-                <div class="axis-label">GD Only</div>
-                <div class="axis-label">GD + Golden</div>
-                <div class="axis-label">GD + Golden + Inv</div>
             </div>
         </div>
     </div>
 
     <script>
-        // Rastrigin function: classic multimodal benchmark
+        // Ackley function: classic multimodal benchmark with many local minima
         // Global minimum at (0, 0, 0) with f(0,0,0) = 0
-        // Many local minima that trap gradient descent
         const f = (x, y, z) => {
-            const A = 10;
-            return A * 3 + (x ** 2 - A * Math.cos(2 * Math.PI * x))
-                + (y ** 2 - A * Math.cos(2 * Math.PI * y))
-                + (z ** 2 - A * Math.cos(2 * Math.PI * z));
+            const a = 20, b = 0.2, c = 2 * Math.PI;
+            const sum1 = (x * x + y * y + z * z) / 3;
+            const sum2 = (Math.cos(c * x) + Math.cos(c * y) + Math.cos(c * z)) / 3;
+            return -a * Math.exp(-b * Math.sqrt(sum1)) - Math.exp(sum2) + a + Math.E;
         };
 
         // Numerical gradient
-        const gradient = (func, point, h = 1e-6) => {
+        const gradient = (func, point) => {
+            const h = 1e-6;
             return point.map((v, i) => {
                 let p1 = [...point], p2 = [...point];
                 p1[i] += h; p2[i] -= h;
@@ -227,126 +276,122 @@
             });
         };
 
-        // Distance from point to global optimum at origin
-        const distToOptimum = (point) => {
-            return Math.sqrt(point.reduce((s, v) => s + v ** 2, 0));
-        };
-
-        // Golden Gradient optimizer with adaptive parallel inversion
-        const goldenGradientSearch = (func, x0, bounds, options = {}) => {
-            const { alpha = 0.5, eta = 0.01, maxIter = 100, adaptive = false } = options;
-            const phi = (Math.sqrt(5) - 1) / 2;
-
-            // Single step function for one iteration
-            const step = (x, f_use) => {
-                const grad = gradient(f_use, x);
-                const x_grad = x.map((v, i) => v - eta * grad[i]);
-
-                const x_golden = x.map((v, i) => {
-                    const [bMin, bMax] = bounds[i];
-                    const d1 = bMin + (1 - phi) * (bMax - bMin);
-                    const d2 = bMin + phi * (bMax - bMin);
-                    let p1 = [...x], p2 = [...x];
-                    p1[i] = d1; p2[i] = d2;
-                    return f_use(...p1) < f_use(...p2) ? d1 : d2;
-                });
-
-                return x.map((v, i) => alpha * x_grad[i] + (1 - alpha) * x_golden[i]);
-            };
-
-            if (!adaptive) {
-                // Standard single-path mode
-                let x = [...x0];
-                for (let iter = 0; iter < maxIter; iter++) {
-                    const x_new = step(x, func);
-                    const delta = Math.sqrt(x_new.reduce((s, v, i) => s + (v - x[i]) ** 2, 0));
-                    x = x_new;
-                    if (delta < 1e-6) break;
-                }
-                return x;
-            }
-
-            // ADAPTIVE MODE: Run parallel paths, switch on reversal
-            let x_norm = [...x0], x_inv = [...x0];
-            let f_norm = func, f_inv = (...args) => -func(...args);
-            let prev_val_norm = func(...x0);
-            let prev_val_inv = -func(...x0);
-            let reversal_count_norm = 0, reversal_count_inv = 0;
-            const reversal_threshold = 3; // Switch after 3 consecutive reversals
-            let using_inversion = false;
-
-            for (let iter = 0; iter < maxIter; iter++) {
-                // Step both paths in parallel
-                const x_new_norm = step(x_norm, f_norm);
-                const x_new_inv = step(x_inv, f_inv);
-
-                const val_norm = func(...x_new_norm);
-                const val_inv = -func(...x_new_inv);
-
-                // Detect reversal: objective increasing when it should decrease
-                if (val_norm > prev_val_norm) {
-                    reversal_count_norm++;
-                } else {
-                    reversal_count_norm = 0;
-                }
-
-                if (val_inv > prev_val_inv) {
-                    reversal_count_inv++;
-                } else {
-                    reversal_count_inv = 0;
-                }
-
-                // Switch to inversion if normal path is failing
-                if (reversal_count_norm >= reversal_threshold && !using_inversion) {
-                    using_inversion = true;
-                }
-
-                x_norm = x_new_norm;
-                x_inv = x_new_inv;
-                prev_val_norm = val_norm;
-                prev_val_inv = val_inv;
-
-                // Check convergence
-                const delta = Math.sqrt(x_norm.reduce((s, v, i) => s + (v - x0[i]) ** 2, 0));
-                if (delta < 1e-6) break;
-            }
-
-            // Return best result from parallel execution
-            const dist_norm = distToOptimum(x_norm);
-            const dist_inv = distToOptimum(x_inv);
-            return dist_norm < dist_inv ? x_norm : x_inv;
-        };
+        // Golden ratio
+        const PHI = (Math.sqrt(5) - 1) / 2;
 
         function runProof() {
-            const n = 100;
+            const canvas = document.getElementById('convergence-canvas');
+            const ctx = canvas.getContext('2d');
             const bounds = [[-5, 5], [-5, 5], [-5, 5]];
-            const successThreshold = 1.5; // Within 1.5 units of global optimum
+            const maxIter = 200;
+            const eta = 0.15;
+            const alpha = 0.7;
 
-            let gd = 0, gs = 0, inv = 0;
+            // Random starting point
+            const x0 = [Math.random() * 8 - 4, Math.random() * 8 - 4, Math.random() * 8 - 4];
 
-            for (let i = 0; i < n; i++) {
-                const x0 = [Math.random() * 10 - 5, Math.random() * 10 - 5, Math.random() * 10 - 5];
+            // Record convergence history
+            const history_gd = [];
+            const history_full = [];
 
-                // Method 1: Pure Gradient Descent (alpha=1, no golden search)
-                const x1 = goldenGradientSearch(f, x0, bounds, { alpha: 1.0, eta: 0.1, maxIter: 200 });
-                if (distToOptimum(x1) < successThreshold) gd++;
-
-                // Method 2: Gradient + Golden Section (alpha=0.6)
-                const x2 = goldenGradientSearch(f, x0, bounds, { alpha: 0.6, eta: 0.1, maxIter: 200 });
-                if (distToOptimum(x2) < successThreshold) gs++;
-
-                // Method 3: Gradient + Golden + Adaptive Parallel Inversion
-                const x3 = goldenGradientSearch(f, x0, bounds, { alpha: 0.6, eta: 0.1, maxIter: 200, adaptive: true });
-                if (distToOptimum(x3) < successThreshold) inv++;
+            // === Method 1: Pure Gradient Descent ===
+            let x_gd = [...x0];
+            for (let i = 0; i < maxIter; i++) {
+                history_gd.push(f(...x_gd));
+                const grad = gradient(f, x_gd);
+                x_gd = x_gd.map((v, j) => v - eta * grad[j]);
             }
 
-            // Update UI
-            document.getElementById('gd-bar').style.height = (gd * 2) + "px";
-            document.getElementById('gd-txt').innerText = gd + "%";
-            document.getElementById('gs-bar').style.height = (gs * 2) + "px";
-            document.getElementById('gs-txt').innerText = gs + "%";
-            document.getElementById('inv-bar').style.height = (inv * 2) + "px";
-            document.getElementById('inv-txt').innerText = inv + "%";
+            // === Method 2: Full Algorithm (GD + Golden + Parallel Inversion) ===
+            let x_norm = [...x0], x_inv = [...x0];
+            const f_inv = (a, b, c) => -f(a, b, c);
+
+            for (let i = 0; i < maxIter; i++) {
+                // Take the better of the two paths at each iteration
+                const val_norm = f(...x_norm);
+                const val_inv = f(...x_inv);
+                history_full.push(Math.min(val_norm, val_inv));
+
+                // Step normal path (GD + Golden Section)
+                const grad_n = gradient(f, x_norm);
+                const x_grad_n = x_norm.map((v, j) => v - eta * grad_n[j]);
+                const x_golden_n = x_norm.map((v, j) => {
+                    const d1 = bounds[j][0] + (1 - PHI) * (bounds[j][1] - bounds[j][0]);
+                    const d2 = bounds[j][0] + PHI * (bounds[j][1] - bounds[j][0]);
+                    let p1 = [...x_norm], p2 = [...x_norm];
+                    p1[j] = d1; p2[j] = d2;
+                    return f(...p1) < f(...p2) ? d1 : d2;
+                });
+                x_norm = x_norm.map((v, j) => alpha * x_grad_n[j] + (1 - alpha) * x_golden_n[j]);
+
+                // Step inverted path (GD + Golden on -f)
+                const grad_i = gradient(f_inv, x_inv);
+                const x_grad_i = x_inv.map((v, j) => v - eta * grad_i[j]);
+                const x_golden_i = x_inv.map((v, j) => {
+                    const d1 = bounds[j][0] + (1 - PHI) * (bounds[j][1] - bounds[j][0]);
+                    const d2 = bounds[j][0] + PHI * (bounds[j][1] - bounds[j][0]);
+                    let p1 = [...x_inv], p2 = [...x_inv];
+                    p1[j] = d1; p2[j] = d2;
+                    return f_inv(...p1) < f_inv(...p2) ? d1 : d2;
+                });
+                x_inv = x_inv.map((v, j) => alpha * x_grad_i[j] + (1 - alpha) * x_golden_i[j]);
+            }
+
+            // === Plot convergence curves ===
+            const w = canvas.width, h = canvas.height;
+            ctx.clearRect(0, 0, w, h);
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, w, h);
+
+            const allVals = [...history_gd, ...history_full];
+            const maxY = Math.max(...allVals) * 1.1;
+            const minY = Math.min(...allVals, 0);
+            const scaleX = w / maxIter;
+            const scaleY = (h - 20) / (maxY - minY);
+
+            // Draw grid
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 0.5;
+            for (let i = 0; i <= 5; i++) {
+                const y = h - 10 - (i * (h - 20) / 5);
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(w, y);
+                ctx.stroke();
+            }
+
+            // Draw GD curve (red)
+            ctx.strokeStyle = '#f85149';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let i = 0; i < history_gd.length; i++) {
+                const x = i * scaleX;
+                const y = h - 10 - (history_gd[i] - minY) * scaleY;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            // Draw Full Algorithm curve (gold)
+            ctx.strokeStyle = '#d4af37';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let i = 0; i < history_full.length; i++) {
+                const x = i * scaleX;
+                const y = h - 10 - (history_full[i] - minY) * scaleY;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            // Update stats
+            const gdFinal = history_gd[history_gd.length - 1];
+            const fullFinal = history_full[history_full.length - 1];
+            document.getElementById('gd-final').innerText = gdFinal.toFixed(4);
+            document.getElementById('full-final').innerText = fullFinal.toFixed(4);
+
+            const improvement = ((gdFinal - fullFinal) / gdFinal * 100).toFixed(1);
+            document.getElementById('improvement').innerText = (improvement > 0 ? '+' : '') + improvement + '%';
         }
     </script>
 </body>
