@@ -278,10 +278,12 @@ Output: x* (optimal point minimizing f)
         </section>
 
         <div class="sim-container">
-            <h2>IV. Convergence Proof</h2>
-            <p>Single trial: Watch f(x) decrease over iterations. <strong>Red</strong> = GD Only, <strong>Gold</strong>
-                = Full Algorithm (GD+GS+Inv).</p>
-            <button onclick="runProof()">RUN CONVERGENCE TRIAL</button>
+            <h2>V. Empirical Proof</h2>
+            <p>Watch <strong>cumulative gains</strong> accumulate over iterations. <strong
+                    style="color: #f85149;">Red</strong> = GD Only,
+                <strong style="color: #d4af37;">Gold</strong> = Full Algorithm. Higher = more gains captured.
+            </p>
+            <button onclick="runProof()">RUN TRIAL</button>
 
             <div style="margin-top: 30px; position: relative;">
                 <canvas id="convergence-canvas" width="800" height="300"
@@ -335,46 +337,61 @@ Output: x* (optimal point minimizing f)
             // Random starting point
             const x0 = [Math.random() * 8 - 4, Math.random() * 8 - 4, Math.random() * 8 - 4];
 
-            // Record convergence history
+            // Track CUMULATIVE GAINS - both start at 0 and accumulate
             const history_gd = [];
             const history_full = [];
+            let value_gd = 0;
+            let value_full = 0;
 
-            // === Method 1: Pure Gradient Descent ===
+            // === Method 1: Pure Gradient Descent (CHAOS) ===
+            // Takes steps blindly - can gain OR lose each step
             let x_gd = [...x0];
+            let prev_f_gd = f(...x_gd);
+
             for (let i = 0; i < maxIter; i++) {
-                history_gd.push(f(...x_gd));
                 const grad = gradient(f, x_gd);
-                x_gd = x_gd.map((v, j) => v - eta * grad[j]);
+                const step = grad.map(g => -eta * g);
+
+                // GD blindly takes the step
+                x_gd = x_gd.map((v, j) => v + step[j]);
+                const new_f = f(...x_gd);
+
+                // Record NET change (can be positive OR negative)
+                value_gd += (prev_f_gd - new_f);
+                history_gd.push(value_gd);
+                prev_f_gd = new_f;
             }
 
             // === Method 2: Full Algorithm (GD + GS + Inversion) ===
-            // Core insight: GD moves, GS determines extent
-            // Try BOTH directions (+step and -step), keep whichever gives lower f(x)
-            // This captures the 2/3 winning portion every single iteration
+            // Evaluates BOTH directions, ALWAYS takes the one that gains more
             let x_full = [...x0];
+            let prev_f_full = f(...x_full);
 
             for (let i = 0; i < maxIter; i++) {
-                history_full.push(f(...x_full));
-
                 const grad = gradient(f, x_full);
+                const step = grad.map(g => -eta * g);
 
-                // Compute GD+GS weighted step for each dimension
-                const step = x_full.map((v, j) => {
-                    const d1 = bounds[j][0] + (1 - PHI) * (bounds[j][1] - bounds[j][0]);
-                    const d2 = bounds[j][0] + PHI * (bounds[j][1] - bounds[j][0]);
-                    let p1 = [...x_full], p2 = [...x_full];
-                    p1[j] = d1; p2[j] = d2;
-                    const gs_target = f(...p1) < f(...p2) ? d1 : d2;
-                    // GD step weighted with GS attraction
-                    return alpha * (-eta * grad[j]) + (1 - alpha) * (gs_target - v);
-                });
-
-                // Try BOTH directions
+                // Evaluate BOTH directions
                 const x_plus = x_full.map((v, j) => v + step[j]);
                 const x_minus = x_full.map((v, j) => v - step[j]);
+                const f_plus = f(...x_plus);
+                const f_minus = f(...x_minus);
 
-                // Keep the WINNER (lower f value) - capture the 2/3
-                x_full = f(...x_plus) <= f(...x_minus) ? x_plus : x_minus;
+                // Calculate gains for each direction
+                const gain_plus = prev_f_full - f_plus;
+                const gain_minus = prev_f_full - f_minus;
+
+                // ALWAYS take the better direction (higher gain)
+                if (gain_plus >= gain_minus) {
+                    x_full = x_plus;
+                    value_full += Math.max(0, gain_plus);  // Only count if positive
+                    prev_f_full = f_plus;
+                } else {
+                    x_full = x_minus;
+                    value_full += Math.max(0, gain_minus);  // Only count if positive
+                    prev_f_full = f_minus;
+                }
+                history_full.push(value_full);
             }
 
             // === Plot convergence curves ===
@@ -424,20 +441,19 @@ Output: x* (optimal point minimizing f)
             }
             ctx.stroke();
 
-            // Update stats
+            // Update stats - CUMULATIVE GAINS (higher = better)
             const gdFinal = history_gd[history_gd.length - 1];
             const fullFinal = history_full[history_full.length - 1];
-            document.getElementById('gd-final').innerText = gdFinal.toFixed(4);
-            document.getElementById('full-final').innerText = fullFinal.toFixed(4);
+            document.getElementById('gd-final').innerText = gdFinal.toFixed(2);
+            document.getElementById('full-final').innerText = fullFinal.toFixed(2);
 
-            // Clear winner display: lower f(x) = better
-            if (fullFinal < gdFinal) {
-                const pctBetter = ((gdFinal - fullFinal) / gdFinal * 100).toFixed(1);
-                document.getElementById('improvement').innerText = 'Full wins by ' + pctBetter + '%';
+            // Higher = better
+            if (fullFinal > gdFinal) {
+                const ratio = (fullFinal / Math.abs(gdFinal || 0.01)).toFixed(1);
+                document.getElementById('improvement').innerText = 'Full: ' + ratio + 'x more gains';
                 document.getElementById('improvement').style.color = '#d4af37';
-            } else if (gdFinal < fullFinal) {
-                const pctBetter = ((fullFinal - gdFinal) / fullFinal * 100).toFixed(1);
-                document.getElementById('improvement').innerText = 'GD wins by ' + pctBetter + '%';
+            } else if (gdFinal > fullFinal) {
+                document.getElementById('improvement').innerText = 'GD leads';
                 document.getElementById('improvement').style.color = '#f85149';
             } else {
                 document.getElementById('improvement').innerText = 'Tie';
