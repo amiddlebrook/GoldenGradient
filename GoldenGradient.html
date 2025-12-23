@@ -161,9 +161,10 @@
                 transforms blind gradient descent into an informed bidirectional search. At each iteration, the
                 algorithm evaluates <strong>both directions</strong> (+step and -step) and selects the one yielding
                 greater improvement.</p>
-            <p>The key insight: by always choosing the better of two options, the algorithm accumulates <strong>only
-                    positive gains</strong> while standard gradient descent blindly follows the gradient, incurring both
-                gains and losses. This creates a sustained upward trend in cumulative value capture.</p>
+            <p>The key insight: by evaluating both directions, the algorithm acts as a <strong>Net Profit</strong>
+                engine. It inherently "pays" the <strong>short tail cost</strong> (small occasional losses) to capture
+                the <strong>long tail gain</strong> (sustained large movements). This results in a jagged but relentless
+                upward trajectory in cumulative value.</p>
         </section>
 
         <section>
@@ -209,19 +210,19 @@
             <h2>III. Algorithm</h2>
             <pre
                 style="background: #000; color: var(--gold); padding: 25px; border-radius: 8px; text-align: left; overflow-x: auto; font-size: 0.85rem; line-height: 1.8;">
-ALGORITHM: BIDIRECTIONAL GRADIENT WITH GAIN PROTECTION
+ALGORITHM: BIDIRECTIONAL GRADIENT WITH NET PROFIT ACCOUNTING
 
 Input: f(x)  - objective function
        x₀    - initial point  
        η     - learning rate
        N     - maximum iterations
 
-Output: cumulative_gain (total value captured)
+Output: cumulative_value (Net Profit)
 
 1. INITIALIZE
    x ← x₀
    prev_f ← f(x)
-   cumulative_gain ← 0
+   cumulative_value ← 0
 
 2. FOR iteration = 1 TO N:
 
@@ -242,13 +243,12 @@ Output: cumulative_gain (total value captured)
            x ← x_minus
            gain ← gain_minus
    
-   2.4 ACCUMULATE only positive gains
-       IF gain > 0:
-           cumulative_gain += gain
+   2.4 ACCUMULATE Net Profit (Gain or Cost)
+       cumulative_value += gain
        
        prev_f ← f(x)
 
-3. RETURN cumulative_gain
+3. RETURN cumulative_value
             </pre>
         </section>
 
@@ -257,19 +257,19 @@ Output: cumulative_gain (total value captured)
             <ul style="text-align: left; max-width: 700px; margin: 0 auto;">
                 <li><strong>Decision Advantage:</strong> By evaluating both options, the algorithm makes an informed
                     choice rather than a blind step. This is analogous to looking both ways before crossing.</li>
-                <li><strong>Gain Protection:</strong> Only positive gains are accumulated. Negative outcomes (losses)
-                    are not counted, creating a monotonically non-decreasing cumulative value.</li>
+                <li><strong>Net Profit Engine:</strong> The algorithm pays the "short tail" cost (small loss) to capture
+                    the "long tail" gain (large improvement).</li>
                 <li><strong>Chaos Exploitation:</strong> While GD's chaotic nature causes value oscillation, the Full
-                    Algorithm extracts the positive portions of that chaos.</li>
+                    Algorithm navigates the chaos to extract a positive integral.</li>
                 <li><strong>Computational Cost:</strong> 2× function evaluations per iteration (evaluating both
                     directions). This is the cost of informed decision-making.</li>
             </ul>
             <div class="formula">
                 GD: value_t = value_{t-1} + (gain OR loss)<br>
-                Full: value_t = value_{t-1} + max(0, gain)
+                Full: value_t = value_{t-1} + (gain OR cost)
             </div>
-            <p style="text-align: center; font-size: 0.9rem;">The Full Algorithm can only maintain or increase value; it
-                never decreases.</p>
+            <p style="text-align: center; font-size: 0.9rem;">The Full Algorithm maximizes the integral of movement over
+                time.</p>
         </section>
 
         <div class="sim-container">
@@ -379,11 +379,11 @@ Output: cumulative_gain (total value captured)
                 // ALWAYS take the better direction (higher gain)
                 if (gain_plus >= gain_minus) {
                     x_full = x_plus;
-                    value_full += Math.max(0, gain_plus);  // Gain protection: only count positive
+                    value_full += gain_plus;  // Proper Accounting: Count the gain OR the loss (cost)
                     prev_f_full = f_plus;
                 } else {
                     x_full = x_minus;
-                    value_full += Math.max(0, gain_minus);  // Gain protection: only count positive
+                    value_full += gain_minus;  // Proper Accounting: Count the gain OR the loss (cost)
                     prev_f_full = f_minus;
                 }
                 history_full.push(value_full);
