@@ -302,15 +302,32 @@ Output: x_opt (optimal point)
                 x_gd = x_gd.map((v, j) => v - eta * grad[j]);
             }
 
-            // === Method 2: Full Algorithm (GD + Golden + Parallel Inversion) ===
+            // === Method 2: Full Algorithm (GD + Golden + Adaptive Inversion) ===
             let x_norm = [...x0], x_inv = [...x0];
             const f_inv = (a, b, c) => -f(a, b, c);
+            let prev_val = f(...x0);
+            let reversal_count = 0;
+            let using_inversion = false;
 
             for (let i = 0; i < maxIter; i++) {
-                // Take the better of the two paths at each iteration
-                const val_norm = f(...x_norm);
-                const val_inv = f(...x_inv);
-                history_full.push(Math.min(val_norm, val_inv));
+                // Record current value from the ACTIVE path
+                const current_val = using_inversion ? f(...x_inv) : f(...x_norm);
+                history_full.push(current_val);
+
+                // Detect reversal: if objective is INCREASING, we're stuck
+                if (current_val > prev_val + 0.001) {
+                    reversal_count++;
+                } else {
+                    reversal_count = 0;
+                }
+
+                // Switch to inversion when stuck (3 consecutive reversals)
+                if (reversal_count >= 3) {
+                    using_inversion = !using_inversion; // Toggle between paths
+                    reversal_count = 0;
+                }
+
+                prev_val = current_val;
 
                 // Step normal path (GD + Golden Section)
                 const grad_n = gradient(f, x_norm);
@@ -324,7 +341,7 @@ Output: x_opt (optimal point)
                 });
                 x_norm = x_norm.map((v, j) => alpha * x_grad_n[j] + (1 - alpha) * x_golden_n[j]);
 
-                // Step inverted path (GD + Golden on -f)
+                // Step inverted path (GD + Golden on -f) - can climb UP
                 const grad_i = gradient(f_inv, x_inv);
                 const x_grad_i = x_inv.map((v, j) => v - eta * grad_i[j]);
                 const x_golden_i = x_inv.map((v, j) => {
