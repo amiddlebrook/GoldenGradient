@@ -190,16 +190,21 @@
                 \cup \psi \}$. This indistinction leads to chaotic oscillation where gains ($\Phi$) are frequently
                 negated by subsequent losses ($\psi$).</p>
 
-            <h3 style="color: var(--gold); margin-top: 25px;">2.3 The "GS + Inv" Protocol</h3>
-            <p>The Golden Gradient introduces a decision operator $\mathcal{D}$ that evaluates the potential step
-                $\Delta x$ against the division. If the step maps to the Short Tail (value destruction), the protocol
-                triggers an <strong>Inversion Effect</strong>:</p>
+            <h3 style="color: var(--gold); margin-top: 25px;">2.3 The Golden Gradient Equation</h3>
+            <p>The core decision operator is not a simple step, but a weighted equilibrium between the Gradient's
+                distinct topology and the Golden Ratio's ideal proportion. The update rule is formally defined as:</p>
             <div class="formula">
-                <strong>$\mathcal{R}(g) = \begin{cases} g & \text{if } g > 0 \quad (\text{Long Tail}) \\ 0 & \text{if }
-                    g \le 0 \quad (\text{Short Tail/Revert}) \end{cases}$</strong>
+                $x_{t+1} = \alpha (x_t - \eta \nabla f(x_t)) + (1-\alpha) x_{golden}$
             </div>
-            <p>Mathematically, we state that the system acts as a diode, permitting flux only in the direction of
-                thermodynamic utility.</p>
+            <p>Where:</p>
+            <ul style="text-align: left; max-width: 700px; margin: 0 auto; list-style-type: none; font-size: 0.9rem;">
+                <li>$\alpha \in (0,1)$: The <strong>Golden Coefficient</strong> balancing empirical reality (gradient)
+                    and theoretical ideal (golden section).</li>
+                <li>$x_{golden}$: The coordinate derived from the Golden Section Search ($d = B_{min} +
+                    \phi(B_{max}-B_{min})$).</li>
+            </ul>
+            <p>This formulation forces the chaotic gradient vector to conform to the constructive geometry of $\phi$,
+                effectively "filtering" entropy through the Golden Ratio.</p>
 
             <h3 style="color: var(--gold); margin-top: 25px;">2.4 The Ratchet Effect Consistency</h3>
             <p>By applying $\mathcal{R}(g)$ recursively, the cumulative value function $V(t)$ becomes a monotonically
