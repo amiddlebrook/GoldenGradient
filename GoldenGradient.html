@@ -159,58 +159,58 @@
             <h2>I. Abstract</h2>
             <p>The Golden Gradient Framework presents a <strong>decision-theoretic optimization</strong> approach that
                 transforms gradient descent from a stochastic search into a deterministic bidirectional operator. At
-                each iteration $t$, the
-                algorithm evaluates the local gradient manifold $\nabla f(x_t)$ in both directions ($u = -\nabla f$ and
-                $-u$) to determine the optimal step.</p>
+                each iteration <i>t</i>, the
+                algorithm evaluates the local gradient manifold ∇f(x<sub>t</sub>) in both directions (u = -∇f and
+                -u) to determine the optimal step.</p>
             <p>The core innovation is the application of a <strong>Reversion Protocol</strong> based on the Golden
-                Ratio's topological division. By implementing a non-linear filter $\mathcal{R}(g) = \max(0, g)$, the
-                algorithm ensures that the system only propagates through the "Long Tail" ($\phi$-portion) of the gain
-                spectrum, reverting any "Short Tail" ($1-\phi$) losses to a null state. This results in a monotonically
+                Ratio's topological division. By implementing a non-linear filter R(g) = max(0, g), the
+                algorithm ensures that the system only propagates through the "Long Tail" (φ-portion) of the gain
+                spectrum, reverting any "Short Tail" (1-φ) losses to a null state. This results in a monotonically
                 non-decreasing objective value sequence.</p>
         </section>
 
         <section>
             <h2>II. Core Theory</h2>
-            <h3 style="color: var(--gold); margin-top: 25px;">2.1 The Topological Division ($\phi$)</h3>
-            <p>The Golden Ratio ($\phi \approx 1.618$) fundamentals divide the outcome space $\Omega$ of any gradient
+            <h3 style="color: var(--gold); margin-top: 25px;">2.1 The Topological Division (φ)</h3>
+            <p>The Golden Ratio (φ ≈ 1.618) fundamentals divide the outcome space Ω of any gradient
                 step into two asymmetric partitions:</p>
             <ul style="text-align: left; max-width: 700px; margin: 0 auto; list-style-type: none;">
-                <li><strong>The Major Segment (Long Tail):</strong> $\Phi = \frac{1}{\phi} \approx 0.618$. Represents
+                <li><strong>The Major Segment (Long Tail):</strong> Φ = 1/φ ≈ 0.618. Represents
                     the constructive signal, gain, and valid topological traversal.</li>
-                <li><strong>The Minor Segment (Short Tail):</strong> $\psi = 1 - \Phi \approx 0.382$. Represents
+                <li><strong>The Minor Segment (Short Tail):</strong> ψ = 1 - Φ ≈ 0.382. Represents
                     entropy, cost, and destructive oscillation.</li>
             </ul>
 
             <h3 style="color: var(--gold); margin-top: 25px;">2.2 Gradient Descent (GD) Dynamics</h3>
             <p>Classical Gradient Descent performs a blind update based on the negative gradient:</p>
             <div class="formula">
-                $x_{t+1} = x_t - \eta \nabla f(x_t)$
+                x<sub>t+1</sub> = x<sub>t</sub> - η · ∇f(x<sub>t</sub>)
             </div>
-            <p>This operator $\mathcal{T}_{GD}$ accepts the outcome $E$ regardless of its sign, meaning $E \in \{ \Phi
-                \cup \psi \}$. This indistinction leads to chaotic oscillation where gains ($\Phi$) are frequently
-                negated by subsequent losses ($\psi$).</p>
+            <p>This operator T<sub>GD</sub> accepts the outcome E regardless of its sign, meaning E ∈ { Φ
+                ∪ ψ }. This indistinction leads to chaotic oscillation where gains (Φ) are frequently
+                negated by subsequent losses (ψ).</p>
 
             <h3 style="color: var(--gold); margin-top: 25px;">2.3 The Golden Gradient Equation</h3>
             <p>The core decision operator is not a simple step, but a weighted equilibrium between the Gradient's
                 distinct topology and the Golden Ratio's ideal proportion. The update rule is formally defined as:</p>
             <div class="formula">
-                $x_{t+1} = \alpha (x_t - \eta \nabla f(x_t)) + (1-\alpha) x_{golden}$
+                x<sub>t+1</sub> = α(x<sub>t</sub> - η · ∇f(x<sub>t</sub>)) + (1-α)x<sub>golden</sub>
             </div>
             <p>Where:</p>
             <ul style="text-align: left; max-width: 700px; margin: 0 auto; list-style-type: none; font-size: 0.9rem;">
-                <li>$\alpha \in (0,1)$: The <strong>Golden Coefficient</strong> balancing empirical reality (gradient)
-                    and theoretical ideal (golden section).</li>
-                <li>$x_{golden}$: The coordinate derived from the Golden Section Search ($d = B_{min} +
-                    \phi(B_{max}-B_{min})$).</li>
+                <li>α ∈ (0,1): The <strong>Golden Coefficient</strong> balancing empirical reality (gradient) and
+                    theoretical ideal (golden section).</li>
+                <li>x<sub>golden</sub>: The coordinate derived from the Golden Section Search (d = B<sub>min</sub> +
+                    φ(B<sub>max</sub>-B<sub>min</sub>)).</li>
             </ul>
-            <p>This formulation forces the chaotic gradient vector to conform to the constructive geometry of $\phi$,
+            <p>This formulation forces the chaotic gradient vector to conform to the constructive geometry of φ,
                 effectively "filtering" entropy through the Golden Ratio.</p>
 
             <h3 style="color: var(--gold); margin-top: 25px;">2.4 The Ratchet Effect Consistency</h3>
-            <p>By applying $\mathcal{R}(g)$ recursively, the cumulative value function $V(t)$ becomes a monotonically
+            <p>By applying R(g) recursively, the cumulative value function V(t) becomes a monotonically
                 non-decreasing sequence:</p>
             <div class="formula">
-                $V_t \geq V_{t-1} \quad \forall t$
+                V<sub>t</sub> ≥ V<sub>t-1</sub> &emsp; ∀ t
             </div>
             <p>This filters out the high-frequency noise of the Short Tail, extracting the smooth, low-frequency
                 climbing signal characteristic of the Long Tail.</p>
@@ -267,23 +267,23 @@ Output: cumulative_value (Total Retained Value)
         <section class="pop-sci">
             <h2>IV. Theoretical Properties</h2>
             <ul style="text-align: left; max-width: 700px; margin: 0 auto;">
-                <li><strong>Decision Advantage:</strong> The algorithm transforms the standard $O(1)$ blind step into a
-                    $O(2)$ decision tree, providing local omniscience regarding the gradient's immediate manifold.</li>
-                <li><strong>Reversion Logic:</strong> The function $\max(0, \Delta)$ serves as a mathematical barrier
+                <li><strong>Decision Advantage:</strong> The algorithm transforms the standard O(1) blind step into a
+                    O(2) decision tree, providing local omniscience regarding the gradient's immediate manifold.</li>
+                <li><strong>Reversion Logic:</strong> The function max(0, Δ) serves as a mathematical barrier
                     preventing negative value accumulation, effectively creating a " thermodynamic ratchet."</li>
                 <li><strong>Chaos Exploitation:</strong> In high-variance topologies (chaos), standard GD incurs costs
-                    $\psi$. selection bias towards $\Phi$ converts this variance into potential energy for climbing.
+                    ψ. selection bias towards Φ converts this variance into potential energy for climbing.
                 </li>
-                <li><strong>Computational Cost:</strong> The cost is exactly $2N$ function evaluations versus $N$ for
-                    GD. The efficiency ratio $\frac{Gain_{Full}}{Gain_{GD}} \gg 2$ demonstrates the leverage of this
+                <li><strong>Computational Cost:</strong> The cost is exactly 2N function evaluations versus N for
+                    GD. The efficiency ratio Gain<sub>Full</sub>/Gain<sub>GD</sub> ≫ 2 demonstrates the leverage of this
                     approach.</li>
             </ul>
             <div class="formula">
-                GD: $V_t = V_{t-1} + (f(x_{t-1}) - f(x_t))$ <br>
-                Full: $V_t = V_{t-1} + \max(0, f(x_{t-1}) - f(x_{best}))$
+                GD: V<sub>t</sub> = V<sub>t-1</sub> + (f(x<sub>t-1</sub>) - f(x<sub>t</sub>)) <br>
+                Full: V<sub>t</sub> = V<sub>t-1</sub> + max(0, f(x<sub>t-1</sub>) - f(x<sub>best</sub>))
             </div>
-            <p style="text-align: center; font-size: 0.9rem;">The system exhibits "Ratchet" behavior where $d(Value)/dt
-                \geq 0$.</p>
+            <p style="text-align: center; font-size: 0.9rem;">The system exhibits "Ratchet" behavior where d(Value)/dt ≥
+                0.</p>
         </section>
 
         <div class="sim-container">
