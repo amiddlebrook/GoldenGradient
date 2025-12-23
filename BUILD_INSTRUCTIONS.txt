@@ -1,0 +1,11 @@
+
+BUILD INSTRUCTIONS
+
+Local PDF:
+pdflatex golden_gradient.tex
+
+arXiv:
+Upload golden_gradient.tex directly (no BibTeX required).
+
+GitHub:
+Push README.md + simulator link.

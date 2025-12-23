@@ -1,0 +1,12 @@
+
+Title: Golden Gradient — a tiny optimizer that beats Adam by refusing bad steps
+
+Body:
+I built a gradient optimizer that does *less* than Adam.
+
+Instead of adapting step sizes, it preserves the raw gradient and only applies updates when the direction is consistent with recent history (using a golden-ratio threshold).
+
+On oscillatory loss surfaces where Adam zig-zags forever, this accumulates monotonic gains.
+
+Interactive simulator + paper:
+https://amiddlebrook.github.io/GoldenGradient/
