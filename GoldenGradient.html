@@ -196,7 +196,8 @@
 
             <h3 style="color: var(--gold); margin-top: 25px;">2.4 Sustained Gain Accumulation</h3>
             <p>While standard GD oscillates chaotically (net position can go up or down), the Full Algorithm creates
-                <strong>sustained upward movement</strong> by:</p>
+                <strong>sustained upward movement</strong> by:
+            </p>
             <ul style="text-align: left; max-width: 700px; margin: 0 auto;">
                 <li>Evaluating both options before committing</li>
                 <li>Selecting the direction that improves the objective</li>
@@ -378,11 +379,11 @@ Output: cumulative_gain (total value captured)
                 // ALWAYS take the better direction (higher gain)
                 if (gain_plus >= gain_minus) {
                     x_full = x_plus;
-                    value_full += Math.max(0, gain_plus);  // Only count if positive
+                    value_full += Math.max(0, gain_plus);  // Gain protection: only count positive
                     prev_f_full = f_plus;
                 } else {
                     x_full = x_minus;
-                    value_full += Math.max(0, gain_minus);  // Only count if positive
+                    value_full += Math.max(0, gain_minus);  // Gain protection: only count positive
                     prev_f_full = f_minus;
                 }
                 history_full.push(value_full);
