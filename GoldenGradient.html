@@ -170,21 +170,17 @@
 
         <section class="pop-sci">
             <h2>II. Core Insight</h2>
-            <p>The golden ratio φ ≈ 0.618 is the <strong>most irrational number</strong>—it avoids periodic patterns
-                better than any other ratio. In optimization:</p>
+            <p>The algorithm runs three independent search strategies in parallel:</p>
             <ul style="text-align: left; max-width: 700px; margin: 0 auto;">
-                <li><strong>Golden-section search</strong> finds the correct basin ~2/3 of the time</li>
-                <li><strong>The inverted path</strong> captures the remaining ~1/3</li>
-                <li>Over many iterations, without intervention, they average to ~50/50</li>
+                <li><strong>Gradient Descent</strong> — Fast local convergence, but blind to global structure</li>
+                <li><strong>Golden-Section Search</strong> — Axis-wise probing at φ ≈ 0.618 to hedge against local traps
+                </li>
+                <li><strong>Inverted Path</strong> — Mirrors the objective (f → −f) to explore complementary basins</li>
             </ul>
-            <p style="margin-top: 15px;"><strong>The key insight:</strong> Reversal detection = pattern detection. When
-                the objective function starts increasing instead of decreasing, you've hit a resonance trap. Triggering
-                inversion at that exact moment breaks the averaging pattern.</p>
-            <div class="formula">
-                Detect reversal → Switch to inverted landscape → Maintain 2/3 advantage
-            </div>
-            <p>By running parallel paths and switching on first evidence of failure, the algorithm maintains efficacy
-                instead of regressing to the mean.</p>
+            <p style="margin-top: 15px;"><strong>Adaptive Inversion:</strong> Both normal and inverted paths run
+                simultaneously. When the objective starts increasing (reversal detected), the algorithm switches to the
+                inverted path. This prevents convergence to local minima.</p>
+            <p>The empirical proof below demonstrates the success rate improvement from combining these methods.</p>
         </section>
 
         <div class="sim-container">
