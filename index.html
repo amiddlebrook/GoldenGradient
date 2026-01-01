@@ -190,6 +190,36 @@ hr.sep {
   </header>
 
   <section class="section">
+    <h2 class="section-title">Abstract</h2>
+    <p>
+      Golden Gradient v2 frames optimization as navigation on a probabilistic topology rather than a purely local descent rule.
+      Directional correctness is modeled as a stochastic field over regime nodes and layers, with long-tail corridors where one
+      direction dominates and boundary bands where the advantage flips. The method partitions posterior mass using golden-ratio
+      thresholds to decide forward, backward, or verification actions without oracle leakage, and it interprets orthogonality as
+      inducing flip cross-sections where expected improvement changes sign. We evaluate GG-Topo against GG-Local, bandit baselines,
+      and verification-heavy policies under matched evaluation budgets and identical noise regimes. The simulations report cumulative
+      improvement curves with confidence intervals, calibration of inferred probabilities, and concentration of verification near
+      flip manifolds. Across suites, GG-Topo maintains competitive or superior improvement under budget constraints while reducing
+      unnecessary verification away from cross-sections. The results support the claim that probabilistic topology offers a stable
+      scaffold for sparse verification and robust navigation in noisy, multi-layer optimization landscapes.
+    </p>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">Contributions</h2>
+    <ul>
+      <li>Formalizes optimization as navigation on a probabilistic topology with corridor and boundary-band regimes.</li>
+      <li>Defines flip cross-sections as orthogonality-induced manifolds where expected direction changes sign.</li>
+      <li>Demonstrates evaluation-budget fairness with budget-matched baselines and targeted verification.</li>
+    </ul>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">Keywords</h2>
+    <p>optimization, stochastic gradients, probabilistic topology, golden ratio, verification budget</p>
+  </section>
+
+  <section class="section">
     <h2 class="section-title">I. The Core Insight (GG2 minimum)</h2>
     <p>
       Gradient methods assume local direction is reliable. In the regimes you care about, direction is a <b>random variable</b>:
@@ -321,7 +351,28 @@ Layer selection:
   </section>
 
   <section class="section">
-    <h2 class="section-title">VIII. Interactive Demonstration (Rigorous Simulation)</h2>
+    <h2 class="section-title">VIII. Related Work</h2>
+    <p>
+      <b>Stochastic gradient methods</b> (SGD, momentum, RMSProp, Adam) treat noisy directionality as an additive
+      perturbation to be averaged out, assuming local gradients still define a stable descent direction.
+      GG-Topo instead models direction as a <em>distribution over correctness</em>, with explicit tail regimes and
+      verification costs that decide when to probe the counterfactual [1].
+    </p>
+    <p>
+      <b>Bandit strategies</b> such as UCB and Thompson sampling focus on exploration vs exploitation over arms.
+      GG-Topo borrows the belief-updating flavor but differs in that “arms” are not independent; they are nodes on a
+      topology with cross-section flips and message passing, so confidence is propagated through neighbors rather than
+      estimated in isolation [2].
+    </p>
+    <p>
+      <b>Line search and Golden-section methods</b> optimize along a 1D interval by shrinking brackets deterministically.
+      GG-Topo treats the search direction itself as uncertain and uses golden thresholds as probabilistic decision
+      boundaries, generalizing the spirit of golden-section to noisy, multi-layer dynamics [3].
+    </p>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">IX. Interactive Demonstration (Rigorous Simulation)</h2>
     <p class="subtitle">
       Runs GG-Topo and multiple baselines under identical evaluation budgets, plots mean cumulative improvement ±95% CI,
       shows calibration, and highlights flip cross-sections.
@@ -390,7 +441,7 @@ Layer selection:
             <div><b>Primary:</b> cumulative improvement vs eval budget (±95% CI)</div>
             <div id="status">Ready (click Run)</div>
           </div>
-          <div class="plot" style="margin-top:10px"><canvas id="simMainChart" height="280"></canvas></div>
+          <div class="plot" style="margin-top:10px"><canvas id="mainChartLive" height="280"></canvas></div>
 
           <div class="legendRow" style="margin-top:10px">
             <span><span class="dot" style="background:var(--gold)"></span> GG-Topo</span>
@@ -404,8 +455,8 @@ Layer selection:
           </div>
 
           <div class="split" style="margin-top:14px">
-            <div class="plot"><canvas id="simCalChart" height="260"></canvas></div>
-            <div class="plot"><canvas id="simFlipChart" height="260"></canvas></div>
+            <div class="plot"><canvas id="calChartLive" height="260"></canvas></div>
+            <div class="plot"><canvas id="flipChartLive" height="260"></canvas></div>
           </div>
           <div class="small" style="display:flex;justify-content:space-between;margin-top:6px">
             <span><b>Calibration:</b> posterior mean vs true p̄ by node</span>
@@ -432,6 +483,13 @@ Baselines:
   Always-Forward, Always-Backward, Always-Verify,
   Random-Verify (verify-rate matched to GG-Topo),
   Thompson, UCB, GG-Local (no topology propagation).
+
+Protocol details:
+  Seeds: deterministic; env seed fixed by (L, σ), run seeds fixed by hash(method|seed|L|σ).
+  Noise: ε ~ Bernoulli(p_{v,ℓ}); additive noise ~ N(0,1), scaled by σ.
+  Synthetic topology: p_{v,ℓ} from 4-bit linear base + layer bias + sinusoidal ripple, clamped to [0.05, 0.95].
+  Eval cost: VERIFY = 2 evals (forward+backward), MOVE = 1 eval.
+  Runtime: O(B · L · MC) per seed (B=eval budget, L=layers, MC=posterior samples).
 </pre>
         </div>
 
@@ -463,7 +521,7 @@ GG-Topo step:
   </section>
 
   <section class="section">
-    <h2 class="section-title">IX. Why This Works (mechanism-level)</h2>
+    <h2 class="section-title">X. Why This Works (mechanism-level)</h2>
     <ul class="bullet-list">
       <li><b>Corridor riding:</b> act when posterior mass is in a long tail (p&gt;hi or p&lt;lo).</li>
       <li><b>Junction disambiguation:</b> verify inside the short band (lo≤p≤hi) to prevent drift.</li>
@@ -473,7 +531,7 @@ GG-Topo step:
   </section>
 
   <section class="section">
-    <h2 class="section-title">X. Limitations and Next Steps</h2>
+    <h2 class="section-title">XI. Limitations and Next Steps</h2>
     <p class="small">
       This simulation isolates the decision mechanics. For publication-grade completeness, extend to:
       (a) nonconvex objectives, (b) higher-dimensional x, (c) nonstationary p fields, (d) explicit cost models, (e) empirical workloads.
@@ -483,7 +541,7 @@ GG-Topo step:
 
   
 <section class="section">
-  <h2 class="section-title">XI. Full Benchmark (Real Data + Visualizations)</h2>
+  <h2 class="section-title">XII. Full Benchmark (Real Data + Visualizations)</h2>
   <div class="note">
     Main benchmark: L=5, σ=0.25, budget=3000, seeds=40, δ=0.1, λ=0.35.
     Random-Verify matched at p=0.830.
@@ -531,6 +589,15 @@ GG-Topo step:
     <span class="badge2" id="suite_meta"></span>
   </div>
   <div class="plot"><canvas id="fig_suite" height="340"></canvas></div>
+</section>
+
+<section class="section">
+  <h2 class="section-title">References</h2>
+  <ol class="small">
+    <li>Robbins, H., &amp; Monro, S. (1951). A stochastic approximation method. <em>Annals of Mathematical Statistics</em>.</li>
+    <li>Auer, P., Cesa-Bianchi, N., &amp; Fischer, P. (2002). Finite-time analysis of the multiarmed bandit problem. <em>Machine Learning</em>.</li>
+    <li>Kiefer, J. (1953). Sequential minimax search for a maximum. <em>Proceedings of the AMS</em>.</li>
+  </ol>
 </section>
 
 <footer class="footer">
@@ -937,7 +1004,7 @@ function computeCI(seriesBySeed){
 }
 
 function drawMain({checkpoints, curves, colors, labels}){
-  const {ctx,w,h}=setupCanvas(document.getElementById("simMainChart"));
+  const {ctx,w,h}=setupCanvas(document.getElementById("mainChartLive"));
   const ax=axes(ctx,w,h);
   const xMin=checkpoints[0], xMax=checkpoints[checkpoints.length-1];
   let yMax=0;
@@ -977,7 +1044,7 @@ function drawMain({checkpoints, curves, colors, labels}){
 }
 
 function drawCalibration({truePavg, estPavg}){
-  const {ctx,w,h}=setupCanvas(document.getElementById("simCalChart"));
+  const {ctx,w,h}=setupCanvas(document.getElementById("calChartLive"));
   const ax=axes(ctx,w,h);
   const x0=ax.x0, x1=ax.x1, y0=ax.y0, y1=ax.y1;
 
@@ -1011,7 +1078,7 @@ function drawCalibration({truePavg, estPavg}){
 }
 
 function drawFlip({pAvg}){
-  const {ctx,w,h}=setupCanvas(document.getElementById("simFlipChart"));
+  const {ctx,w,h}=setupCanvas(document.getElementById("flipChartLive"));
   const ax=axes(ctx,w,h);
   const x0=ax.x0,x1=ax.x1,y0=ax.y0,y1=ax.y1;
 
@@ -1088,7 +1155,7 @@ function reset(){
   stopFlag=false;
   els.status.textContent="Ready (click Run)";
   els.kpi.innerHTML="";
-  for(const id of ["simMainChart","simCalChart","simFlipChart"]){
+  for(const id of ["mainChartLive","calChartLive","flipChartLive"]){
     const c=document.getElementById(id);
     const {ctx,w,h}=setupCanvas(c);
     ctx.clearRect(0,0,w,h);
