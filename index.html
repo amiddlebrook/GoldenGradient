@@ -458,10 +458,12 @@ Layer selection:
             <div class="plot"><canvas id="calChartLive" height="260"></canvas></div>
             <div class="plot"><canvas id="flipChartLive" height="260"></canvas></div>
           </div>
+          <div class="plot" style="margin-top:12px"><canvas id="proofBandLive" height="180"></canvas></div>
           <div class="small" style="display:flex;justify-content:space-between;margin-top:6px">
             <span><b>Calibration:</b> posterior mean vs true p̄ by node</span>
             <span><b>Flip cross-sections:</b> nodes closest to p̄=0.5</span>
           </div>
+          <div class="small" style="margin-top:6px"><b>Proof bands:</b> counts of nodes in forward/backward corridors vs verify band (hi/lo thresholds).</div>
         </div>
 
         <div id="tab-proto" class="hidden">
@@ -560,17 +562,20 @@ GG-Topo step:
 </div>
 
 
+  <h3 class="section-title" style="font-size:1.25rem;margin-top:18px">Figure 2 — Proof bands (hi/lo thresholds over topology)</h3>
+  <div class="plot"><canvas id="proofBandChart" height="220"></canvas></div>
+
   <div class="split" style="margin-top:14px">
-    <div><h3 class="section-title" style="font-size:1.25rem">Figure 2 — Verification counts</h3><div class="plot"><canvas id="verifyChart" height="320"></canvas></div></div>
-    <div><h3 class="section-title" style="font-size:1.25rem">Figure 3 — Final distribution (quantiles)</h3><div class="plot"><canvas id="fig_dist" height="320"></canvas></div></div>
+    <div><h3 class="section-title" style="font-size:1.25rem">Figure 3 — Verification counts</h3><div class="plot"><canvas id="verifyChart" height="320"></canvas></div></div>
+    <div><h3 class="section-title" style="font-size:1.25rem">Figure 4 — Final distribution (quantiles)</h3><div class="plot"><canvas id="fig_dist" height="320"></canvas></div></div>
   </div>
 
   <div class="split" style="margin-top:14px">
-    <div><h3 class="section-title" style="font-size:1.25rem">Figure 4 — Calibration</h3><div class="plot"><canvas id="calChart" height="320"></canvas></div></div>
-    <div><h3 class="section-title" style="font-size:1.25rem">Figure 5 — Flip cross-sections</h3><div class="plot"><canvas id="flipChart" height="320"></canvas></div></div>
+    <div><h3 class="section-title" style="font-size:1.25rem">Figure 5 — Calibration</h3><div class="plot"><canvas id="calChart" height="320"></canvas></div></div>
+    <div><h3 class="section-title" style="font-size:1.25rem">Figure 6 — Flip cross-sections</h3><div class="plot"><canvas id="flipChart" height="320"></canvas></div></div>
   </div>
 
-  <h3 class="section-title" style="font-size:1.25rem;margin-top:18px">Figure 6 — True probability topology (per-layer)</h3>
+  <h3 class="section-title" style="font-size:1.25rem;margin-top:18px">Figure 7 — True probability topology (per-layer)</h3>
   <div class="split">
     <div class="plot"><canvas id="fig_p_layer0" height="220"></canvas></div>
     <div class="plot"><canvas id="fig_p_layer1" height="220"></canvas></div>
@@ -581,7 +586,7 @@ GG-Topo step:
   </div>
   <div class="plot" style="margin-top:10px"><canvas id="fig_p_layer4" height="220"></canvas></div>
 
-  <h3 class="section-title" style="font-size:1.25rem;margin-top:18px">Figure 7 — Suite (6 configs) dashboard</h3>
+  <h3 class="section-title" style="font-size:1.25rem;margin-top:18px">Figure 8 — Suite (6 configs) dashboard</h3>
   <div class="controls" style="margin-bottom:10px">
     <label>Config
       <select id="suite_pick" style="margin-left:6px"></select>
@@ -868,11 +873,23 @@ function runOne({method, env, budget, delta, mc, lambda, rngSeed}){
 
     if(action==="forward"){
       const ff=env.f(xf); evals+=1;
-      const imp=f-ff; if(imp>0){ x=xf; state.update(xf-x); f=ff; cumImp+=imp; }
+      const imp=f-ff;
+      if(imp>0){
+        const dx=xf-x;
+        x=xf;
+        state.update(dx);
+        f=ff; cumImp+=imp;
+      }
       stepCount++;
     }else if(action==="backward"){
       const fb=env.f(xb); evals+=1;
-      const imp=f-fb; if(imp>0){ x=xb; state.update(xb-x); f=fb; cumImp+=imp; }
+      const imp=f-fb;
+      if(imp>0){
+        const dx=xb-x;
+        x=xb;
+        state.update(dx);
+        f=fb; cumImp+=imp;
+      }
       stepCount++;
     }else{
       const ff=env.f(xf), fb=env.f(xb); evals+=2;
@@ -880,9 +897,21 @@ function runOne({method, env, budget, delta, mc, lambda, rngSeed}){
       beliefs.update(v,l,y);
       verifyCount++;
       if(ff<fb){
-        const imp=f-ff; if(imp>0){ x=xf; state.update(xf-x); f=ff; cumImp+=imp; }
+        const imp=f-ff;
+        if(imp>0){
+          const dx=xf-x;
+          x=xf;
+          state.update(dx);
+          f=ff; cumImp+=imp;
+        }
       }else{
-        const imp=f-fb; if(imp>0){ x=xb; state.update(xb-x); f=fb; cumImp+=imp; }
+        const imp=f-fb;
+        if(imp>0){
+          const dx=xb-x;
+          x=xb;
+          state.update(dx);
+          f=fb; cumImp+=imp;
+        }
       }
       stepCount++;
     }
@@ -948,6 +977,10 @@ function colorForP(p){
   if(p>HI) return `rgba(72,199,116,${0.25+0.55*(p-HI)/(1-HI)})`;
   if(p<LO) return `rgba(241,70,104,${0.25+0.55*(LO-p)/LO})`;
   return `rgba(255,176,32,${0.18+0.45*(1-Math.abs(p-0.5)/0.5)})`;
+}
+function cssVar(name, fallback){
+  const v=getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return v || fallback;
 }
 function buildHeat(container, pAvg){
   container.innerHTML="";
@@ -1116,6 +1149,56 @@ function drawFlip({pAvg}){
   ctx.fillText(`Closest flip nodes: ${order.map(o=>o[1].toString(16).toUpperCase()).join(", ")}`, x0, y1+18);
 }
 
+function drawProofBands({pAvg}){
+  const {ctx,w,h}=setupCanvas(document.getElementById("proofBandLive"));
+  const ax=axes(ctx,w,h);
+  const bands=[
+    {key:"forward", label:`Forward p̄>hi (${HI.toFixed(2)})`, color:"rgba(72,199,116,.8)"},
+    {key:"verify", label:"Verify band lo≤p̄≤hi", color:"rgba(255,176,32,.8)"},
+    {key:"backward", label:`Backward p̄<lo (${LO.toFixed(2)})`, color:"rgba(241,70,104,.8)"},
+  ];
+  const stats=bands.map(b=>({label:b.label, color:b.color, count:0, mean:0}));
+  pAvg.forEach(p=>{
+    let idx=1;
+    if(p>HI) idx=0;
+    else if(p<LO) idx=2;
+    stats[idx].count++;
+    stats[idx].mean+=p;
+  });
+  stats.forEach(s=>{ s.mean = s.count ? s.mean/s.count : 0; });
+  const maxv=Math.max(...stats.map(s=>s.count))*1.2 || 1;
+  const bw=(ax.x1-ax.x0)/stats.length;
+  for(let i=0;i<=4;i++){
+    const yv=maxv*i/4;
+    const y=ax.y0-(ax.y0-ax.y1)*(yv/maxv);
+    ctx.strokeStyle="rgba(255,255,255,.06)";
+    ctx.beginPath(); ctx.moveTo(ax.x0,y); ctx.lineTo(ax.x1,y); ctx.stroke();
+    text(ctx,ax.x0-8,y+4,`${Math.round(yv)}`,"rgba(232,238,252,.55)","right");
+  }
+  text(ctx,(ax.x0+ax.x1)/2,ax.y0+26,"Node counts by proof bands (hi/lo thresholds)","rgba(232,238,252,.65)","center");
+  text(ctx,ax.x0,ax.y1-8,"Count of nodes","rgba(232,238,252,.65)","left");
+  ctx.textAlign="center";
+  stats.forEach((s,i)=>{
+    const x=ax.x0+i*bw+6;
+    const hbar=(ax.y0-ax.y1)*(s.count/maxv);
+    const y=ax.y0-hbar;
+    ctx.fillStyle=s.color;
+    ctx.globalAlpha=0.9;
+    ctx.fillRect(x,y,bw-12,hbar);
+    ctx.globalAlpha=1;
+    ctx.fillStyle="rgba(232,238,252,.8)";
+    ctx.font="11px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
+    ctx.fillText(`${s.count} nodes`, x+(bw-12)/2, y-6);
+    ctx.fillStyle="rgba(232,238,252,.6)";
+    ctx.font="10px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
+    ctx.fillText(`μ=${s.mean.toFixed(2)}`, x+(bw-12)/2, y+14);
+    ctx.fillStyle="rgba(232,238,252,.6)";
+    ctx.font="9px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
+    ctx.fillText(s.label, x+(bw-12)/2, ax.y0+16);
+  });
+  ctx.textAlign="left";
+}
+
 let stopFlag=false;
 const els={
   run:document.getElementById("runBtn"),
@@ -1155,7 +1238,7 @@ function reset(){
   stopFlag=false;
   els.status.textContent="Ready (click Run)";
   els.kpi.innerHTML="";
-  for(const id of ["mainChartLive","calChartLive","flipChartLive"]){
+  for(const id of ["mainChartLive","calChartLive","flipChartLive","proofBandLive"]){
     const c=document.getElementById(id);
     const {ctx,w,h}=setupCanvas(c);
     ctx.clearRect(0,0,w,h);
@@ -1195,11 +1278,11 @@ async function run(){
   buildHeatLayers(els.heatLayers, env.p);
 
   const methods=[
-    {key:"gg_topo", label:"GG‑Topo", color:getComputedStyle(document.documentElement).getPropertyValue("--gold").trim()},
+    {key:"gg_topo", label:"GG‑Topo", color:cssVar("--gold","#d4af37")},
     {key:"gg_local", label:"GG‑Local", color:"rgba(212,175,55,.55)"},
-    {key:"thompson", label:"Thompson", color:getComputedStyle(document.documentElement).getPropertyValue("--cyan").trim()},
-    {key:"ucb", label:"UCB", color:getComputedStyle(document.documentElement).getPropertyValue("--purple").trim()},
-    {key:"always_verify", label:"Always‑Verify", color:getComputedStyle(document.documentElement).getPropertyValue("--warn").trim()},
+    {key:"thompson", label:"Thompson", color:cssVar("--accent-cyan","#3ec7d3")},
+    {key:"ucb", label:"UCB", color:cssVar("--accent-purple","#9b7bff")},
+    {key:"always_verify", label:"Always‑Verify", color:cssVar("--accent-orange","#ffb020")},
     {key:"always_forward", label:"Always‑Forward", color:"rgba(232,238,252,.75)"},
     {key:"always_backward", label:"Always‑Backward", color:"rgba(241,70,104,.85)"},
     {key:"random_verify", label:"Random‑Verify", color:"rgba(255,255,255,.32)"},
@@ -1268,6 +1351,7 @@ async function run(){
   }
   drawCalibration({truePavg:pAvg, estPavg});
   drawFlip({pAvg});
+  drawProofBands({pAvg});
 
   const best=methods.map(m=>[finals[m.key],m.label]).sort((a,b)=>b[0]-a[0])[0];
   els.kpi.innerHTML=[
@@ -1514,6 +1598,54 @@ function drawFlip(pre){
   const close=pre.calibration.closest_flip_nodes.map(x=>x.toString(16).toUpperCase()).join(", ");
   ctx.fillText(`Closest flip nodes: ${close}`, x0, y1+18);
 }
+function drawProofBands(pre){
+  const {ctx,w,h}=setupCanvas(document.getElementById("proofBandChart"));
+  const ax=axes(ctx,w,h);
+  const hi=pre.meta.hi, lo=pre.meta.lo;
+  const pAvg=pre.calibration.p_true_avg;
+  const bands=[
+    {label:`Forward p̄>hi (${hi.toFixed(2)})`, color:"rgba(72,199,116,.8)"},
+    {label:"Verify band lo≤p̄≤hi", color:"rgba(255,176,32,.8)"},
+    {label:`Backward p̄<lo (${lo.toFixed(2)})`, color:"rgba(241,70,104,.8)"},
+  ];
+  const stats=bands.map(b=>({label:b.label, color:b.color, count:0, mean:0}));
+  pAvg.forEach(p=>{
+    let idx=1;
+    if(p>hi) idx=0;
+    else if(p<lo) idx=2;
+    stats[idx].count++;
+    stats[idx].mean+=p;
+  });
+  stats.forEach(s=>{ s.mean = s.count ? s.mean/s.count : 0; });
+  const maxv=Math.max(...stats.map(s=>s.count))*1.2 || 1;
+  const bw=(ax.x1-ax.x0)/stats.length;
+  for(let i=0;i<=4;i++){
+    const yv=maxv*i/4;
+    const y=ax.y0-(ax.y0-ax.y1)*(yv/maxv);
+    ctx.strokeStyle="rgba(255,255,255,.06)";
+    ctx.beginPath(); ctx.moveTo(ax.x0,y); ctx.lineTo(ax.x1,y); ctx.stroke();
+    text(ctx,ax.x0-10,y+4,`${Math.round(yv)}`,"rgba(232,238,252,.55)","right");
+  }
+  text(ctx,(ax.x0+ax.x1)/2,ax.y0+34,"Node counts by proof bands (hi/lo thresholds)","rgba(232,238,252,.70)","center");
+  text(ctx,ax.x0,ax.y1-10,"Count of nodes","rgba(232,238,252,.70)","left");
+  ctx.textAlign="center";
+  stats.forEach((s,i)=>{
+    const x=ax.x0+i*bw+6;
+    const hbar=(ax.y0-ax.y1)*(s.count/maxv);
+    const y=ax.y0-hbar;
+    ctx.fillStyle=s.color; ctx.globalAlpha=0.9;
+    ctx.fillRect(x,y,bw-12,hbar); ctx.globalAlpha=1;
+    ctx.fillStyle="rgba(232,238,252,.80)";
+    ctx.font="11px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
+    ctx.fillText(`${s.count} nodes`, x+(bw-12)/2, y-6);
+    ctx.fillStyle="rgba(232,238,252,.60)";
+    ctx.font="10px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
+    ctx.fillText(`μ=${s.mean.toFixed(2)}`, x+(bw-12)/2, y+14);
+    ctx.font="9px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
+    ctx.fillText(s.label, x+(bw-12)/2, ax.y0+16);
+  });
+  ctx.textAlign="left";
+}
 function drawAblation(pre, which, canvasId, title){
   const {ctx,w,h}=setupCanvas(document.getElementById(canvasId));
   const ax=axes(ctx,w,h);
@@ -1600,6 +1732,7 @@ function drawSuite(pre){
   const pre=window.__PRECOMPUTED__;
   try {
     drawMainFrom(pre);
+    drawProofBands(pre);
     drawVerifyBar(pre);
     drawDist(pre);
     drawCalibration(pre);
