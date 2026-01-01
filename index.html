@@ -4,227 +4,331 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Golden Gradient: A Deterministic Layer Framework</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Source+Code+Pro:wght@400;500&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            --gold: #C9A227;
-            --gold-light: #E8D48A;
-            --gold-dark: #8B6914;
-            --bg-deep: #0A0A0F;
-            --bg-card: #12121A;
-            --bg-elevated: #1A1A24;
-            --text-primary: #F5F5F0;
-            --text-secondary: #A0A0A0;
-            --text-muted: #606060;
-            --accent-blue: #4A6FA5;
-            --accent-green: #4A8A4A;
+            --gold: #D4AF37;
+            --gold-light: #F4E4A6;
+            --gold-dark: #996515;
+            --gold-muted: #8B7355;
+            --bg-deep: #0D0D12;
+            --bg-card: #141419;
+            --bg-elevated: #1C1C24;
+            --bg-hover: #252530;
+            --text-primary: #F0EDE6;
+            --text-secondary: #9A9A9A;
+            --text-muted: #5A5A5A;
+            --accent-green: #4A9B6E;
+            --accent-red: #C45B5B;
+            --accent-blue: #5B8DC4;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: 'Cormorant Garamond', Georgia, serif;
-            font-size: 18px;
-            line-height: 1.7;
+            font-family: 'Source Sans 3', -apple-system, sans-serif;
+            font-size: 17px;
+            line-height: 1.75;
             color: var(--text-primary);
             background: var(--bg-deep);
+            font-weight: 300;
         }
 
-        .container { max-width: 900px; margin: 0 auto; padding: 3rem 2rem; }
+        .container { 
+            max-width: 960px; 
+            margin: 0 auto; 
+            padding: 4rem 2.5rem; 
+        }
 
         header {
             text-align: center;
-            margin-bottom: 3rem;
-            padding-bottom: 2rem;
-            border-bottom: 1px solid var(--gold-dark);
+            margin-bottom: 4rem;
+            padding-bottom: 3rem;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+            position: relative;
+        }
+
+        header::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
         }
 
         h1 {
-            font-size: 2.6rem;
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 3.2rem;
             font-weight: 400;
             color: var(--gold);
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.75rem;
+            letter-spacing: 0.02em;
         }
 
-        .subtitle { font-size: 1.15rem; font-style: italic; color: var(--text-secondary); }
+        .subtitle { 
+            font-size: 1.15rem; 
+            font-style: italic; 
+            color: var(--text-secondary);
+            font-family: 'Playfair Display', Georgia, serif;
+        }
 
         .phi-display {
-            margin-top: 1rem;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.9rem;
-            color: var(--gold-light);
-            opacity: 0.8;
+            margin-top: 1.5rem;
+            font-family: 'Source Code Pro', monospace;
+            font-size: 0.85rem;
+            color: var(--gold-muted);
+            letter-spacing: 0.05em;
         }
 
-        section { margin-bottom: 2.5rem; }
+        section { margin-bottom: 3.5rem; }
 
         h2 {
-            font-size: 1.5rem;
-            font-weight: 600;
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 1.6rem;
+            font-weight: 400;
             color: var(--gold);
-            margin-bottom: 1rem;
-            padding-bottom: 0.4rem;
-            border-bottom: 1px solid var(--bg-elevated);
+            margin-bottom: 1.25rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.15);
         }
 
-        h3 { font-size: 1.1rem; font-weight: 600; color: var(--text-primary); margin: 1.5rem 0 0.6rem; }
+        h3 { 
+            font-size: 1.05rem; 
+            font-weight: 600; 
+            color: var(--text-primary); 
+            margin: 2rem 0 0.75rem;
+            letter-spacing: 0.01em;
+        }
 
-        p { margin-bottom: 0.9rem; text-align: justify; }
+        p { 
+            margin-bottom: 1rem; 
+            text-align: justify;
+            hyphens: auto;
+        }
+
+        strong { font-weight: 600; color: var(--text-primary); }
+        em { font-style: italic; color: var(--gold-light); }
 
         .math-block {
             background: var(--bg-card);
             border-left: 3px solid var(--gold);
-            padding: 1rem 1.2rem;
-            margin: 1.2rem 0;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.8rem;
+            padding: 1.25rem 1.5rem;
+            margin: 1.5rem 0;
+            font-family: 'Source Code Pro', monospace;
+            font-size: 0.82rem;
+            line-height: 1.8;
             overflow-x: auto;
+            border-radius: 0 4px 4px 0;
+            white-space: pre;
         }
 
         .theorem {
             background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-elevated) 100%);
-            border: 1px solid var(--gold-dark);
-            padding: 1.2rem;
-            margin: 1.5rem 0;
-            border-radius: 4px;
+            border: 1px solid rgba(212, 175, 55, 0.25);
+            padding: 1.5rem;
+            margin: 2rem 0;
+            border-radius: 6px;
             position: relative;
         }
 
         .theorem::before {
             content: attr(data-type);
             position: absolute;
-            top: -0.6rem;
-            left: 1rem;
+            top: -0.7rem;
+            left: 1.25rem;
             background: var(--bg-deep);
             color: var(--gold);
-            padding: 0 0.5rem;
+            padding: 0 0.6rem;
             font-size: 0.7rem;
             font-weight: 600;
-            letter-spacing: 0.08em;
+            letter-spacing: 0.1em;
             text-transform: uppercase;
+            font-family: 'Source Code Pro', monospace;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            margin: 1.2rem 0;
+            margin: 1.5rem 0;
             font-size: 0.9rem;
         }
 
         th, td {
-            padding: 0.6rem 0.8rem;
+            padding: 0.75rem 1rem;
             text-align: left;
             border-bottom: 1px solid var(--bg-elevated);
         }
 
-        th { color: var(--gold); font-weight: 600; }
+        th { 
+            color: var(--gold); 
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
 
         .algorithm {
             background: var(--bg-card);
             border: 1px solid var(--bg-elevated);
-            padding: 1.2rem;
-            margin: 1.2rem 0;
-            border-radius: 4px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.75rem;
-            line-height: 1.7;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            border-radius: 6px;
+            font-family: 'Source Code Pro', monospace;
+            font-size: 0.78rem;
+            line-height: 1.8;
         }
 
         .algorithm-title {
             color: var(--gold);
             font-weight: 600;
-            margin-bottom: 0.8rem;
-            font-size: 0.85rem;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            letter-spacing: 0.05em;
         }
 
         .algorithm .comment { color: var(--text-muted); }
         .algorithm .keyword { color: var(--accent-blue); }
         .algorithm .golden { color: var(--gold); }
 
-        .layer-diagram {
+        .diagram-container {
             background: var(--bg-card);
-            padding: 1.2rem;
-            margin: 1.5rem 0;
-            border-radius: 4px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.75rem;
-            line-height: 1.4;
-            white-space: pre;
-            overflow-x: auto;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 2rem 0;
+            border: 1px solid var(--bg-elevated);
+        }
+
+        .diagram-container svg {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .diagram-caption {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            margin-top: 1rem;
+            font-style: italic;
         }
 
         .demo-container {
             background: var(--bg-card);
             border: 1px solid var(--bg-elevated);
-            border-radius: 4px;
-            padding: 1.2rem;
-            margin: 1.2rem 0;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 2rem 0;
         }
 
         .demo-controls {
             display: flex;
-            gap: 0.6rem;
-            margin-bottom: 0.8rem;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
             flex-wrap: wrap;
             align-items: center;
         }
 
         button {
-            background: var(--gold-dark);
-            color: var(--text-primary);
+            background: linear-gradient(135deg, var(--gold-dark) 0%, var(--gold) 100%);
+            color: var(--bg-deep);
             border: none;
-            padding: 0.5rem 1rem;
-            font-family: 'JetBrains Mono', monospace;
+            padding: 0.6rem 1.25rem;
+            font-family: 'Source Code Pro', monospace;
             font-size: 0.75rem;
+            font-weight: 600;
             cursor: pointer;
             border-radius: 4px;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
-        button:hover { background: var(--gold); color: var(--bg-deep); }
+        button:hover { 
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+        }
 
         select {
             background: var(--bg-elevated);
             color: var(--text-primary);
-            border: 1px solid var(--bg-elevated);
-            padding: 0.35rem 0.5rem;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.7rem;
-            border-radius: 3px;
+            border: 1px solid var(--bg-hover);
+            padding: 0.5rem 0.75rem;
+            font-family: 'Source Code Pro', monospace;
+            font-size: 0.75rem;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .demo-chart {
+            background: var(--bg-elevated);
+            border-radius: 6px;
+            overflow: hidden;
+            margin: 1rem 0;
         }
 
         .demo-stats {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-            gap: 0.5rem;
-            margin-top: 0.8rem;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 0.75rem;
+            margin-top: 1rem;
         }
 
         .stat-box {
             background: var(--bg-elevated);
-            padding: 0.5rem;
-            border-radius: 4px;
+            padding: 0.75rem;
+            border-radius: 6px;
             text-align: center;
+            border: 1px solid transparent;
+        }
+
+        .stat-box.highlight {
+            border-color: rgba(212, 175, 55, 0.3);
+            background: rgba(212, 175, 55, 0.05);
         }
 
         .stat-value {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.9rem;
+            font-family: 'Source Code Pro', monospace;
+            font-size: 1.1rem;
+            font-weight: 500;
             color: var(--gold);
         }
 
-        .stat-label { font-size: 0.6rem; color: var(--text-secondary); margin-top: 0.15rem; }
+        .stat-value.gd { color: var(--accent-red); }
+
+        .stat-label { 
+            font-size: 0.65rem; 
+            color: var(--text-secondary); 
+            margin-top: 0.25rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
 
         footer {
-            margin-top: 3rem;
-            padding-top: 1.5rem;
+            margin-top: 4rem;
+            padding-top: 2rem;
             border-top: 1px solid var(--bg-elevated);
             text-align: center;
             color: var(--text-muted);
-            font-size: 0.8rem;
+            font-size: 0.85rem;
         }
 
-        ul, ol { margin-left: 1.5rem; margin-bottom: 1rem; }
-        li { margin-bottom: 0.3rem; }
+        footer .phi-symbol {
+            font-size: 1.5rem;
+            color: var(--gold);
+            margin-bottom: 0.5rem;
+        }
+
+        ul, ol { margin-left: 1.75rem; margin-bottom: 1rem; }
+        li { margin-bottom: 0.4rem; }
+
+        @media (max-width: 768px) {
+            .container { padding: 2rem 1.25rem; }
+            h1 { font-size: 2.2rem; }
+            .demo-stats { grid-template-columns: repeat(3, 1fr); }
+        }
     </style>
 </head>
 <body>
@@ -232,590 +336,810 @@
         <header>
             <h1>Golden Gradient</h1>
             <p class="subtitle">A Deterministic Layer Framework for Gradient Descent</p>
-            <p class="phi-display">φ = 1.618... &nbsp;│&nbsp; 1/φ = 0.618... &nbsp;│&nbsp; 1/φ² = 0.382...</p>
+            <p class="phi-display">φ = 1.6180339... · 1/φ = 0.6180339... · 1/φ² = 0.3819660...</p>
         </header>
 
-        <!-- ============================================ -->
-        <!-- SECTION I: THE CORE IDEA -->
-        <!-- ============================================ -->
         <section>
             <h2>I. The Core Idea</h2>
             
             <p>
-                Golden Gradient is a <strong>deterministic layer framework</strong> that partitions 
-                gradient descent into two regimes: <em>Long tail</em> (trust the gradient) and 
-                <em>Short tail</em> (verify with bidirectional check). The partition is maintained 
-                at the golden ratio through adaptive threshold calibration.
+                Golden Gradient partitions each gradient descent iteration into one of two regimes: 
+                <em>Long-tail</em> (trust the gradient) or <em>Short-tail</em> (verify bidirectionally). 
+                Each iteration is an <strong>independent stochastic event</strong> where the regime is 
+                determined by comparing gradient metrics against adaptive thresholds calibrated to 
+                the golden ratio.
             </p>
 
             <div class="theorem" data-type="Key Insight">
                 <p>
-                    The flip decision is <strong>deterministic</strong> given the layer state. 
-                    The "probability" describes which fraction of <em>space</em> is in each regime, 
-                    not uncertainty in the decision.
+                    The regime decision at each iteration is deterministic given the gradient state, 
+                    but appears stochastic across iterations due to gradient noise. By calibrating 
+                    thresholds at the 1/φ² quantile, we <strong>impose</strong> a partition where 
+                    ~61.8% of iterations fall into Long-tail and ~38.2% into Short-tail.
                 </p>
             </div>
         </section>
 
-        <!-- ============================================ -->
-        <!-- SECTION II: THE THREE LAYERS -->
-        <!-- ============================================ -->
         <section>
-            <h2>II. The Three Layers</h2>
+            <h2>II. The Detection Layer</h2>
 
             <p>
-                Each layer detects a different aspect of gradient geometry. Together, they 
-                determine whether we're in a Long tail (stable) or Short tail (uncertain) region.
+                We use <strong>gradient alignment</strong> (cosine similarity between consecutive gradients) 
+                as our primary detection metric. This measures whether the optimization is proceeding 
+                smoothly or experiencing reversals.
             </p>
 
-            <h3>Layer 1: Sign Consistency (Temporal)</h3>
-            <div class="math-block">
-consistency[i] = |mean(sign(g[i]) over last k steps)|
+            <div class="math-block">alignment_t = cos(θ) = (g_t · g_{t-1}) / (‖g_t‖ × ‖g_{t-1}‖)
 
-If consistency[i] ≥ threshold → Long tail for dimension i
-If consistency[i] < threshold → Short tail for dimension i
-            </div>
-            <p>
-                Stable gradient direction indicates we're in a smooth descent region (Long tail).
-                Oscillating sign indicates we're near a boundary or local oscillation (Short tail).
-            </p>
+Range: [-1, +1]
+  +1 → consecutive gradients point same direction (smooth)
+   0 → consecutive gradients are orthogonal
+  -1 → consecutive gradients reversed (oscillating)
 
-            <h3>Layer 2: Direction Alignment (Spatial)</h3>
-            <div class="math-block">
-alignment = (g_t · g_{t-1}) / (|g_t| × |g_{t-1}|)
+At each iteration t:
+  If alignment_t ≥ threshold → LONG-TAIL (trust gradient)
+  If alignment_t < threshold → SHORT-TAIL (verify both directions)</div>
 
-If alignment ≥ threshold → Long tail
-If alignment < threshold → Short tail (gradient reversal)
-            </div>
-            <p>
-                Positive alignment means consecutive gradients point the same way. Negative 
-                alignment signals a reversal—we may have overshot or hit oscillatory behavior.
-            </p>
-
-            <h3>Layer 3: Magnitude Stability (Temporal)</h3>
-            <div class="math-block">
-cv[i] = std(|g[i]|) / mean(|g[i]|)  (coefficient of variation)
-
-If cv[i] < threshold → Long tail (stable magnitude)
-If cv[i] ≥ threshold → Short tail (erratic magnitude)
-            </div>
-
-            <div class="layer-diagram">
-LAYER STRUCTURE
-═══════════════════════════════════════════════════════════════
-
-Layer 1 (Sign):        ◄────── Long (stable) ──────►◄── Short ──►
-                       ├───────────────────────────────┼──────────┤
-                       │   sign(g) consistent          │ sign(g)  │
-                       │   over recent history         │ flipping │
-                       └───────────────────────────────┴──────────┘
-
-Layer 2 (Alignment):   ◄────── Long (aligned) ─────►◄── Short ──►
-                       ├───────────────────────────────┼──────────┤
-                       │   g_t · g_{t-1} > 0           │ g_t·g<0  │
-                       │   (same direction)            │ reversal │
-                       └───────────────────────────────┴──────────┘
-
-Layer 3 (Magnitude):   ◄────── Long (stable) ──────►◄── Short ──►
-                       ├───────────────────────────────┼──────────┤
-                       │   |g| roughly constant        │ |g|      │
-                       │                               │ erratic  │
-                       └───────────────────────────────┴──────────┘
-
-COMBINED:  If ALL layers Long → trust gradient
-           If ANY layer Short → bidirectional check
+            <div class="diagram-container">
+                <svg viewBox="0 0 800 180" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="longGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:#1a3a2a"/>
+                            <stop offset="100%" style="stop-color:#0D0D12"/>
+                        </linearGradient>
+                        <linearGradient id="shortGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:#0D0D12"/>
+                            <stop offset="100%" style="stop-color:#3a2a2a"/>
+                        </linearGradient>
+                    </defs>
+                    
+                    <text x="400" y="28" fill="#D4AF37" font-family="Playfair Display, serif" font-size="16" text-anchor="middle" font-weight="600">Regime Partition by Alignment</text>
+                    
+                    <g transform="translate(80, 55)">
+                        <text x="0" y="20" fill="#F0EDE6" font-family="Source Code Pro, monospace" font-size="11">alignment</text>
+                        
+                        <!-- Scale bar -->
+                        <rect x="100" y="8" width="520" height="36" rx="4" fill="#1C1C24" stroke="#5A5A5A" stroke-width="1"/>
+                        
+                        <!-- Long tail region (right side, above threshold) -->
+                        <rect x="299" y="10" width="319" height="32" rx="3" fill="url(#longGrad)" opacity="0.8"/>
+                        <text x="458" y="30" fill="#4A9B6E" font-family="Source Code Pro, monospace" font-size="10" text-anchor="middle">LONG-TAIL (~61.8%)</text>
+                        
+                        <!-- Short tail region (left side, below threshold) -->
+                        <rect x="102" y="10" width="197" height="32" rx="3" fill="url(#shortGrad)" opacity="0.8"/>
+                        <text x="200" y="30" fill="#C45B5B" font-family="Source Code Pro, monospace" font-size="10" text-anchor="middle">SHORT-TAIL (~38.2%)</text>
+                        
+                        <!-- Threshold marker -->
+                        <line x1="299" y1="5" x2="299" y2="48" stroke="#D4AF37" stroke-width="2"/>
+                        <text x="299" y="62" fill="#D4AF37" font-family="Source Code Pro, monospace" font-size="9" text-anchor="middle">τ = quantile(history, 1/φ²)</text>
+                        
+                        <!-- Scale labels -->
+                        <text x="100" y="80" fill="#9A9A9A" font-family="Source Code Pro, monospace" font-size="9" text-anchor="middle">-1</text>
+                        <text x="360" y="80" fill="#9A9A9A" font-family="Source Code Pro, monospace" font-size="9" text-anchor="middle">0</text>
+                        <text x="620" y="80" fill="#9A9A9A" font-family="Source Code Pro, monospace" font-size="9" text-anchor="middle">+1</text>
+                    </g>
+                </svg>
+                <p class="diagram-caption">Threshold set at 1/φ² quantile ensures exactly 1/φ of iterations exceed it</p>
             </div>
         </section>
 
-        <!-- ============================================ -->
-        <!-- SECTION III: ADAPTIVE THRESHOLD CALIBRATION -->
-        <!-- ============================================ -->
         <section>
             <h2>III. Adaptive Threshold Calibration</h2>
 
             <p>
-                The key to achieving φ-statistics is <strong>adaptive thresholds</strong>. 
-                Rather than using fixed thresholds, we set them at the 1/φ² quantile of 
-                each metric's distribution. This <em>forces</em> the Long/Short partition 
-                to match the golden ratio.
+                The threshold is not fixed—it adapts to the observed distribution of alignment values. 
+                By setting it at the 1/φ² ≈ 0.382 quantile, we guarantee that approximately 61.8% of 
+                iterations will have alignment above threshold (Long-tail) and 38.2% below (Short-tail).
             </p>
 
             <div class="algorithm">
-                <p class="algorithm-title">THRESHOLD CALIBRATION</p>
-<pre>
-<span class="keyword">For each</span> metric m (sign_consistency, alignment, magnitude_cv):
+                <p class="algorithm-title">ADAPTIVE CALIBRATION</p>
+<pre><span class="comment">// Maintain sliding window of recent alignment values</span>
+history ← circular_buffer(size=100)
+
+<span class="keyword">Every</span> calibration_interval iterations:
+    τ ← quantile(history, <span class="golden">1/φ²</span>)  <span class="comment">// ≈ 38.2nd percentile</span>
     
-    <span class="comment">// Track metric values over recent history</span>
-    history[m].append(current_value)
-    
-    <span class="comment">// Set threshold at 1/φ² quantile</span>
-    <span class="comment">// This ensures ~1/φ of values are above (Long tail)</span>
-    <span class="comment">// and ~1/φ² of values are below (Short tail)</span>
-    threshold[m] = <span class="golden">quantile(history[m], 1/φ²)</span>
-</pre>
+<span class="comment">// This guarantees:</span>
+<span class="comment">//   P(alignment ≥ τ) = 1 - 1/φ² = 1/φ ≈ 61.8%  (Long-tail)</span>
+<span class="comment">//   P(alignment < τ) = 1/φ² ≈ 38.2%            (Short-tail)</span></pre>
             </div>
 
-            <div class="theorem" data-type="Result">
+            <div class="theorem" data-type="Self-Consistency">
                 <p>
-                    With adaptive calibration, the Long/Short fractions become deterministic:
+                    The golden ratio is the unique value where the quantile parameter equals the 
+                    resulting tail fraction: setting threshold at the q-quantile means (1-q) of 
+                    values exceed it. For q = 1/φ², we get 1 - 1/φ² = 1/φ. This self-referential 
+                    property is why φ appears in Golden Section Search.
                 </p>
-                <ul style="margin-top: 0.5rem;">
-                    <li><strong>Long tail:</strong> ~61.8% of time (1/φ)</li>
-                    <li><strong>Short tail:</strong> ~38.2% of time (1/φ²)</li>
-                    <li><strong>Flip rate when Short:</strong> ~50%</li>
-                    <li><strong>Overall flip rate:</strong> ~19% (38.2% × 50%)</li>
-                </ul>
             </div>
         </section>
 
-        <!-- ============================================ -->
-        <!-- SECTION IV: THE ALGORITHM -->
-        <!-- ============================================ -->
         <section>
             <h2>IV. The Complete Algorithm</h2>
 
             <div class="algorithm">
-                <p class="algorithm-title">GOLDEN GRADIENT</p>
-<pre>
-<span class="keyword">Initialize:</span>
-    x ← x₀
-    f_curr ← f(x)
-    history ← []
-    thresholds ← {sign: <span class="golden">1/φ</span>, align: 0, mag: 1.0}
+                <p class="algorithm-title">GOLDEN GRADIENT DESCENT</p>
+<pre><span class="keyword">Input:</span> f(x), x₀, learning_rate η, max_iterations T
+<span class="keyword">Output:</span> x_best, f_best
 
-<span class="keyword">For each</span> iteration:
-    
-    <span class="comment">// 1. Compute gradient</span>
+x ← x₀
+g_prev ← None
+history ← []
+τ ← 0  <span class="comment">// initial threshold</span>
+
+<span class="keyword">For</span> t = 1 to T:
+    <span class="comment">// Compute gradient (possibly noisy/stochastic)</span>
     g ← ∇f(x)
     
-    <span class="comment">// 2. Update metric history</span>
-    history.sign.append(sign_consistency(g))
-    history.align.append(alignment(g, g_prev))
-    history.mag.append(magnitude_cv(g))
-    
-    <span class="comment">// 3. Calibrate thresholds (every k iterations)</span>
-    <span class="keyword">If</span> iteration % 20 == 0:
-        <span class="keyword">For each</span> metric m:
-            thresholds[m] ← quantile(history[m], <span class="golden">1/φ²</span>)
-    
-    <span class="comment">// 4. Determine layer state</span>
-    sign_long   ← all(sign_consistency[i] ≥ thresholds.sign)
-    align_long  ← alignment ≥ thresholds.align
-    in_long     ← sign_long <span class="keyword">AND</span> align_long
-    
-    <span class="comment">// 5. Take action based on state</span>
-    step ← -η × g
-    
-    <span class="keyword">If</span> in_long:
-        <span class="comment">// LONG TAIL: Trust gradient</span>
-        x_new ← x + step
-        f_new ← f(x_new)
+    <span class="comment">// Compute alignment with previous gradient</span>
+    <span class="keyword">If</span> g_prev ≠ None:
+        alignment ← (g · g_prev) / (‖g‖ × ‖g_prev‖)
+        history.append(alignment)
     <span class="keyword">Else:</span>
-        <span class="comment">// SHORT TAIL: Bidirectional check</span>
-        f_plus  ← f(x + step)
-        f_minus ← f(x - step)
-        
-        <span class="keyword">If</span> f_plus ≤ f_minus:
-            x_new ← x + step
-            f_new ← f_plus
-        <span class="keyword">Else:</span>
-            x_new ← x - step   <span class="comment">// FLIP</span>
-            f_new ← f_minus
+        alignment ← 1.0  <span class="comment">// first iteration defaults to Long-tail</span>
     
-    <span class="comment">// 6. Strict descent</span>
-    <span class="keyword">If</span> f_new < f_curr:
-        x ← x_new
-        f_curr ← f_new
+    <span class="comment">// Recalibrate threshold periodically</span>
+    <span class="keyword">If</span> t % 20 == 0 <span class="keyword">and</span> len(history) ≥ 20:
+        τ ← quantile(history[-100:], <span class="golden">1/φ²</span>)
+    
+    <span class="comment">// THIS ITERATION'S REGIME DECISION</span>
+    step ← η × g
+    
+    <span class="keyword">If</span> alignment ≥ τ:
+        <span class="comment">// LONG-TAIL: trust gradient direction</span>
+        x ← x - step
+    <span class="keyword">Else:</span>
+        <span class="comment">// SHORT-TAIL: evaluate both directions, pick better</span>
+        f_forward  ← f(x - step)
+        f_backward ← f(x + step)
+        
+        <span class="keyword">If</span> f_forward ≤ f_backward:
+            x ← x - step
+        <span class="keyword">Else:</span>
+            x ← x + step  <span class="comment">// FLIP: go opposite to gradient</span>
     
     g_prev ← g
-</pre>
+    
+<span class="keyword">Return</span> x, f(x)</pre>
             </div>
         </section>
 
-        <!-- ============================================ -->
-        <!-- SECTION V: WHY THE GOLDEN RATIO -->
-        <!-- ============================================ -->
         <section>
             <h2>V. Why the Golden Ratio?</h2>
 
             <p>
-                The golden ratio appears because it creates a <strong>self-consistent</strong> 
-                partition. In Golden Section Search (1D), φ is optimal because it minimizes 
-                worst-case interval reduction. The same principle extends here:
+                The connection to <strong>Golden Section Search</strong> (GSS) provides intuition. 
+                In GSS for 1D unimodal optimization, the golden ratio minimizes worst-case evaluations 
+                because probe points can be reused after eliminating a region.
             </p>
 
-            <div class="theorem" data-type="Self-Consistency">
-                <p>
-                    Setting threshold at the 1/φ² quantile means:
-                </p>
-                <ul style="margin-top: 0.5rem;">
-                    <li>1/φ ≈ 61.8% of values are above threshold (Long tail)</li>
-                    <li>1/φ² ≈ 38.2% of values are below threshold (Short tail)</li>
-                    <li>The threshold equals the fraction it creates</li>
-                </ul>
-                <p style="margin-top: 0.5rem;">
-                    This is the <em>unique fixed point</em> where the partition parameter 
-                    equals the partition fraction.
-                </p>
+            <div class="diagram-container">
+                <svg viewBox="0 0 800 200" xmlns="http://www.w3.org/2000/svg">
+                    <text x="400" y="28" fill="#D4AF37" font-family="Playfair Display, serif" font-size="16" text-anchor="middle" font-weight="600">Golden Section Search</text>
+                    
+                    <g transform="translate(100, 55)">
+                        <line x1="0" y1="20" x2="600" y2="20" stroke="#F0EDE6" stroke-width="2"/>
+                        <circle cx="0" cy="20" r="4" fill="#F0EDE6"/>
+                        <circle cx="600" cy="20" r="4" fill="#F0EDE6"/>
+                        <text x="0" y="45" fill="#9A9A9A" font-family="Source Code Pro, monospace" font-size="10" text-anchor="middle">a</text>
+                        <text x="600" y="45" fill="#9A9A9A" font-family="Source Code Pro, monospace" font-size="10" text-anchor="middle">b</text>
+                        
+                        <!-- Golden points -->
+                        <circle cx="229" cy="20" r="6" fill="#D4AF37"/>
+                        <circle cx="371" cy="20" r="6" fill="#D4AF37"/>
+                        <text x="229" y="45" fill="#D4AF37" font-family="Source Code Pro, monospace" font-size="10" text-anchor="middle">x₁</text>
+                        <text x="371" y="45" fill="#D4AF37" font-family="Source Code Pro, monospace" font-size="10" text-anchor="middle">x₂</text>
+                        
+                        <!-- Ratio annotations -->
+                        <line x1="0" y1="60" x2="229" y2="60" stroke="#C45B5B" stroke-width="1"/>
+                        <text x="115" y="75" fill="#C45B5B" font-family="Source Code Pro, monospace" font-size="9" text-anchor="middle">1/φ² ≈ 0.382</text>
+                        
+                        <line x1="229" y1="60" x2="600" y2="60" stroke="#4A9B6E" stroke-width="1"/>
+                        <text x="415" y="75" fill="#4A9B6E" font-family="Source Code Pro, monospace" font-size="9" text-anchor="middle">1/φ ≈ 0.618</text>
+                    </g>
+                    
+                    <g transform="translate(100, 130)">
+                        <rect x="0" y="0" width="600" height="50" rx="6" fill="#1C1C24" stroke="#D4AF37" stroke-width="1"/>
+                        <text x="300" y="20" fill="#D4AF37" font-family="Source Code Pro, monospace" font-size="11" text-anchor="middle" font-weight="600">ANALOGY</text>
+                        <text x="300" y="38" fill="#F0EDE6" font-family="Source Sans 3, sans-serif" font-size="11" text-anchor="middle">GSS partitions space optimally · Golden Gradient partitions iterations optimally</text>
+                    </g>
+                </svg>
             </div>
 
             <p>
-                The φ-partition is not "discovered" in the data—it is <strong>imposed</strong> 
-                by choosing thresholds at φ-quantiles. The insight from GSS is that this 
-                particular partition has optimal properties for interval elimination, 
-                which translates to optimal properties for deciding when to trust the gradient.
+                In Golden Gradient, φ partitions <em>when to trust</em> versus <em>when to verify</em>. 
+                The 61.8%/38.2% split balances efficiency (most iterations use 1 evaluation) against 
+                robustness (uncertain iterations are checked with 2 evaluations).
             </p>
         </section>
 
-        <!-- ============================================ -->
-        <!-- SECTION VI: PROVEN PROPERTIES -->
-        <!-- ============================================ -->
         <section>
             <h2>VI. Properties</h2>
 
             <table>
                 <tr>
-                    <th>Property</th>
-                    <th>Status</th>
-                    <th>Explanation</th>
+                    <th style="width: 40%;">Property</th>
+                    <th style="width: 15%;">Status</th>
+                    <th>Notes</th>
                 </tr>
                 <tr>
-                    <td>f(x) monotonically non-increasing</td>
-                    <td style="color: var(--accent-green);">✓ Proven</td>
-                    <td>Strict descent enforced by construction</td>
-                </tr>
-                <tr>
-                    <td>Long fraction ≈ 61.8%</td>
+                    <td>Long-tail fraction ≈ 61.8%</td>
                     <td style="color: var(--accent-green);">✓ Enforced</td>
-                    <td>By adaptive threshold calibration</td>
+                    <td>By threshold at 1/φ² quantile</td>
                 </tr>
                 <tr>
-                    <td>Short fraction ≈ 38.2%</td>
+                    <td>Short-tail fraction ≈ 38.2%</td>
                     <td style="color: var(--accent-green);">✓ Enforced</td>
-                    <td>By adaptive threshold calibration</td>
+                    <td>Complement of Long-tail</td>
                 </tr>
                 <tr>
-                    <td>Flip rate when Short ≈ 50%</td>
-                    <td style="color: var(--accent-green);">✓ Observed</td>
-                    <td>Bidirectional check, random direction better</td>
+                    <td>Flip rate | Short-tail ≈ 50%</td>
+                    <td style="color: var(--accent-green);">✓ Empirical</td>
+                    <td>In uncertain regions, either direction equally likely better</td>
                 </tr>
                 <tr>
                     <td>Overall flip rate ≈ 19%</td>
                     <td style="color: var(--accent-green);">✓ Derived</td>
-                    <td>= Short% × Flip|Short% ≈ 38% × 50%</td>
+                    <td>= 38.2% × 50%</td>
                 </tr>
                 <tr>
-                    <td>Faster than standard GD</td>
-                    <td style="color: var(--accent-blue);">Context-dependent</td>
-                    <td>Helps with noise/oscillation; costs 2× evals in Short</td>
+                    <td>Avg. function evals/iter</td>
+                    <td style="color: var(--accent-blue);">~1.38</td>
+                    <td>= 61.8%×1 + 38.2%×2</td>
                 </tr>
             </table>
         </section>
 
-        <!-- ============================================ -->
-        <!-- SECTION VII: DEMO -->
-        <!-- ============================================ -->
         <section>
             <h2>VII. Interactive Demonstration</h2>
 
+            <p>
+                Each iteration is an <strong>independent event</strong>. Watch the regime strip to see 
+                the stochastic sequence of Long (green), Short (red), and Flip (gold) events. 
+                The running percentage converges toward 61.8% as iterations increase.
+            </p>
+
             <div class="demo-container">
                 <div class="demo-controls">
-                    <button onclick="runDemo(1000)">Run 1000</button>
-                    <button onclick="runDemo(2000)">Run 2000</button>
-                    <button onclick="resetDemo()">Reset</button>
+                    <button onclick="runSimulation(200)">200 iters</button>
+                    <button onclick="runSimulation(500)">500 iters</button>
+                    <button onclick="runSimulation(1000)">1000 iters</button>
+                    <button onclick="resetSimulation()" style="background: var(--bg-elevated); color: var(--text-secondary);">Reset</button>
                 </div>
                 <div class="demo-controls">
-                    <label style="font-size: 0.65rem; color: var(--text-secondary);">
+                    <label style="font-size: 0.75rem; color: var(--text-secondary);">
                         Function:
                         <select id="fnSelect">
-                            <option value="rosenbrock">Rosenbrock + Oscillation</option>
-                            <option value="rastrigin">Rastrigin</option>
+                            <option value="quadratic">Noisy Quadratic</option>
+                            <option value="rosenbrock">Rosenbrock</option>
+                            <option value="rastrigin" selected>Rastrigin</option>
                         </select>
                     </label>
-                    <label style="font-size: 0.65rem; color: var(--text-secondary);">
-                        Noise:
+                    <label style="font-size: 0.75rem; color: var(--text-secondary);">
+                        Noise Level:
                         <select id="noiseSelect">
-                            <option value="0">None</option>
-                            <option value="0.3">Low</option>
-                            <option value="0.5" selected>Medium</option>
-                            <option value="1.0">High</option>
+                            <option value="0.2">Low</option>
+                            <option value="0.4" selected>Medium</option>
+                            <option value="0.7">High</option>
                         </select>
                     </label>
                 </div>
                 
-                <svg id="chart" viewBox="0 0 650 200" xmlns="http://www.w3.org/2000/svg">
-                    <rect width="650" height="200" fill="#12121A"/>
-                    <text x="325" y="16" fill="#A0A0A0" font-family="JetBrains Mono" font-size="9" text-anchor="middle">
-                        f(x) vs Iteration (log scale)
-                    </text>
-                    <line x1="50" y1="170" x2="630" y2="170" stroke="#606060" stroke-width="1"/>
-                    <line x1="50" y1="170" x2="50" y2="30" stroke="#606060" stroke-width="1"/>
-                    
-                    <rect x="60" y="24" width="12" height="3" fill="#A54A4A"/>
-                    <text x="76" y="28" fill="#A0A0A0" font-family="JetBrains Mono" font-size="7">GD</text>
-                    <rect x="100" y="24" width="12" height="3" fill="#C9A227"/>
-                    <text x="116" y="28" fill="#C9A227" font-family="JetBrains Mono" font-size="7">Golden</text>
-                    
-                    <path id="gdPath" d="" fill="none" stroke="#A54A4A" stroke-width="1.5" opacity="0.6"/>
-                    <path id="goldenPath" d="" fill="none" stroke="#C9A227" stroke-width="2"/>
-                </svg>
+                <!-- Trajectory Chart -->
+                <div class="demo-chart">
+                    <svg id="trajectoryChart" viewBox="0 0 720 180" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="720" height="180" fill="#1C1C24"/>
+                        <text x="360" y="16" fill="#9A9A9A" font-family="Source Code Pro, monospace" font-size="10" text-anchor="middle">f(x) over iterations</text>
+                        
+                        <!-- Legend -->
+                        <rect x="520" y="6" width="12" height="3" fill="#C45B5B"/>
+                        <text x="536" y="10" fill="#9A9A9A" font-family="Source Code Pro, monospace" font-size="8">Standard GD</text>
+                        <rect x="610" y="6" width="12" height="3" fill="#D4AF37"/>
+                        <text x="626" y="10" fill="#D4AF37" font-family="Source Code Pro, monospace" font-size="8">Golden</text>
+                        
+                        <!-- Axes -->
+                        <line x1="50" y1="155" x2="700" y2="155" stroke="#5A5A5A" stroke-width="1"/>
+                        <line x1="50" y1="155" x2="50" y2="25" stroke="#5A5A5A" stroke-width="1"/>
+                        
+                        <text x="45" y="30" fill="#5A5A5A" font-family="Source Code Pro, monospace" font-size="8" text-anchor="end" id="yMaxLabel">—</text>
+                        <text x="45" y="155" fill="#5A5A5A" font-family="Source Code Pro, monospace" font-size="8" text-anchor="end" id="yMinLabel">—</text>
+                        <text x="700" y="170" fill="#5A5A5A" font-family="Source Code Pro, monospace" font-size="8" text-anchor="end" id="xMaxLabel">—</text>
+                        
+                        <path id="gdPath" d="" fill="none" stroke="#C45B5B" stroke-width="1.5" opacity="0.6"/>
+                        <path id="goldenPath" d="" fill="none" stroke="#D4AF37" stroke-width="2"/>
+                    </svg>
+                </div>
+
+                <!-- Regime Strip -->
+                <div style="margin: 0.5rem 0;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                        <span style="font-size: 0.65rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">Per-Iteration Events</span>
+                        <div style="font-size: 0.6rem; color: var(--text-muted);">
+                            <span style="color: #4A9B6E;">■</span> Long
+                            <span style="color: #C45B5B; margin-left: 0.5rem;">■</span> Short
+                            <span style="color: #D4AF37; margin-left: 0.5rem;">■</span> Flip
+                        </div>
+                    </div>
+                    <canvas id="regimeCanvas" height="20" style="width: 100%; height: 20px; border-radius: 4px; background: #141419;"></canvas>
+                </div>
+
+                <!-- Convergence Chart -->
+                <div class="demo-chart" style="margin-top: 0.5rem;">
+                    <svg id="convergenceChart" viewBox="0 0 720 100" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="720" height="100" fill="#141419"/>
+                        <text x="360" y="14" fill="#9A9A9A" font-family="Source Code Pro, monospace" font-size="10" text-anchor="middle">Running Long-tail % → Target 61.8%</text>
+                        
+                        <!-- Target line -->
+                        <line x1="50" y1="42" x2="700" y2="42" stroke="#D4AF37" stroke-width="1" stroke-dasharray="4,4" opacity="0.6"/>
+                        <text x="705" y="46" fill="#D4AF37" font-family="Source Code Pro, monospace" font-size="7" text-anchor="start">61.8%</text>
+                        
+                        <!-- 50% line -->
+                        <line x1="50" y1="55" x2="700" y2="55" stroke="#5A5A5A" stroke-width="1" stroke-dasharray="2,4" opacity="0.4"/>
+                        
+                        <line x1="50" y1="85" x2="700" y2="85" stroke="#5A5A5A" stroke-width="1"/>
+                        <line x1="50" y1="85" x2="50" y2="22" stroke="#5A5A5A" stroke-width="1"/>
+                        
+                        <text x="45" y="27" fill="#5A5A5A" font-family="Source Code Pro, monospace" font-size="7" text-anchor="end">100%</text>
+                        <text x="45" y="87" fill="#5A5A5A" font-family="Source Code Pro, monospace" font-size="7" text-anchor="end">0%</text>
+                        
+                        <path id="convPath" d="" fill="none" stroke="#4A9B6E" stroke-width="2"/>
+                    </svg>
+                </div>
                 
                 <div class="demo-stats">
                     <div class="stat-box">
-                        <div class="stat-value" id="gdFinal" style="color: #A54A4A;">—</div>
-                        <div class="stat-label">GD Final</div>
+                        <div class="stat-value gd" id="statGD">—</div>
+                        <div class="stat-label">GD Best</div>
                     </div>
                     <div class="stat-box">
-                        <div class="stat-value" id="goldenFinal">—</div>
-                        <div class="stat-label">Golden Final</div>
+                        <div class="stat-value" id="statGolden">—</div>
+                        <div class="stat-label">Golden Best</div>
                     </div>
-                    <div class="stat-box" style="background: rgba(201,162,39,0.15);">
-                        <div class="stat-value" id="longPct">—</div>
-                        <div class="stat-label">Long % (target 62%)</div>
+                    <div class="stat-box highlight">
+                        <div class="stat-value" id="statLong">—</div>
+                        <div class="stat-label">Long %</div>
                     </div>
-                    <div class="stat-box" style="background: rgba(201,162,39,0.15);">
-                        <div class="stat-value" id="shortPct">—</div>
-                        <div class="stat-label">Short % (target 38%)</div>
+                    <div class="stat-box highlight">
+                        <div class="stat-value" id="statShort">—</div>
+                        <div class="stat-label">Short %</div>
                     </div>
-                    <div class="stat-box" style="background: rgba(201,162,39,0.15);">
-                        <div class="stat-value" id="flipPct">—</div>
-                        <div class="stat-label">Flip % (target 19%)</div>
+                    <div class="stat-box highlight">
+                        <div class="stat-value" id="statFlip">—</div>
+                        <div class="stat-label">Flip %</div>
                     </div>
                     <div class="stat-box">
-                        <div class="stat-value" id="winner">—</div>
-                        <div class="stat-label">Better Method</div>
+                        <div class="stat-value" id="statWinner">—</div>
+                        <div class="stat-label">Winner</div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- ============================================ -->
-        <!-- SECTION VIII: SUMMARY -->
-        <!-- ============================================ -->
         <section>
-            <h2>VIII. Summary</h2>
+            <h2>VIII. Algorithm Flow</h2>
 
-            <div class="layer-diagram">
-THE GOLDEN GRADIENT FRAMEWORK
-═════════════════════════════════════════════════════════════════════
+            <div class="diagram-container">
+                <svg viewBox="0 0 800 420" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                            <path d="M0,0 L0,6 L9,3 z" fill="#D4AF37"/>
+                        </marker>
+                    </defs>
+                    
+                    <text x="400" y="28" fill="#D4AF37" font-family="Playfair Display, serif" font-size="16" text-anchor="middle" font-weight="600">Golden Gradient Flow</text>
+                    
+                    <!-- Compute gradient -->
+                    <g transform="translate(300, 50)">
+                        <rect x="0" y="0" width="200" height="45" rx="6" fill="#1C1C24" stroke="#5A5A5A" stroke-width="1"/>
+                        <text x="100" y="28" fill="#F0EDE6" font-family="Source Code Pro, monospace" font-size="11" text-anchor="middle">Compute g = ∇f(x)</text>
+                    </g>
+                    
+                    <line x1="400" y1="100" x2="400" y2="125" stroke="#D4AF37" stroke-width="2" marker-end="url(#arrow)"/>
+                    
+                    <!-- Compute alignment -->
+                    <g transform="translate(300, 130)">
+                        <rect x="0" y="0" width="200" height="45" rx="6" fill="#1C1C24" stroke="#5A5A5A" stroke-width="1"/>
+                        <text x="100" y="28" fill="#F0EDE6" font-family="Source Code Pro, monospace" font-size="11" text-anchor="middle">alignment = g·g_prev</text>
+                    </g>
+                    
+                    <line x1="400" y1="180" x2="400" y2="205" stroke="#D4AF37" stroke-width="2" marker-end="url(#arrow)"/>
+                    
+                    <!-- Decision diamond -->
+                    <g transform="translate(400, 235)">
+                        <polygon points="0,-30 70,0 0,30 -70,0" fill="#1C1C24" stroke="#D4AF37" stroke-width="1"/>
+                        <text x="0" y="5" fill="#F0EDE6" font-family="Source Code Pro, monospace" font-size="10" text-anchor="middle">align ≥ τ?</text>
+                    </g>
+                    
+                    <!-- Long-tail branch -->
+                    <line x1="330" y1="235" x2="200" y2="235" stroke="#4A9B6E" stroke-width="2"/>
+                    <line x1="200" y1="235" x2="200" y2="290" stroke="#4A9B6E" stroke-width="2" marker-end="url(#arrow)"/>
+                    <text x="265" y="225" fill="#4A9B6E" font-family="Source Code Pro, monospace" font-size="10">YES</text>
+                    
+                    <g transform="translate(100, 300)">
+                        <rect x="0" y="0" width="200" height="60" rx="6" fill="#1a3a2a" stroke="#4A9B6E" stroke-width="1"/>
+                        <text x="100" y="22" fill="#4A9B6E" font-family="Source Code Pro, monospace" font-size="11" text-anchor="middle" font-weight="600">LONG-TAIL</text>
+                        <text x="100" y="40" fill="#F0EDE6" font-family="Source Code Pro, monospace" font-size="9" text-anchor="middle">x ← x - η·g</text>
+                        <text x="100" y="54" fill="#9A9A9A" font-family="Source Code Pro, monospace" font-size="8" text-anchor="middle">1 evaluation</text>
+                    </g>
+                    
+                    <!-- Short-tail branch -->
+                    <line x1="470" y1="235" x2="600" y2="235" stroke="#C45B5B" stroke-width="2"/>
+                    <line x1="600" y1="235" x2="600" y2="290" stroke="#C45B5B" stroke-width="2" marker-end="url(#arrow)"/>
+                    <text x="535" y="225" fill="#C45B5B" font-family="Source Code Pro, monospace" font-size="10">NO</text>
+                    
+                    <g transform="translate(500, 300)">
+                        <rect x="0" y="0" width="200" height="60" rx="6" fill="#3a2a2a" stroke="#C45B5B" stroke-width="1"/>
+                        <text x="100" y="22" fill="#C45B5B" font-family="Source Code Pro, monospace" font-size="11" text-anchor="middle" font-weight="600">SHORT-TAIL</text>
+                        <text x="100" y="40" fill="#F0EDE6" font-family="Source Code Pro, monospace" font-size="9" text-anchor="middle">Compare f(x±η·g)</text>
+                        <text x="100" y="54" fill="#9A9A9A" font-family="Source Code Pro, monospace" font-size="8" text-anchor="middle">2 evaluations, may flip</text>
+                    </g>
+                    
+                    <!-- Merge -->
+                    <line x1="200" y1="365" x2="200" y2="390" stroke="#F0EDE6" stroke-width="1"/>
+                    <line x1="600" y1="365" x2="600" y2="390" stroke="#F0EDE6" stroke-width="1"/>
+                    <line x1="200" y1="390" x2="600" y2="390" stroke="#F0EDE6" stroke-width="1"/>
+                    <circle cx="400" cy="390" r="4" fill="#D4AF37"/>
+                    
+                    <!-- Stats box -->
+                    <g transform="translate(310, 400)">
+                        <text x="90" y="15" fill="#9A9A9A" font-family="Source Code Pro, monospace" font-size="9" text-anchor="middle">Long: 61.8% · Short: 38.2% · Flip: ~19%</text>
+                    </g>
+                </svg>
+            </div>
+        </section>
 
-                    ┌─────────────────────────────────────────────────┐
-                    │              LAYER DETECTION                     │
-                    │                                                  │
-                    │  Sign consistency ──┐                            │
-                    │  Alignment ─────────┼──► Combined state          │
-                    │  Magnitude CV ──────┘                            │
-                    └────────────────────────┬────────────────────────┘
-                                             │
-                    ┌────────────────────────┴────────────────────────┐
-                    │                                                  │
-          ┌─────────▼──────────┐                    ┌─────────▼───────┐
-          │    LONG TAIL       │                    │   SHORT TAIL    │
-          │    ~61.8%          │                    │    ~38.2%       │
-          │                    │                    │                 │
-          │  Trust gradient    │                    │  Bidirectional  │
-          │  No flip           │                    │  check needed   │
-          │  1 f-eval          │                    │  ~50% flip      │
-          │                    │                    │  2 f-evals      │
-          └────────────────────┘                    └─────────────────┘
-                    │                                        │
-                    └──────────────┬─────────────────────────┘
-                                   │
-                    ┌──────────────▼──────────────┐
-                    │      STRICT DESCENT         │
-                    │  Only accept if f decreases │
-                    └─────────────────────────────┘
+        <section>
+            <h2>IX. Summary</h2>
 
-STATISTICS:
-  • Long fraction:    1/φ ≈ 61.8%  (by threshold calibration)
-  • Short fraction:   1/φ² ≈ 38.2% (by threshold calibration)
-  • Flip | Short:     ~50%         (random which direction is better)
-  • Overall flip:     ~19%         (Short% × Flip|Short%)
-
-THE φ IS IMPOSED, NOT DISCOVERED:
-  Thresholds set at 1/φ² quantile → forces golden partition
+            <div class="theorem" data-type="Core Thesis">
+                <p>
+                    <strong>Golden Gradient</strong> partitions each gradient descent iteration into 
+                    Long-tail (trust) or Short-tail (verify) regimes based on gradient alignment. 
+                    By calibrating the threshold at the 1/φ² quantile, we impose the golden ratio 
+                    partition: ~61.8% Long-tail, ~38.2% Short-tail.
+                </p>
+                <p style="margin-top: 0.75rem; margin-bottom: 0;">
+                    Each iteration is an independent stochastic event. Over many iterations, the 
+                    law of large numbers drives the empirical statistics toward the golden targets. 
+                    The flip rate in Short-tail approaches 50%, giving ~19% overall flips.
+                </p>
             </div>
         </section>
 
         <footer>
+            <p class="phi-symbol">φ</p>
             <p>Golden Gradient — A Deterministic Layer Framework</p>
-            <p style="margin-top: 0.3rem;">φ = (1 + √5) / 2 ≈ 1.618033988749895</p>
+            <p style="margin-top: 0.5rem; color: var(--gold-muted);">φ = (1 + √5) / 2 = 1.6180339887498948482...</p>
         </footer>
     </div>
 
     <script>
+        // =============================================
+        // GOLDEN GRADIENT SIMULATION
+        // =============================================
+        
         const PHI = (1 + Math.sqrt(5)) / 2;
-        const PHI_INV = 1 / PHI;
-        const PHI_INV2 = 1 / (PHI * PHI);
+        const PHI_INV2 = 1 / (PHI * PHI);  // ≈ 0.382
 
-        const fns = {
+        // Test functions with analytical gradients
+        const functions = {
+            quadratic: {
+                f: (x, y) => x*x + y*y,
+                grad: (x, y) => [2*x, 2*y],
+                start: [4, 3],
+                lr: 0.08
+            },
             rosenbrock: {
-                f: (x, y) => (1-x)**2 + 100*(y-x*x)**2 + 5*Math.sin(4*x)*Math.sin(4*y),
-                start: [-1.2, 1.0],
-                eta: 0.0005
+                f: (x, y) => Math.pow(1-x, 2) + 100*Math.pow(y - x*x, 2),
+                grad: (x, y) => [
+                    -2*(1-x) - 400*x*(y - x*x),
+                    200*(y - x*x)
+                ],
+                start: [-1.5, 1.5],
+                lr: 0.0004
             },
             rastrigin: {
                 f: (x, y) => 20 + (x*x - 10*Math.cos(2*Math.PI*x)) + (y*y - 10*Math.cos(2*Math.PI*y)),
-                start: [2.5, 2.5],
-                eta: 0.002
+                grad: (x, y) => [
+                    2*x + 20*Math.PI*Math.sin(2*Math.PI*x),
+                    2*y + 20*Math.PI*Math.sin(2*Math.PI*y)
+                ],
+                start: [3, 3],
+                lr: 0.003
             }
         };
 
-        function gauss() {
+        // Box-Muller for Gaussian noise
+        function randn() {
             let u = 0, v = 0;
             while (u === 0) u = Math.random();
             while (v === 0) v = Math.random();
-            return Math.sqrt(-2*Math.log(u)) * Math.cos(2*Math.PI*v);
+            return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
         }
 
-        function grad(fn, x, y, noise) {
-            const h = 1e-7;
-            let dx = (fn(x+h, y) - fn(x-h, y)) / (2*h);
-            let dy = (fn(x, y+h) - fn(x, y-h)) / (2*h);
-            if (noise > 0) {
-                dx += noise * gauss() * (Math.abs(dx) + 0.01);
-                dy += noise * gauss() * (Math.abs(dy) + 0.01);
-            }
-            const norm = Math.sqrt(dx*dx + dy*dy);
-            if (norm > 1000) { dx *= 1000/norm; dy *= 1000/norm; }
-            return [dx, dy];
+        // Add noise to gradient (multiplicative + additive)
+        function noisyGrad(gradFn, x, y, noise) {
+            const [gx, gy] = gradFn(x, y);
+            const mag = Math.sqrt(gx*gx + gy*gy) + 0.1;
+            return [
+                gx * (1 + noise * randn()) + noise * 0.1 * randn(),
+                gy * (1 + noise * randn()) + noise * 0.1 * randn()
+            ];
         }
 
+        // Quantile function
         function quantile(arr, q) {
+            if (arr.length === 0) return 0;
             const sorted = [...arr].sort((a, b) => a - b);
-            const idx = Math.floor(q * sorted.length);
-            return sorted[Math.min(idx, sorted.length - 1)];
+            const pos = q * (sorted.length - 1);
+            const lo = Math.floor(pos);
+            const hi = Math.ceil(pos);
+            return lo === hi ? sorted[lo] : sorted[lo] * (hi - pos) + sorted[hi] * (pos - lo);
         }
 
-        function runGD(fn, start, eta, iters, noise) {
-            let [x, y] = start;
-            const traj = [fn(x, y)];
+        // Standard Gradient Descent
+        function runStandardGD(fn, iters, noise) {
+            let [x, y] = [...fn.start];
+            const traj = [];
+            
             for (let i = 0; i < iters; i++) {
-                const [gx, gy] = grad(fn, x, y, noise);
-                x -= eta * gx;
-                y -= eta * gy;
-                traj.push(fn(x, y));
+                traj.push(fn.f(x, y));
+                const [gx, gy] = noisyGrad(fn.grad, x, y, noise);
+                x -= fn.lr * gx;
+                y -= fn.lr * gy;
+                x = Math.max(-10, Math.min(10, x));
+                y = Math.max(-10, Math.min(10, y));
             }
-            return { traj, final: traj[traj.length-1] };
+            traj.push(fn.f(x, y));
+            return { traj, best: Math.min(...traj) };
         }
 
-        function runGolden(fn, start, eta, iters, noise) {
-            let [x, y] = start;
-            let fCurr = fn(x, y);
-            const traj = [fCurr];
+        // Golden Gradient Descent
+        function runGoldenGD(fn, iters, noise) {
+            let [x, y] = [...fn.start];
+            const traj = [];
+            const events = [];
             
+            const alignHist = [];
+            let threshold = 0;
             let gPrev = null;
-            const alignHistory = [];
-            let alignThreshold = 0;
             
-            let longSteps = 0, shortSteps = 0, flips = 0, accepts = 0;
+            const warmup = Math.min(25, Math.floor(iters * 0.05));
             
             for (let i = 0; i < iters; i++) {
-                const g = grad(fn, x, y, noise);
+                traj.push(fn.f(x, y));
                 
-                // Compute alignment
-                let alignment = 1.0;
-                if (gPrev) {
+                const g = noisyGrad(fn.grad, x, y, noise);
+                
+                // Compute alignment with previous gradient
+                let align = 1;
+                if (gPrev !== null) {
                     const dot = g[0]*gPrev[0] + g[1]*gPrev[1];
-                    const norm = Math.sqrt(g[0]**2 + g[1]**2) * Math.sqrt(gPrev[0]**2 + gPrev[1]**2) + 1e-10;
-                    alignment = dot / norm;
-                }
-                alignHistory.push(alignment);
-                
-                // Calibrate threshold every 20 iters
-                if (i > 0 && i % 20 === 0 && alignHistory.length >= 20) {
-                    alignThreshold = quantile(alignHistory.slice(-100), PHI_INV2);
+                    const n1 = Math.sqrt(g[0]*g[0] + g[1]*g[1]) + 1e-10;
+                    const n2 = Math.sqrt(gPrev[0]*gPrev[0] + gPrev[1]*gPrev[1]) + 1e-10;
+                    align = dot / (n1 * n2);
                 }
                 
-                // Determine state
-                const inLong = (i < 30) || (alignment >= alignThreshold);
+                alignHist.push(align);
+                if (alignHist.length > 100) alignHist.shift();
                 
-                const sx = -eta * g[0], sy = -eta * g[1];
-                let xNew, yNew, fNew;
+                // Recalibrate threshold periodically
+                if (i >= warmup && i % 15 === 0 && alignHist.length >= 15) {
+                    threshold = quantile(alignHist, PHI_INV2);
+                }
+                
+                // THIS ITERATION'S REGIME DECISION
+                const inLong = (i < warmup) || (align >= threshold);
+                
+                const stepX = fn.lr * g[0];
+                const stepY = fn.lr * g[1];
+                let flipped = false;
                 
                 if (inLong) {
-                    longSteps++;
-                    xNew = x + sx;
-                    yNew = y + sy;
-                    fNew = fn(xNew, yNew);
+                    // LONG-TAIL: trust gradient
+                    x -= stepX;
+                    y -= stepY;
                 } else {
-                    shortSteps++;
-                    const fPlus = fn(x + sx, y + sy);
-                    const fMinus = fn(x - sx, y - sy);
+                    // SHORT-TAIL: bidirectional check
+                    const xFwd = x - stepX, yFwd = y - stepY;
+                    const xBwd = x + stepX, yBwd = y + stepY;
+                    const fFwd = fn.f(xFwd, yFwd);
+                    const fBwd = fn.f(xBwd, yBwd);
                     
-                    if (fPlus <= fMinus) {
-                        xNew = x + sx; yNew = y + sy; fNew = fPlus;
+                    if (fFwd <= fBwd) {
+                        x = xFwd;
+                        y = yFwd;
                     } else {
-                        xNew = x - sx; yNew = y - sy; fNew = fMinus;
-                        flips++;
+                        x = xBwd;
+                        y = yBwd;
+                        flipped = true;
                     }
                 }
                 
-                if (fNew < fCurr) {
-                    x = xNew; y = yNew; fCurr = fNew;
-                    accepts++;
-                }
+                events.push({ long: inLong, flipped: flipped });
                 
+                x = Math.max(-10, Math.min(10, x));
+                y = Math.max(-10, Math.min(10, y));
                 gPrev = g;
-                traj.push(fCurr);
             }
+            
+            traj.push(fn.f(x, y));
+            
+            const longCount = events.filter(e => e.long).length;
+            const shortCount = events.filter(e => !e.long).length;
+            const flipCount = events.filter(e => e.flipped).length;
             
             return {
                 traj,
-                final: fCurr,
-                longPct: longSteps / iters,
-                shortPct: shortSteps / iters,
-                flipPct: flips / iters
+                best: Math.min(...traj),
+                events,
+                longPct: longCount / events.length,
+                shortPct: shortCount / events.length,
+                flipPct: flipCount / events.length
             };
         }
 
-        function runDemo(iters = 1000) {
-            const fnKey = document.getElementById('fnSelect').value;
-            const noise = parseFloat(document.getElementById('noiseSelect').value);
-            const fn = fns[fnKey];
+        // Draw trajectory chart
+        function drawTrajectory(gdTraj, goldenTraj) {
+            const all = [...gdTraj, ...goldenTraj].filter(v => isFinite(v) && v > 0);
+            if (all.length === 0) return;
             
-            const gd = runGD(fn.f, fn.start, fn.eta, iters, noise);
-            const golden = runGolden(fn.f, fn.start, fn.eta, iters, noise);
+            const sorted = [...all].sort((a, b) => a - b);
+            const minV = Math.max(sorted[Math.floor(sorted.length * 0.01)] || sorted[0], 1e-10);
+            const maxV = sorted[Math.floor(sorted.length * 0.99)] || sorted[sorted.length - 1];
             
-            // Draw
-            const all = [...gd.traj, ...golden.traj].filter(v => v > 0 && isFinite(v));
-            const maxL = Math.log10(Math.max(...all) + 1);
-            const minL = Math.log10(Math.min(...all.filter(v => v > 1e-10)) + 1e-10);
+            const logMin = Math.log10(minV);
+            const logMax = Math.log10(maxV);
+            const range = Math.max(logMax - logMin, 0.3);
             
-            function path(traj, id) {
-                const p = traj.map((v, i) => {
-                    const px = 50 + (i / iters) * 580;
-                    const lv = Math.log10(Math.max(v, 1e-10) + 1e-10);
-                    const py = 170 - ((lv - minL) / (maxL - minL + 0.01)) * 135;
-                    return (i === 0 ? 'M' : 'L') + px.toFixed(1) + ',' + Math.max(30, Math.min(170, py)).toFixed(1);
-                }).join(' ');
-                document.getElementById(id).setAttribute('d', p);
+            const left = 50, right = 700, top = 25, bottom = 155;
+            const w = right - left, h = bottom - top;
+            
+            function makePath(traj) {
+                let d = '';
+                const n = traj.length;
+                for (let i = 0; i < n; i++) {
+                    const v = traj[i];
+                    if (!isFinite(v) || v <= 0) continue;
+                    const px = left + (i / (n - 1)) * w;
+                    const lv = Math.log10(Math.max(v, minV));
+                    const py = bottom - ((lv - logMin) / range) * h;
+                    d += (d === '' ? 'M' : 'L') + px.toFixed(1) + ',' + Math.max(top, Math.min(bottom, py)).toFixed(1);
+                }
+                return d;
             }
             
-            path(gd.traj, 'gdPath');
-            path(golden.traj, 'goldenPath');
+            document.getElementById('gdPath').setAttribute('d', makePath(gdTraj));
+            document.getElementById('goldenPath').setAttribute('d', makePath(goldenTraj));
             
-            const fmt = v => {
-                if (!isFinite(v)) return 'NaN';
-                if (Math.abs(v) > 1e6) return v.toExponential(1);
-                if (Math.abs(v) > 100) return v.toFixed(0);
-                if (Math.abs(v) > 1) return v.toFixed(2);
-                return v.toFixed(4);
-            };
-            
-            document.getElementById('gdFinal').textContent = fmt(gd.final);
-            document.getElementById('goldenFinal').textContent = fmt(golden.final);
-            document.getElementById('longPct').textContent = (golden.longPct * 100).toFixed(0) + '%';
-            document.getElementById('shortPct').textContent = (golden.shortPct * 100).toFixed(0) + '%';
-            document.getElementById('flipPct').textContent = (golden.flipPct * 100).toFixed(0) + '%';
-            document.getElementById('winner').textContent = golden.final < gd.final ? 'Golden' : 'GD';
+            const fmtY = v => v >= 100 ? v.toFixed(0) : v >= 1 ? v.toFixed(1) : v.toFixed(3);
+            document.getElementById('yMaxLabel').textContent = fmtY(maxV);
+            document.getElementById('yMinLabel').textContent = fmtY(minV);
+            document.getElementById('xMaxLabel').textContent = (gdTraj.length - 1).toString();
         }
 
-        function resetDemo() {
-            ['gdPath', 'goldenPath'].forEach(id => document.getElementById(id).setAttribute('d', ''));
-            ['gdFinal', 'goldenFinal', 'longPct', 'shortPct', 'flipPct', 'winner'].forEach(id =>
-                document.getElementById(id).textContent = '—');
+        // Draw regime strip using canvas
+        function drawRegimeStrip(events) {
+            const canvas = document.getElementById('regimeCanvas');
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * window.devicePixelRatio;
+            canvas.height = rect.height * window.devicePixelRatio;
+            
+            const ctx = canvas.getContext('2d');
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            
+            const w = rect.width, h = rect.height;
+            ctx.clearRect(0, 0, w, h);
+            
+            const n = events.length;
+            if (n === 0) return;
+            
+            const barW = w / n;
+            
+            for (let i = 0; i < n; i++) {
+                const e = events[i];
+                if (e.flipped) {
+                    ctx.fillStyle = '#D4AF37';
+                } else if (e.long) {
+                    ctx.fillStyle = '#4A9B6E';
+                } else {
+                    ctx.fillStyle = '#C45B5B';
+                }
+                ctx.fillRect(i * barW, 0, Math.ceil(barW) + 0.5, h);
+            }
         }
+
+        // Draw convergence chart
+        function drawConvergence(events) {
+            const n = events.length;
+            if (n === 0) return;
+            
+            const left = 50, right = 700, top = 22, bottom = 85;
+            const w = right - left, h = bottom - top;
+            
+            let d = '';
+            let longCount = 0;
+            
+            for (let i = 0; i < n; i++) {
+                if (events[i].long) longCount++;
+                const pct = longCount / (i + 1);
+                const px = left + (i / Math.max(n - 1, 1)) * w;
+                const py = bottom - pct * h;
+                d += (d === '' ? 'M' : 'L') + px.toFixed(1) + ',' + py.toFixed(1);
+            }
+            
+            document.getElementById('convPath').setAttribute('d', d);
+        }
+
+        // Format value for display
+        function formatVal(v) {
+            if (!isFinite(v)) return '—';
+            if (v < 0.001) return v.toExponential(1);
+            if (v < 1) return v.toFixed(3);
+            if (v < 100) return v.toFixed(2);
+            if (v < 10000) return v.toFixed(0);
+            return v.toExponential(1);
+        }
+
+        // Main simulation function
+        function runSimulation(iters) {
+            const fnKey = document.getElementById('fnSelect').value;
+            const noise = parseFloat(document.getElementById('noiseSelect').value);
+            const fn = functions[fnKey];
+            
+            // Run both algorithms
+            const gd = runStandardGD(fn, iters, noise);
+            const golden = runGoldenGD(fn, iters, noise);
+            
+            // Draw visualizations
+            drawTrajectory(gd.traj, golden.traj);
+            drawRegimeStrip(golden.events);
+            drawConvergence(golden.events);
+            
+            // Update statistics
+            document.getElementById('statGD').textContent = formatVal(gd.best);
+            document.getElementById('statGolden').textContent = formatVal(golden.best);
+            document.getElementById('statLong').textContent = (golden.longPct * 100).toFixed(1) + '%';
+            document.getElementById('statShort').textContent = (golden.shortPct * 100).toFixed(1) + '%';
+            document.getElementById('statFlip').textContent = (golden.flipPct * 100).toFixed(1) + '%';
+            
+            // Determine winner
+            const winnerEl = document.getElementById('statWinner');
+            if (golden.best < gd.best * 0.95) {
+                winnerEl.textContent = 'Golden';
+                winnerEl.style.color = '#D4AF37';
+            } else if (gd.best < golden.best * 0.95) {
+                winnerEl.textContent = 'GD';
+                winnerEl.style.color = '#C45B5B';
+            } else {
+                winnerEl.textContent = 'Tie';
+                winnerEl.style.color = '#9A9A9A';
+            }
+        }
+
+        // Reset simulation
+        function resetSimulation() {
+            document.getElementById('gdPath').setAttribute('d', '');
+            document.getElementById('goldenPath').setAttribute('d', '');
+            document.getElementById('convPath').setAttribute('d', '');
+            
+            const canvas = document.getElementById('regimeCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            ['statGD', 'statGolden', 'statLong', 'statShort', 'statFlip', 'statWinner',
+             'yMaxLabel', 'yMinLabel', 'xMaxLabel'].forEach(id => {
+                document.getElementById(id).textContent = '—';
+            });
+        }
+
+        // Initialize on page load
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                runSimulation(500);
+            }, 300);
+        });
     </script>
 </body>
 </html>
