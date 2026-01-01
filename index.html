@@ -432,6 +432,13 @@ Baselines:
   Always-Forward, Always-Backward, Always-Verify,
   Random-Verify (verify-rate matched to GG-Topo),
   Thompson, UCB, GG-Local (no topology propagation).
+
+Protocol details:
+  Seeds: deterministic; env seed fixed by (L, σ), run seeds fixed by hash(method|seed|L|σ).
+  Noise: ε ~ Bernoulli(p_{v,ℓ}); additive noise ~ N(0,1), scaled by σ.
+  Synthetic topology: p_{v,ℓ} from 4-bit linear base + layer bias + sinusoidal ripple, clamped to [0.05, 0.95].
+  Eval cost: VERIFY = 2 evals (forward+backward), MOVE = 1 eval.
+  Runtime: O(B · L · MC) per seed (B=eval budget, L=layers, MC=posterior samples).
 </pre>
         </div>
 
