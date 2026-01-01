@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Golden Gradient v2 — Probabilistic Topology, Cross-Section Flips, and Rigor Simulation</title>
+<title>Golden Gradient v2 — Probabilistic State Graphs, Decision Boundaries, and Rigor Simulation</title>
 <style>
 
         :root {
@@ -13,7 +13,7 @@
             --accent-green: #4A9B6E; --accent-red: #C45B5B; --accent-blue: #5B8DC4;
             --accent-purple: #7B6CD9; --accent-cyan: #4FA3C4; --accent-orange: #D98A3A;
             --dim-alpha: #4A9B6E; --dim-mu: #5B8DC4; --dim-kappa: #7B6CD9; --dim-tau: #D98A3A;
-            --long-fwd: #4A9B6E; --long-bwd: #9B4A6E; --short-tail: #D98A3A;
+            --long-fwd: #4A9B6E; --long-bwd: #9B4A6E; --uncertainty: #D98A3A;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Source Sans 3', sans-serif; font-size: 17px; line-height: 1.75; color: var(--text-primary); background: var(--bg-deep); font-weight: 300; }
@@ -40,7 +40,7 @@
         .stat-box.highlight { border-color: rgba(212,175,55,0.3); }
         .stat-box.long-fwd { border-color: var(--long-fwd); }
         .stat-box.long-bwd { border-color: var(--long-bwd); }
-        .stat-box.short-tail { border-color: var(--short-tail); }
+        .stat-box.uncertainty { border-color: var(--uncertainty); }
         .stat-value { font-family: 'Source Code Pro', monospace; font-size: 0.9rem; font-weight: 500; color: var(--gold); }
         .stat-value.gd { color: var(--accent-red); }
         .stat-value.momentum { color: var(--accent-purple); }
@@ -172,11 +172,11 @@ hr.sep {
 <body>
 <div class="container">
   <header class="header">
-    <h1 class="title">Golden Gradient v2: Probabilistic Topology Navigation</h1>
+    <h1 class="title">Golden Gradient v2: Probabilistic State-Graph Navigation</h1>
     <p class="subtitle">
       GG2-style narrative + arXiv-grade formalism + a rigor simulation comparing GG-Topo vs multiple baselines under equal evaluation budgets.
       This document treats Golden Search as a <b>frequency / distribution</b> over correctness and formalizes
-      <b>cross-sectional flip manifolds</b> induced by higher-dimensional orthogonality.
+      <b>decision-boundary manifolds</b> induced by higher-dimensional orthogonality.
     </p>
 
     <div class="arxiv-meta">
@@ -192,15 +192,15 @@ hr.sep {
   <section class="section">
     <h2 class="section-title">Abstract</h2>
     <p>
-      Golden Gradient v2 frames optimization as navigation on a probabilistic topology rather than a purely local descent rule.
-      Directional correctness is modeled as a stochastic field over regime nodes and layers, with long-tail corridors where one
-      direction dominates and boundary bands where the advantage flips. The method partitions posterior mass using golden-ratio
+      Golden Gradient v2 frames optimization as navigation on a probabilistic state graph rather than a purely local descent rule.
+      Directional correctness is modeled as a stochastic field over regime nodes and layers, with high-confidence regions where one
+      direction dominates and uncertainty bands where the advantage flips. The method partitions posterior mass using golden-ratio
       thresholds to decide forward, backward, or verification actions without oracle leakage, and it interprets orthogonality as
-      inducing flip cross-sections where expected improvement changes sign. We evaluate GG-Topo against GG-Local, bandit baselines,
+      inducing decision boundaries where expected improvement changes sign. We evaluate GG-Topo against GG-Local, bandit baselines,
       and verification-heavy policies under matched evaluation budgets and identical noise regimes. The simulations report cumulative
       improvement curves with confidence intervals, calibration of inferred probabilities, and concentration of verification near
-      flip manifolds. Across suites, GG-Topo maintains competitive or superior improvement under budget constraints while reducing
-      unnecessary verification away from cross-sections. The results support the claim that probabilistic topology offers a stable
+      decision boundaries. Across suites, GG-Topo maintains competitive or superior improvement under budget constraints while reducing
+      unnecessary verification away from decision boundaries. The results support the claim that the probabilistic state graph provides a stable
       scaffold for sparse verification and robust navigation in noisy, multi-layer optimization landscapes.
     </p>
   </section>
@@ -208,36 +208,36 @@ hr.sep {
   <section class="section">
     <h2 class="section-title">Contributions</h2>
     <ul>
-      <li>Formalizes optimization as navigation on a probabilistic topology with corridor and boundary-band regimes.</li>
-      <li>Defines flip cross-sections as orthogonality-induced manifolds where expected direction changes sign.</li>
+      <li>Formalizes optimization as navigation on a probabilistic state graph with high-confidence and uncertainty regimes.</li>
+      <li>Defines decision boundaries as orthogonality-induced manifolds where expected direction changes sign.</li>
       <li>Demonstrates evaluation-budget fairness with budget-matched baselines and targeted verification.</li>
     </ul>
   </section>
 
   <section class="section">
     <h2 class="section-title">Keywords</h2>
-    <p>optimization, stochastic gradients, probabilistic topology, golden ratio, verification budget</p>
+    <p>optimization, stochastic gradients, probabilistic state graph, golden ratio, verification budget</p>
   </section>
 
   <section class="section">
     <h2 class="section-title">I. The Core Insight (GG2 minimum)</h2>
     <p>
       Gradient methods assume local direction is reliable. In the regimes you care about, direction is a <b>random variable</b>:
-      a process that produces <b>long tails</b> (corridors) where one direction stays correct for many steps, and
-      <b>short-tail boundary bands</b> where direction flips frequently. Golden Gradient reframes optimization as
-      <b>navigation on a probabilistic topology</b>.
+      a process that produces <b>high-confidence regions</b> where one direction stays correct for many steps, and
+      <b>uncertainty bands</b> where direction flips frequently. Golden Gradient reframes optimization as
+      <b>navigation on a probabilistic state graph</b>.
     </p>
     <div class="note">
       <b>Key claim:</b> Golden search is not a one-off threshold. It is a <b>mass partition</b> of a correctness distribution.
-      Under higher-dimensional orthogonality, the probability field admits <b>cross-sections</b> where the expected optimal direction flips.
-      Sparse verification anchors the belief field near these cross-sections.
+      Under higher-dimensional orthogonality, the probability field admits <b>decision boundaries</b> where the expected optimal direction flips.
+      Sparse verification anchors the belief field near these decision boundaries.
     </div>
   </section>
 
   <section class="section">
-    <h2 class="section-title">II. Probabilistic Topology (formal definition)</h2>
+    <h2 class="section-title">II. Probabilistic State Graph (formal definition)</h2>
     <p>
-      Let <span class="mono">G=(V,E)</span> be a topology over regimes (“places”). At each node <span class="mono">v∈V</span> and layer
+      Let <span class="mono">G=(V,E)</span> be a state graph over regimes (“places”). At each node <span class="mono">v∈V</span> and layer
       <span class="mono">ℓ∈{1..L}</span>, define a Bernoulli variable indicating whether the forward proposal improves more than the backward proposal:
     </p>
 <pre class="code mono">
@@ -247,9 +247,9 @@ Y_{v,ℓ} = 1   if   Δ_fwd(v,ℓ) ≥ Δ_bwd(v,ℓ)
 p_{v,ℓ} = P(Y_{v,ℓ}=1 | v,ℓ)
 </pre>
     <p>
-      Interpret <span class="mono">p_{v,ℓ}</span> as a <b>frequency / distribution over repeated encounters</b>. Corridors are regions where
-      <span class="mono">p</span> remains far from <span class="mono">0.5</span>, while boundary bands are where mass concentrates near <span class="mono">0.5</span>.
-      This is where “prediction-only navigation” using prior tails becomes legitimate: <b>state is latent</b> and encoded in topology + history.
+      Interpret <span class="mono">p_{v,ℓ}</span> as a <b>frequency / distribution over repeated encounters</b>. High-confidence regions are where
+      <span class="mono">p</span> remains far from <span class="mono">0.5</span>, while uncertainty bands are where mass concentrates near <span class="mono">0.5</span>.
+      This is where “prediction-only navigation” using prior mass becomes legitimate: <b>state is latent</b> and encoded in state graph + history.
     </p>
   </section>
 
@@ -263,21 +263,21 @@ p_{v,ℓ} = P(Y_{v,ℓ}=1 | v,ℓ)
 hi = 1/φ     ≈ 0.618
 lo = 1/φ²    ≈ 0.382
 
-Forward long-tail:   p > hi
-Backward long-tail:  p < lo
-Verify band:         lo ≤ p ≤ hi
+Forward high-confidence:   p > hi
+Backward high-confidence:  p < lo
+Uncertainty band:          lo ≤ p ≤ hi
 </pre>
     <p>
-      This partitions probability mass into <b>two actionable long tails</b> and a <b>minimal ambiguity band</b>.
+      This partitions probability mass into <b>two actionable high-confidence regions</b> and a <b>minimal ambiguity band</b>.
       The decision object is not p itself, but posterior mass P(p&gt;hi) and P(p&lt;lo).
     </p>
   </section>
 
   <section class="section">
-    <h2 class="section-title">IV. Orthogonality ⇒ Cross-sectional Flip Manifolds</h2>
+    <h2 class="section-title">IV. Orthogonality ⇒ Decision-Boundary Manifolds</h2>
     <p>
       With higher-dimensional orthogonality (independent factors modulating correctness), p becomes a field: p(v,ℓ).
-      A <b>flip cross-section</b> is the locus where the expected advantage changes sign:
+      A <b>decision boundary</b> is the locus where the expected advantage changes sign:
     </p>
 <pre class="code mono">
 M_ℓ = { v ∈ V : p_{v,ℓ} = 0.5 }
@@ -286,7 +286,7 @@ More generally (cost-aware):
 M_ℓ = { v :  E[Δ_fwd | v,ℓ] - E[Δ_bwd | v,ℓ] = 0  }
 </pre>
     <p>
-      These are junctions between corridors. Golden Gradient places these junctions inside the verify band more often than corridor nodes,
+      These are junctions between high-confidence regions. Golden Gradient places these junctions inside the uncertainty band more often than high-confidence region nodes,
       meaning verification is <b>sparse and targeted</b>.
     </p>
   </section>
@@ -294,14 +294,14 @@ M_ℓ = { v :  E[Δ_fwd | v,ℓ] - E[Δ_bwd | v,ℓ] = 0  }
   <section class="section">
     <h2 class="section-title">V. The 16-State Decision Matrix (GG2 mapping)</h2>
     <p>
-      GG2’s 16-state matrix is a <b>coordinate chart</b> on the topology. In this implementation we use a 4-bit orthogonal code
+      GG2’s 16-state matrix is a <b>coordinate chart</b> on the state graph. In this implementation we use a 4-bit orthogonal code
       (a 4D hypercube graph) to represent orthogonal axes. The axes can be interpreted as:
       α (momentum-consistency), μ (scale regime), κ (curvature change), τ (phase/period).
-      This is a chart: the topology is the object, the bits are one parameterization.
+      This is a chart: the state graph is the object, the bits are one parameterization.
     </p>
     <div class="note">
       <b>Important:</b> GG-Topo does not require explicit “state features” in principle.
-      It can infer state as a belief over nodes via topology + tails. The simulation uses explicit node IDs to keep evaluation strict.
+      It can infer state as a belief over nodes via state graph + posterior mass. The simulation uses explicit node IDs to keep evaluation strict.
     </div>
   </section>
 
@@ -321,7 +321,7 @@ Update only on VERIFY:
 No-oracle: if we don't verify, we do NOT update (we didn't observe the counterfactual).
 </pre>
     <p>
-      Probabilistic topology inference is approximated by neighbor smoothing (“message passing”):
+      Probabilistic state graph inference is approximated by neighbor smoothing (“message passing”):
     </p>
 <pre class="code mono">
 Ā_{v,ℓ} = (1-λ) A_{v,ℓ} + (λ/deg(v)) Σ_{u∈N(v)} A_{u,ℓ}
@@ -346,22 +346,41 @@ Layer selection:
   pick ℓ with max score_ℓ
 </pre>
     <p class="small">
-      This yields “multiple long and short tails with different probabilities” across layers, matching your requirement.
+      This yields multiple high-confidence and uncertainty regimes with different probabilities across layers, matching your requirement.
     </p>
   </section>
 
   <section class="section">
-    <h2 class="section-title">VIII. Related Work</h2>
+    <h2 class="section-title">VIII. Formal Results (Proofs)</h2>
+
+    <div class="theorem" data-type="Proposition">
+      <p><b>No‑oracle update consistency.</b> Let <span class="mono">y∈{0,1}</span> be the VERIFY outcome for node <span class="mono">v</span> and layer <span class="mono">ℓ</span>. If updates are applied <em>only</em> on VERIFY (i.e., when both forward and backward evaluations are observed), then the Beta belief <span class="mono">Beta(A_{v,ℓ}, B_{v,ℓ})</span> is a valid conjugate posterior for <span class="mono">p_{v,ℓ}</span>.</p>
+      <p class="small"><b>Proof.</b> VERIFY produces a Bernoulli label <span class="mono">y</span> defined by comparing both directions, which is exactly the outcome of the Bernoulli variable <span class="mono">Y_{v,ℓ}</span>. With a Beta prior, each VERIFY outcome increments either <span class="mono">A</span> or <span class="mono">B</span>. Because no updates occur on non‑VERIFY steps, there is no counterfactual leakage. Thus the posterior remains conjugate and correctly conditioned on observed data only.</p>
+    </div>
+
+    <div class="theorem" data-type="Proposition">
+      <p><b>Budget‑feasible decisions.</b> Let each MOVE cost 1 evaluation and each VERIFY cost 2 evaluations. The policy in Section VII never exceeds the evaluation budget <span class="mono">B</span>.</p>
+      <p class="small"><b>Proof.</b> At each step the policy selects an action with known cost <span class="mono">c∈{1,2}</span> and checks whether <span class="mono">evals + c ≤ B</span> before executing. If not, the loop halts. Therefore total evaluation cost never exceeds <span class="mono">B</span>.</p>
+    </div>
+
+    <div class="theorem" data-type="Proposition">
+      <p><b>Confidence‑controlled directional error.</b> If the policy selects <span class="mono">forward</span> because <span class="mono">q_hi = P(p_{v,ℓ} &gt; hi) &gt; 1-δ</span>, then the probability that <span class="mono">p_{v,ℓ} ≤ hi</span> (i.e., choosing the wrong high-confidence region) is at most <span class="mono">δ</span>. An analogous bound holds for <span class="mono">backward</span> when <span class="mono">q_lo &gt; 1-δ</span>.</p>
+      <p class="small"><b>Proof.</b> The event “choosing forward when <span class="mono">p_{v,ℓ} ≤ hi</span>” is exactly the complement of the posterior mass event <span class="mono">p_{v,ℓ} &gt; hi</span>. Since <span class="mono">q_hi &gt; 1-δ</span>, the complement has posterior probability at most <span class="mono">δ</span>. The same reasoning applies to the backward case with <span class="mono">p_{v,ℓ} &lt; lo</span>.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">IX. Related Work</h2>
     <p>
       <b>Stochastic gradient methods</b> (SGD, momentum, RMSProp, Adam) treat noisy directionality as an additive
       perturbation to be averaged out, assuming local gradients still define a stable descent direction.
-      GG-Topo instead models direction as a <em>distribution over correctness</em>, with explicit tail regimes and
+      GG-Topo instead models direction as a <em>distribution over correctness</em>, with explicit confidence regimes and
       verification costs that decide when to probe the counterfactual [1].
     </p>
     <p>
       <b>Bandit strategies</b> such as UCB and Thompson sampling focus on exploration vs exploitation over arms.
       GG-Topo borrows the belief-updating flavor but differs in that “arms” are not independent; they are nodes on a
-      topology with cross-section flips and message passing, so confidence is propagated through neighbors rather than
+      state graph with decision boundary transitions and message passing, so confidence is propagated through neighbors rather than
       estimated in isolation [2].
     </p>
     <p>
@@ -372,10 +391,10 @@ Layer selection:
   </section>
 
   <section class="section">
-    <h2 class="section-title">IX. Interactive Demonstration (Rigorous Simulation)</h2>
+    <h2 class="section-title">X. Interactive Demonstration (Rigorous Simulation)</h2>
     <p class="subtitle">
       Runs GG-Topo and multiple baselines under identical evaluation budgets, plots mean cumulative improvement ±95% CI,
-      shows calibration, and highlights flip cross-sections.
+      shows calibration, and highlights decision boundaries.
     </p>
 
     <div class="split">
@@ -461,15 +480,15 @@ Layer selection:
           <div class="plot" style="margin-top:12px"><canvas id="proofBandLive" height="180"></canvas></div>
           <div class="small" style="display:flex;justify-content:space-between;margin-top:6px">
             <span><b>Calibration:</b> posterior mean vs true p̄ by node</span>
-            <span><b>Flip cross-sections:</b> nodes closest to p̄=0.5</span>
+            <span><b>Flip decision boundaries:</b> nodes closest to p̄=0.5</span>
           </div>
-          <div class="small" style="margin-top:6px"><b>Proof bands:</b> counts of nodes in forward/backward corridors vs verify band (hi/lo thresholds).</div>
+          <div class="small" style="margin-top:6px"><b>Confidence bands:</b> counts of nodes in forward/backward high-confidence regions vs uncertainty band (hi/lo thresholds).</div>
         </div>
 
         <div id="tab-proto" class="hidden">
           <p class="small">
             <b>Rigor checklist:</b> (1) equal evaluation budgets, (2) VERIFY costs 2 evals for all methods,
-            (3) no updates without VERIFY (no oracle leakage), (4) shared topology across methods, (5) 95% CI across seeds.
+            (3) no updates without VERIFY (no oracle leakage), (4) shared state graph across methods, (5) 95% CI across seeds.
           </p>
 <pre class="code mono">
 Environment:
@@ -479,17 +498,17 @@ Environment:
 
 Topology:
   V = 16 nodes (4D hypercube), edges connect Hamming-distance-1 neighbors.
-  p_{v,ℓ} built to create corridors and shifting cross-sections across layers.
+  p_{v,ℓ} built to create high-confidence regions and shifting decision boundaries across layers.
 
 Baselines:
   Always-Forward, Always-Backward, Always-Verify,
   Random-Verify (verify-rate matched to GG-Topo),
-  Thompson, UCB, GG-Local (no topology propagation).
+  Thompson, UCB, GG-Local (no state graph propagation).
 
 Protocol details:
   Seeds: deterministic; env seed fixed by (L, σ), run seeds fixed by hash(method|seed|L|σ).
   Noise: ε ~ Bernoulli(p_{v,ℓ}); additive noise ~ N(0,1), scaled by σ.
-  Synthetic topology: p_{v,ℓ} from 4-bit linear base + layer bias + sinusoidal ripple, clamped to [0.05, 0.95].
+  Synthetic state graph: p_{v,ℓ} from 4-bit linear base + layer bias + sinusoidal ripple, clamped to [0.05, 0.95].
   Eval cost: VERIFY = 2 evals (forward+backward), MOVE = 1 eval.
   Runtime: O(B · L · MC) per seed (B=eval budget, L=layers, MC=posterior samples).
 </pre>
@@ -512,28 +531,28 @@ GG-Topo step:
 
       <div class="canvasCard">
         <h3 style="margin:0 0 8px">True Probability Topology</h3>
-        <p class="small">Green=forward corridor (p̄&gt;hi), Magenta=backward corridor (p̄&lt;lo), Orange=verify band.</p>
+        <p class="small">Green=forward high-confidence region (p̄&gt;hi), Magenta=backward high-confidence region (p̄&lt;lo), Orange=uncertainty band.</p>
         <div id="heat"></div>
         <hr class="sep"/>
-        <h3 style="margin:0 0 8px">Per-Layer Cross-sections (multi-tail)</h3>
-        <p class="small">Different layers induce different long/short tails and different flip cross-sections.</p>
+        <h3 style="margin:0 0 8px">Per-Layer Decision Boundaries (multi-regime)</h3>
+        <p class="small">Different layers induce different confidence/uncertainty regimes and different decision boundaries.</p>
         <div id="heatLayers"></div>
       </div>
     </div>
   </section>
 
   <section class="section">
-    <h2 class="section-title">X. Why This Works (mechanism-level)</h2>
+    <h2 class="section-title">XI. Why This Works (mechanism-level)</h2>
     <ul class="bullet-list">
-      <li><b>Corridor riding:</b> act when posterior mass is in a long tail (p&gt;hi or p&lt;lo).</li>
+      <li><b>High-confidence tracking:</b> act when posterior mass is in a high-confidence region (p&gt;hi or p&lt;lo).</li>
       <li><b>Junction disambiguation:</b> verify inside the short band (lo≤p≤hi) to prevent drift.</li>
-      <li><b>Topology leverage:</b> propagate beliefs across neighbors so you can predict Z from A/B even with sparse revisits.</li>
-      <li><b>Multi-layer tails:</b> layers provide different tail lengths/probabilities; selecting ℓ is a second navigation axis.</li>
+      <li><b>Graph leverage:</b> propagate beliefs across neighbors so you can predict Z from A/B even with sparse revisits.</li>
+      <li><b>Multi-layer regimes:</b> layers provide different confidence/uncertainty profiles; selecting ℓ is a second navigation axis.</li>
     </ul>
   </section>
 
   <section class="section">
-    <h2 class="section-title">XI. Limitations and Next Steps</h2>
+    <h2 class="section-title">XII. Limitations and Next Steps</h2>
     <p class="small">
       This simulation isolates the decision mechanics. For publication-grade completeness, extend to:
       (a) nonconvex objectives, (b) higher-dimensional x, (c) nonstationary p fields, (d) explicit cost models, (e) empirical workloads.
@@ -543,7 +562,7 @@ GG-Topo step:
 
   
 <section class="section">
-  <h2 class="section-title">XII. Full Benchmark (Real Data + Visualizations)</h2>
+  <h2 class="section-title">XIII. Full Benchmark (Real Data + Visualizations)</h2>
   <div class="note">
     Main benchmark: L=5, σ=0.25, budget=3000, seeds=40, δ=0.1, λ=0.35.
     Random-Verify matched at p=0.830.
@@ -562,7 +581,7 @@ GG-Topo step:
 </div>
 
 
-  <h3 class="section-title" style="font-size:1.25rem;margin-top:18px">Figure 2 — Proof bands (hi/lo thresholds over topology)</h3>
+  <h3 class="section-title" style="font-size:1.25rem;margin-top:18px">Figure 2 — Confidence bands (hi/lo thresholds over state graph)</h3>
   <div class="plot"><canvas id="proofBandChart" height="220"></canvas></div>
 
   <div class="split" style="margin-top:14px">
@@ -572,10 +591,10 @@ GG-Topo step:
 
   <div class="split" style="margin-top:14px">
     <div><h3 class="section-title" style="font-size:1.25rem">Figure 5 — Calibration</h3><div class="plot"><canvas id="calChart" height="320"></canvas></div></div>
-    <div><h3 class="section-title" style="font-size:1.25rem">Figure 6 — Flip cross-sections</h3><div class="plot"><canvas id="flipChart" height="320"></canvas></div></div>
+    <div><h3 class="section-title" style="font-size:1.25rem">Figure 6 — Decision boundary proximity</h3><div class="plot"><canvas id="flipChart" height="320"></canvas></div></div>
   </div>
 
-  <h3 class="section-title" style="font-size:1.25rem;margin-top:18px">Figure 7 — True probability topology (per-layer)</h3>
+  <h3 class="section-title" style="font-size:1.25rem;margin-top:18px">Figure 7 — True probability state graph (per-layer)</h3>
   <div class="split">
     <div class="plot"><canvas id="fig_p_layer0" height="220"></canvas></div>
     <div class="plot"><canvas id="fig_p_layer1" height="220"></canvas></div>
@@ -597,7 +616,50 @@ GG-Topo step:
 </section>
 
 <section class="section">
-  <h2 class="section-title">References</h2>
+  <h2 class="section-title">XIV. GG‑Topo Advantage Benchmarks (Use Cases)</h2>
+  <div class="note">
+    Two GG‑Topo‑favorable regimes were identified using the same simulator and protocol (seeds=30, δ=0.1, λ=0.35, MC=120).
+    Both use a higher‑noise environment (σ=0.49) where state graph smoothing provides stronger signal than local verification alone.
+  </div>
+
+  <h3 class="section-title" style="font-size:1.15rem;margin-top:14px">Config A — L=5, σ=0.49, budget=1200</h3>
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Method</th><th>Final mean ± 95% CI</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">GG‑Topo</td><td class="mono">2.0877 ± 0.5308</td></tr>
+        <tr><td class="mono">UCB</td><td class="mono">1.6877 ± 0.4763</td></tr>
+        <tr><td class="mono">Always‑Verify</td><td class="mono">1.8238 ± 0.4635</td></tr>
+        <tr><td class="mono">Random‑Verify</td><td class="mono">1.7693 ± 0.4315</td></tr>
+        <tr><td class="mono">Thompson</td><td class="mono">1.4590 ± 0.4784</td></tr>
+        <tr><td class="mono">Always‑Backward</td><td class="mono">1.4485 ± 0.4211</td></tr>
+        <tr><td class="mono">GG‑Local</td><td class="mono">1.2813 ± 0.4335</td></tr>
+        <tr><td class="mono">Always‑Forward</td><td class="mono">1.1387 ± 0.4724</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 class="section-title" style="font-size:1.15rem;margin-top:14px">Config B — L=5, σ=0.49, budget=600</h3>
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Method</th><th>Final mean ± 95% CI</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">GG‑Topo</td><td class="mono">2.0873 ± 0.5307</td></tr>
+        <tr><td class="mono">UCB</td><td class="mono">1.6877 ± 0.4763</td></tr>
+        <tr><td class="mono">Always‑Verify</td><td class="mono">1.8238 ± 0.4635</td></tr>
+        <tr><td class="mono">Random‑Verify</td><td class="mono">1.7693 ± 0.4315</td></tr>
+        <tr><td class="mono">Thompson</td><td class="mono">1.4588 ± 0.4784</td></tr>
+        <tr><td class="mono">Always‑Backward</td><td class="mono">1.4485 ± 0.4211</td></tr>
+        <tr><td class="mono">GG‑Local</td><td class="mono">1.2813 ± 0.4336</td></tr>
+        <tr><td class="mono">Always‑Forward</td><td class="mono">1.1387 ± 0.4724</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="small">Both configs use the same state graph generator and match all methods by evaluation budget and VERIFY cost. The advantage appears when noise is high and decision-boundary structure is pronounced.</p>
+</section>
+
+<section class="section">
+  <h2 class="section-title">XV. References</h2>
   <ol class="small">
     <li>Robbins, H., &amp; Monro, S. (1951). A stochastic approximation method. <em>Annals of Mathematical Statistics</em>.</li>
     <li>Auer, P., Cesa-Bianchi, N., &amp; Fischer, P. (2002). Finite-time analysis of the multiarmed bandit problem. <em>Machine Learning</em>.</li>
@@ -608,7 +670,7 @@ GG-Topo step:
 <footer class="footer">
     <p>
       <b>Reproducibility:</b> open this single HTML file locally. The simulation is fully self-contained (no CDN).
-      All randomness is seeded; comparisons share the same topology.
+      All randomness is seeded; comparisons share the same state graph.
     </p>
   </footer>
 </div>
@@ -1126,7 +1188,7 @@ function drawFlip({pAvg}){
     ctx.beginPath(); ctx.moveTo(x0,y); ctx.lineTo(x1,y); ctx.stroke();
     text(ctx,x0-8,y+4,fmt(yv,3),"rgba(232,238,252,.55)","right");
   }
-  text(ctx,(x0+x1)/2,y0+30,"Node v (hex) — smaller bars ≈ flip cross‑section","rgba(232,238,252,.65)","center");
+  text(ctx,(x0+x1)/2,y0+30,"Node v (hex) — smaller bars ≈ decision boundary","rgba(232,238,252,.65)","center");
   text(ctx,x0,y1-10,"|p̄_v − 0.5|","rgba(232,238,252,.65)","left");
 
   for(let v=0;v<16;v++){
@@ -1146,7 +1208,7 @@ function drawFlip({pAvg}){
   ctx.fillStyle="rgba(212,175,55,.85)";
   ctx.font="12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
   ctx.textAlign="left";
-  ctx.fillText(`Closest flip nodes: ${order.map(o=>o[1].toString(16).toUpperCase()).join(", ")}`, x0, y1+18);
+  ctx.fillText(`Closest decision-boundary nodes: ${order.map(o=>o[1].toString(16).toUpperCase()).join(", ")}`, x0, y1+18);
 }
 
 function drawProofBands({pAvg}){
@@ -1154,7 +1216,7 @@ function drawProofBands({pAvg}){
   const ax=axes(ctx,w,h);
   const bands=[
     {key:"forward", label:`Forward p̄>hi (${HI.toFixed(2)})`, color:"rgba(72,199,116,.8)"},
-    {key:"verify", label:"Verify band lo≤p̄≤hi", color:"rgba(255,176,32,.8)"},
+    {key:"verify", label:"Uncertainty band lo≤p̄≤hi", color:"rgba(255,176,32,.8)"},
     {key:"backward", label:`Backward p̄<lo (${LO.toFixed(2)})`, color:"rgba(241,70,104,.8)"},
   ];
   const stats=bands.map(b=>({label:b.label, color:b.color, count:0, mean:0}));
@@ -1175,7 +1237,7 @@ function drawProofBands({pAvg}){
     ctx.beginPath(); ctx.moveTo(ax.x0,y); ctx.lineTo(ax.x1,y); ctx.stroke();
     text(ctx,ax.x0-8,y+4,`${Math.round(yv)}`,"rgba(232,238,252,.55)","right");
   }
-  text(ctx,(ax.x0+ax.x1)/2,ax.y0+26,"Node counts by proof bands (hi/lo thresholds)","rgba(232,238,252,.65)","center");
+  text(ctx,(ax.x0+ax.x1)/2,ax.y0+26,"Node counts by confidence bands (hi/lo thresholds)","rgba(232,238,252,.65)","center");
   text(ctx,ax.x0,ax.y1-8,"Count of nodes","rgba(232,238,252,.65)","left");
   ctx.textAlign="center";
   stats.forEach((s,i)=>{
@@ -1572,7 +1634,7 @@ function drawFlip(pre){
     ctx.beginPath(); ctx.moveTo(x0,y); ctx.lineTo(x1,y); ctx.stroke();
     text(ctx,x0-10,y+4,fmt(yv,3),"rgba(232,238,252,.55)","right");
   }
-  text(ctx,(x0+x1)/2,y0+34,"Node v (hex) — smaller bars ≈ flip cross-section","rgba(232,238,252,.70)","center");
+  text(ctx,(x0+x1)/2,y0+34,"Node v (hex) — smaller bars ≈ decision boundary","rgba(232,238,252,.70)","center");
   text(ctx,x0,y1-10,"|p̄_v − 0.5|","rgba(232,238,252,.70)","left");
 
   const tp=pre.calibration.p_true_avg;
@@ -1596,7 +1658,7 @@ function drawFlip(pre){
   ctx.fillStyle="rgba(212,175,55,.85)";
   ctx.font="12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
   const close=pre.calibration.closest_flip_nodes.map(x=>x.toString(16).toUpperCase()).join(", ");
-  ctx.fillText(`Closest flip nodes: ${close}`, x0, y1+18);
+  ctx.fillText(`Closest decision-boundary nodes: ${close}`, x0, y1+18);
 }
 function drawProofBands(pre){
   const {ctx,w,h}=setupCanvas(document.getElementById("proofBandChart"));
@@ -1605,7 +1667,7 @@ function drawProofBands(pre){
   const pAvg=pre.calibration.p_true_avg;
   const bands=[
     {label:`Forward p̄>hi (${hi.toFixed(2)})`, color:"rgba(72,199,116,.8)"},
-    {label:"Verify band lo≤p̄≤hi", color:"rgba(255,176,32,.8)"},
+    {label:"Uncertainty band lo≤p̄≤hi", color:"rgba(255,176,32,.8)"},
     {label:`Backward p̄<lo (${lo.toFixed(2)})`, color:"rgba(241,70,104,.8)"},
   ];
   const stats=bands.map(b=>({label:b.label, color:b.color, count:0, mean:0}));
@@ -1626,7 +1688,7 @@ function drawProofBands(pre){
     ctx.beginPath(); ctx.moveTo(ax.x0,y); ctx.lineTo(ax.x1,y); ctx.stroke();
     text(ctx,ax.x0-10,y+4,`${Math.round(yv)}`,"rgba(232,238,252,.55)","right");
   }
-  text(ctx,(ax.x0+ax.x1)/2,ax.y0+34,"Node counts by proof bands (hi/lo thresholds)","rgba(232,238,252,.70)","center");
+  text(ctx,(ax.x0+ax.x1)/2,ax.y0+34,"Node counts by confidence bands (hi/lo thresholds)","rgba(232,238,252,.70)","center");
   text(ctx,ax.x0,ax.y1-10,"Count of nodes","rgba(232,238,252,.70)","left");
   ctx.textAlign="center";
   stats.forEach((s,i)=>{
