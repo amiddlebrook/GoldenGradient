@@ -190,6 +190,36 @@ hr.sep {
   </header>
 
   <section class="section">
+    <h2 class="section-title">Abstract</h2>
+    <p>
+      Golden Gradient v2 frames optimization as navigation on a probabilistic topology rather than a purely local descent rule.
+      Directional correctness is modeled as a stochastic field over regime nodes and layers, with long-tail corridors where one
+      direction dominates and boundary bands where the advantage flips. The method partitions posterior mass using golden-ratio
+      thresholds to decide forward, backward, or verification actions without oracle leakage, and it interprets orthogonality as
+      inducing flip cross-sections where expected improvement changes sign. We evaluate GG-Topo against GG-Local, bandit baselines,
+      and verification-heavy policies under matched evaluation budgets and identical noise regimes. The simulations report cumulative
+      improvement curves with confidence intervals, calibration of inferred probabilities, and concentration of verification near
+      flip manifolds. Across suites, GG-Topo maintains competitive or superior improvement under budget constraints while reducing
+      unnecessary verification away from cross-sections. The results support the claim that probabilistic topology offers a stable
+      scaffold for sparse verification and robust navigation in noisy, multi-layer optimization landscapes.
+    </p>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">Contributions</h2>
+    <ul>
+      <li>Formalizes optimization as navigation on a probabilistic topology with corridor and boundary-band regimes.</li>
+      <li>Defines flip cross-sections as orthogonality-induced manifolds where expected direction changes sign.</li>
+      <li>Demonstrates evaluation-budget fairness with budget-matched baselines and targeted verification.</li>
+    </ul>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">Keywords</h2>
+    <p>optimization, stochastic gradients, probabilistic topology, golden ratio, verification budget</p>
+  </section>
+
+  <section class="section">
     <h2 class="section-title">I. The Core Insight (GG2 minimum)</h2>
     <p>
       Gradient methods assume local direction is reliable. In the regimes you care about, direction is a <b>random variable</b>:
