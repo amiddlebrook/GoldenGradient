@@ -390,7 +390,7 @@ Layer selection:
             <div><b>Primary:</b> cumulative improvement vs eval budget (±95% CI)</div>
             <div id="status">Ready (click Run)</div>
           </div>
-          <div class="plot" style="margin-top:10px"><canvas id="mainChart" height="280"></canvas></div>
+          <div class="plot" style="margin-top:10px"><canvas id="simMainChart" height="280"></canvas></div>
 
           <div class="legendRow" style="margin-top:10px">
             <span><span class="dot" style="background:var(--gold)"></span> GG-Topo</span>
@@ -404,8 +404,8 @@ Layer selection:
           </div>
 
           <div class="split" style="margin-top:14px">
-            <div class="plot"><canvas id="calChart" height="260"></canvas></div>
-            <div class="plot"><canvas id="flipChart" height="260"></canvas></div>
+            <div class="plot"><canvas id="simCalChart" height="260"></canvas></div>
+            <div class="plot"><canvas id="simFlipChart" height="260"></canvas></div>
           </div>
           <div class="small" style="display:flex;justify-content:space-between;margin-top:6px">
             <span><b>Calibration:</b> posterior mean vs true p̄ by node</span>
@@ -490,7 +490,7 @@ GG-Topo step:
   </div>
 
   <h3 class="section-title" style="font-size:1.25rem;margin-top:14px">Figure 1 — Cumulative improvement vs evaluation budget (±95% CI)</h3>
-  <div class="plot"><canvas id="fig_main" height="360"></canvas></div>
+  <div class="plot"><canvas id="mainChart" height="360"></canvas></div>
 
   <h3 class="section-title" style="font-size:1.25rem;margin-top:18px">Table 1 — Summary</h3>
   
@@ -503,13 +503,13 @@ GG-Topo step:
 
 
   <div class="split" style="margin-top:14px">
-    <div><h3 class="section-title" style="font-size:1.25rem">Figure 2 — Verification counts</h3><div class="plot"><canvas id="fig_verify" height="320"></canvas></div></div>
+    <div><h3 class="section-title" style="font-size:1.25rem">Figure 2 — Verification counts</h3><div class="plot"><canvas id="verifyChart" height="320"></canvas></div></div>
     <div><h3 class="section-title" style="font-size:1.25rem">Figure 3 — Final distribution (quantiles)</h3><div class="plot"><canvas id="fig_dist" height="320"></canvas></div></div>
   </div>
 
   <div class="split" style="margin-top:14px">
-    <div><h3 class="section-title" style="font-size:1.25rem">Figure 4 — Calibration</h3><div class="plot"><canvas id="fig_cal" height="320"></canvas></div></div>
-    <div><h3 class="section-title" style="font-size:1.25rem">Figure 5 — Flip cross-sections</h3><div class="plot"><canvas id="fig_flip" height="320"></canvas></div></div>
+    <div><h3 class="section-title" style="font-size:1.25rem">Figure 4 — Calibration</h3><div class="plot"><canvas id="calChart" height="320"></canvas></div></div>
+    <div><h3 class="section-title" style="font-size:1.25rem">Figure 5 — Flip cross-sections</h3><div class="plot"><canvas id="flipChart" height="320"></canvas></div></div>
   </div>
 
   <h3 class="section-title" style="font-size:1.25rem;margin-top:18px">Figure 6 — True probability topology (per-layer)</h3>
@@ -937,7 +937,7 @@ function computeCI(seriesBySeed){
 }
 
 function drawMain({checkpoints, curves, colors, labels}){
-  const {ctx,w,h}=setupCanvas(document.getElementById("mainChart"));
+  const {ctx,w,h}=setupCanvas(document.getElementById("simMainChart"));
   const ax=axes(ctx,w,h);
   const xMin=checkpoints[0], xMax=checkpoints[checkpoints.length-1];
   let yMax=0;
@@ -977,7 +977,7 @@ function drawMain({checkpoints, curves, colors, labels}){
 }
 
 function drawCalibration({truePavg, estPavg}){
-  const {ctx,w,h}=setupCanvas(document.getElementById("calChart"));
+  const {ctx,w,h}=setupCanvas(document.getElementById("simCalChart"));
   const ax=axes(ctx,w,h);
   const x0=ax.x0, x1=ax.x1, y0=ax.y0, y1=ax.y1;
 
@@ -1011,7 +1011,7 @@ function drawCalibration({truePavg, estPavg}){
 }
 
 function drawFlip({pAvg}){
-  const {ctx,w,h}=setupCanvas(document.getElementById("flipChart"));
+  const {ctx,w,h}=setupCanvas(document.getElementById("simFlipChart"));
   const ax=axes(ctx,w,h);
   const x0=ax.x0,x1=ax.x1,y0=ax.y0,y1=ax.y1;
 
@@ -1088,7 +1088,7 @@ function reset(){
   stopFlag=false;
   els.status.textContent="Ready (click Run)";
   els.kpi.innerHTML="";
-  for(const id of ["mainChart","calChart","flipChart"]){
+  for(const id of ["simMainChart","simCalChart","simFlipChart"]){
     const c=document.getElementById(id);
     const {ctx,w,h}=setupCanvas(c);
     ctx.clearRect(0,0,w,h);
@@ -1299,7 +1299,7 @@ function drawMainFrom(pre){
   const chk=pre.main.checkpoints;
   const curves=pre.main.curves;
   const order=["gg_topo","gg_local","thompson","ucb","always_verify","always_forward","always_backward","random_verify"];
-  const {ctx,w,h}=setupCanvas(document.getElementById("fig_main"));
+  const {ctx,w,h}=setupCanvas(document.getElementById("mainChart"));
   const ax=axes(ctx,w,h);
   const xMin=chk[0], xMax=chk[chk.length-1];
   let yMax=0;
@@ -1339,7 +1339,7 @@ function drawMainFrom(pre){
   }
 }
 function drawVerifyBar(pre){
-  const {ctx,w,h}=setupCanvas(document.getElementById("fig_verify"));
+  const {ctx,w,h}=setupCanvas(document.getElementById("verifyChart"));
   const ax=axes(ctx,w,h);
   const stats=pre.main.verify_stats;
   const keys=["gg_topo","gg_local","thompson","ucb","always_verify","always_forward","always_backward","random_verify"];
@@ -1374,7 +1374,7 @@ function drawVerifyBar(pre){
   ctx.textAlign="left";
 }
 function drawCalibration(pre){
-  const {ctx,w,h}=setupCanvas(document.getElementById("fig_cal"));
+  const {ctx,w,h}=setupCanvas(document.getElementById("calChart"));
   const ax=axes(ctx,w,h);
   const x0=ax.x0,x1=ax.x1,y0=ax.y0,y1=ax.y1;
   for(let i=0;i<=5;i++){
@@ -1408,7 +1408,7 @@ function drawCalibration(pre){
   }
 }
 function drawFlip(pre){
-  const {ctx,w,h}=setupCanvas(document.getElementById("fig_flip"));
+  const {ctx,w,h}=setupCanvas(document.getElementById("flipChart"));
   const ax=axes(ctx,w,h);
   const x0=ax.x0,x1=ax.x1,y0=ax.y0,y1=ax.y1;
   const vals=pre.calibration.flip_dist;
