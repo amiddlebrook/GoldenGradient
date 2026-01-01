@@ -1,0 +1,1558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Golden Gradient v2 — Probabilistic Topology, Cross-Section Flips, and Rigor Simulation</title>
+<style>
+
+        :root {
+            --gold: #D4AF37; --gold-light: #F4E4A6; --gold-dark: #996515; --gold-muted: #8B7355;
+            --bg-deep: #0D0D12; --bg-card: #141419; --bg-elevated: #1C1C24; --bg-hover: #252530;
+            --text-primary: #F0EDE6; --text-secondary: #9A9A9A; --text-muted: #5A5A5A;
+            --accent-green: #4A9B6E; --accent-red: #C45B5B; --accent-blue: #5B8DC4;
+            --accent-purple: #7B6CD9; --accent-cyan: #4FA3C4; --accent-orange: #D98A3A;
+            --dim-alpha: #4A9B6E; --dim-mu: #5B8DC4; --dim-kappa: #7B6CD9; --dim-tau: #D98A3A;
+            --long-fwd: #4A9B6E; --long-bwd: #9B4A6E; --short-tail: #D98A3A;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Source Sans 3', sans-serif; font-size: 17px; line-height: 1.75; color: var(--text-primary); background: var(--bg-deep); font-weight: 300; }
+        .container { max-width: 1000px; margin: 0 auto; padding: 4rem 2.5rem; }
+        header { text-align: center; margin-bottom: 4rem; padding-bottom: 3rem; border-bottom: 1px solid rgba(212,175,55,0.2); }
+        h1 { font-family: 'Playfair Display', serif; font-size: 3rem; color: var(--gold); margin-bottom: 0.75rem; }
+        .subtitle { font-size: 1.1rem; font-style: italic; color: var(--text-secondary); font-family: 'Playfair Display', serif; }
+        .phi-display { margin-top: 1.5rem; font-family: 'Source Code Pro', monospace; font-size: 0.85rem; color: var(--gold-muted); }
+        section { margin-bottom: 3.5rem; }
+        h2 { font-family: 'Playfair Display', serif; font-size: 1.6rem; color: var(--gold); margin-bottom: 1.25rem; padding-bottom: 0.5rem; border-bottom: 1px solid rgba(212,175,55,0.15); }
+        p { margin-bottom: 1rem; text-align: justify; }
+        em { color: var(--gold-light); }
+        .math-block { background: var(--bg-card); border-left: 3px solid var(--gold); padding: 1.25rem 1.5rem; margin: 1.5rem 0; font-family: 'Source Code Pro', monospace; font-size: 0.78rem; line-height: 1.8; overflow-x: auto; border-radius: 0 4px 4px 0; white-space: pre; }
+        .theorem { background: linear-gradient(135deg, var(--bg-card), var(--bg-elevated)); border: 1px solid rgba(212,175,55,0.25); padding: 1.5rem; margin: 2rem 0; border-radius: 6px; position: relative; }
+        .theorem::before { content: attr(data-type); position: absolute; top: -0.7rem; left: 1.25rem; background: var(--bg-deep); color: var(--gold); padding: 0 0.6rem; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; font-family: 'Source Code Pro', monospace; }
+        .demo-container { background: var(--bg-card); border: 1px solid var(--bg-elevated); border-radius: 8px; padding: 1.5rem; margin: 2rem 0; }
+        .demo-controls { display: flex; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center; }
+        button { background: linear-gradient(135deg, var(--gold-dark), var(--gold)); color: var(--bg-deep); border: none; padding: 0.6rem 1.25rem; font-family: 'Source Code Pro', monospace; font-size: 0.75rem; font-weight: 600; cursor: pointer; border-radius: 4px; text-transform: uppercase; }
+        button:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(212,175,55,0.3); }
+        select { background: var(--bg-elevated); color: var(--text-primary); border: 1px solid var(--bg-hover); padding: 0.5rem; font-family: 'Source Code Pro', monospace; font-size: 0.75rem; border-radius: 4px; }
+        .demo-chart { background: var(--bg-elevated); border-radius: 6px; overflow: hidden; margin: 1rem 0; }
+        .demo-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 0.4rem; margin-top: 1rem; }
+        .stat-box { background: var(--bg-elevated); padding: 0.5rem; border-radius: 6px; text-align: center; border: 1px solid transparent; }
+        .stat-box.highlight { border-color: rgba(212,175,55,0.3); }
+        .stat-box.long-fwd { border-color: var(--long-fwd); }
+        .stat-box.long-bwd { border-color: var(--long-bwd); }
+        .stat-box.short-tail { border-color: var(--short-tail); }
+        .stat-value { font-family: 'Source Code Pro', monospace; font-size: 0.9rem; font-weight: 500; color: var(--gold); }
+        .stat-value.gd { color: var(--accent-red); }
+        .stat-value.momentum { color: var(--accent-purple); }
+        .stat-value.rmsprop { color: var(--accent-cyan); }
+        .stat-value.adam { color: var(--accent-orange); }
+        .stat-label { font-size: 0.5rem; color: var(--text-secondary); margin-top: 0.15rem; text-transform: uppercase; }
+        .dimension-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1.5rem 0; }
+        .dimension-box { background: var(--bg-elevated); border-radius: 8px; padding: 1rem; text-align: center; border: 2px solid transparent; }
+        .dimension-box.alpha { border-color: var(--dim-alpha); }
+        .dimension-box.mu { border-color: var(--dim-mu); }
+        .dimension-box.kappa { border-color: var(--dim-kappa); }
+        .dimension-box.tau { border-color: var(--dim-tau); }
+        .dimension-box .symbol { font-size: 1.4rem; font-family: 'Playfair Display', serif; }
+        .dimension-box .name { font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; margin-top: 0.25rem; }
+        .dimension-box .desc { font-size: 0.65rem; color: var(--text-muted); margin-top: 0.5rem; }
+        .state-matrix { display: grid; grid-template-columns: repeat(8, 1fr); gap: 3px; margin: 1rem 0; }
+        .state-cell { aspect-ratio: 1; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-family: 'Source Code Pro', monospace; font-size: 0.5rem; color: var(--bg-deep); font-weight: 600; }
+        footer { margin-top: 4rem; padding-top: 2rem; border-top: 1px solid var(--bg-elevated); text-align: center; color: var(--text-muted); font-size: 0.85rem; }
+        footer .phi-symbol { font-size: 1.5rem; color: var(--gold); margin-bottom: 0.5rem; }
+        @media (max-width: 768px) { .container { padding: 2rem 1.25rem; } h1 { font-size: 2rem; } .dimension-grid { grid-template-columns: repeat(2, 1fr); } .state-matrix { grid-template-columns: repeat(4, 1fr); } }
+    
+
+/* --- Extensions to GG2 style for paper-grade blocks --- */
+.arxiv-meta {
+  display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:10px;
+}
+.badge2 {
+  border:1px solid rgba(212,175,55,.30);
+  background:rgba(212,175,55,.07);
+  color:var(--gold-light);
+  padding:6px 10px;
+  border-radius:999px;
+  font-weight:800;
+  font-size:.92rem;
+}
+.note {
+  border-left:3px solid rgba(212,175,55,.55);
+  padding:10px 12px;
+  background:rgba(212,175,55,.06);
+  border-radius:10px;
+  color:var(--text-secondary);
+}
+.kpiGrid {
+  display:grid;
+  grid-template-columns:repeat(6,minmax(0,1fr));
+  gap:10px;
+  margin-top:12px;
+}
+@media(max-width:1000px){ .kpiGrid{grid-template-columns:repeat(3,minmax(0,1fr));} }
+.kpi {
+  background:rgba(255,255,255,.03);
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:14px;
+  padding:10px;
+}
+.kpi .v{font-weight:900; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;}
+.kpi .l{color:var(--text-secondary); font-size:.9rem; margin-top:4px;}
+.split {
+  display:grid; grid-template-columns:1.05fr .95fr; gap:18px; align-items:start;
+}
+@media(max-width:1000px){ .split{grid-template-columns:1fr;} }
+.canvasCard {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 18px;
+  padding: 16px;
+}
+.legendRow {
+  display:flex; flex-wrap:wrap; gap:12px; align-items:center; color:var(--text-secondary);
+  font-size:.95rem;
+}
+.dot{width:10px;height:10px;border-radius:3px;display:inline-block}
+.tabs {
+  display:flex; flex-wrap:wrap; gap:10px; margin-top:10px;
+}
+.tabBtn {
+  cursor:pointer;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.02);
+  color:var(--text-secondary);
+  padding:8px 12px;
+  border-radius:999px;
+  font-weight:900;
+}
+.tabBtn.active {
+  border-color:rgba(212,175,55,.35);
+  background:rgba(212,175,55,.08);
+  color:var(--gold-light);
+}
+.hidden{display:none}
+pre.code {
+  white-space:pre-wrap;
+  word-break:break-word;
+  background:rgba(0,0,0,.25);
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:14px;
+  padding:14px;
+  color:#d7e6ff;
+}
+.small {
+  font-size:.95rem;
+  color:var(--text-secondary);
+}
+hr.sep {
+  border:none;
+  height:1px;
+  background:rgba(255,255,255,.10);
+  margin:16px 0;
+}
+.heatgrid {
+  display:grid;
+  grid-template-columns:repeat(16,1fr);
+  gap:6px;
+}
+.cell {
+  aspect-ratio:1;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.10);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:900;
+  color:#081423;
+  font-size:.85rem;
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+  <header class="header">
+    <h1 class="title">Golden Gradient v2: Probabilistic Topology Navigation</h1>
+    <p class="subtitle">
+      GG2-style narrative + arXiv-grade formalism + a rigor simulation comparing GG-Topo vs multiple baselines under equal evaluation budgets.
+      This document treats Golden Search as a <b>frequency / distribution</b> over correctness and formalizes
+      <b>cross-sectional flip manifolds</b> induced by higher-dimensional orthogonality.
+    </p>
+
+    <div class="arxiv-meta">
+      <span class="badge2">φ=(1+√5)/2≈1.618</span>
+      <span class="badge2">hi=1/φ≈0.618</span>
+      <span class="badge2">lo=1/φ²≈0.382</span>
+      <span class="badge2">VERIFY cost=2 evals</span>
+      <span class="badge2">No oracle leakage</span>
+      <span class="badge2">Eval-budget fair</span>
+    </div>
+  </header>
+
+  <section class="section">
+    <h2 class="section-title">I. The Core Insight (GG2 minimum)</h2>
+    <p>
+      Gradient methods assume local direction is reliable. In the regimes you care about, direction is a <b>random variable</b>:
+      a process that produces <b>long tails</b> (corridors) where one direction stays correct for many steps, and
+      <b>short-tail boundary bands</b> where direction flips frequently. Golden Gradient reframes optimization as
+      <b>navigation on a probabilistic topology</b>.
+    </p>
+    <div class="note">
+      <b>Key claim:</b> Golden search is not a one-off threshold. It is a <b>mass partition</b> of a correctness distribution.
+      Under higher-dimensional orthogonality, the probability field admits <b>cross-sections</b> where the expected optimal direction flips.
+      Sparse verification anchors the belief field near these cross-sections.
+    </div>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">II. Probabilistic Topology (formal definition)</h2>
+    <p>
+      Let <span class="mono">G=(V,E)</span> be a topology over regimes (“places”). At each node <span class="mono">v∈V</span> and layer
+      <span class="mono">ℓ∈{1..L}</span>, define a Bernoulli variable indicating whether the forward proposal improves more than the backward proposal:
+    </p>
+<pre class="code mono">
+Y_{v,ℓ} = 1   if   Δ_fwd(v,ℓ) ≥ Δ_bwd(v,ℓ)
+        = 0   otherwise
+
+p_{v,ℓ} = P(Y_{v,ℓ}=1 | v,ℓ)
+</pre>
+    <p>
+      Interpret <span class="mono">p_{v,ℓ}</span> as a <b>frequency / distribution over repeated encounters</b>. Corridors are regions where
+      <span class="mono">p</span> remains far from <span class="mono">0.5</span>, while boundary bands are where mass concentrates near <span class="mono">0.5</span>.
+      This is where “prediction-only navigation” using prior tails becomes legitimate: <b>state is latent</b> and encoded in topology + history.
+    </p>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">III. Golden Partition as Distributional Mass Split</h2>
+    <p>
+      Define thresholds based on the golden ratio:
+    </p>
+<pre class="code mono">
+φ = (1+√5)/2
+hi = 1/φ     ≈ 0.618
+lo = 1/φ²    ≈ 0.382
+
+Forward long-tail:   p > hi
+Backward long-tail:  p < lo
+Verify band:         lo ≤ p ≤ hi
+</pre>
+    <p>
+      This partitions probability mass into <b>two actionable long tails</b> and a <b>minimal ambiguity band</b>.
+      The decision object is not p itself, but posterior mass P(p&gt;hi) and P(p&lt;lo).
+    </p>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">IV. Orthogonality ⇒ Cross-sectional Flip Manifolds</h2>
+    <p>
+      With higher-dimensional orthogonality (independent factors modulating correctness), p becomes a field: p(v,ℓ).
+      A <b>flip cross-section</b> is the locus where the expected advantage changes sign:
+    </p>
+<pre class="code mono">
+M_ℓ = { v ∈ V : p_{v,ℓ} = 0.5 }
+
+More generally (cost-aware):
+M_ℓ = { v :  E[Δ_fwd | v,ℓ] - E[Δ_bwd | v,ℓ] = 0  }
+</pre>
+    <p>
+      These are junctions between corridors. Golden Gradient places these junctions inside the verify band more often than corridor nodes,
+      meaning verification is <b>sparse and targeted</b>.
+    </p>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">V. The 16-State Decision Matrix (GG2 mapping)</h2>
+    <p>
+      GG2’s 16-state matrix is a <b>coordinate chart</b> on the topology. In this implementation we use a 4-bit orthogonal code
+      (a 4D hypercube graph) to represent orthogonal axes. The axes can be interpreted as:
+      α (momentum-consistency), μ (scale regime), κ (curvature change), τ (phase/period).
+      This is a chart: the topology is the object, the bits are one parameterization.
+    </p>
+    <div class="note">
+      <b>Important:</b> GG-Topo does not require explicit “state features” in principle.
+      It can infer state as a belief over nodes via topology + tails. The simulation uses explicit node IDs to keep evaluation strict.
+    </div>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">VI. Adaptive Learning (no oracle leakage)</h2>
+    <p>
+      Each node-layer holds a Beta belief:
+    </p>
+<pre class="code mono">
+p_{v,ℓ} ~ Beta(A_{v,ℓ}, B_{v,ℓ}), initialized A=B=1.
+
+VERIFY returns y∈{0,1} by evaluating both directions.
+Update only on VERIFY:
+  A ← A + y
+  B ← B + (1-y)
+
+No-oracle: if we don't verify, we do NOT update (we didn't observe the counterfactual).
+</pre>
+    <p>
+      Probabilistic topology inference is approximated by neighbor smoothing (“message passing”):
+    </p>
+<pre class="code mono">
+Ā_{v,ℓ} = (1-λ) A_{v,ℓ} + (λ/deg(v)) Σ_{u∈N(v)} A_{u,ℓ}
+B̂_{v,ℓ} = (1-λ) B_{v,ℓ} + (λ/deg(v)) Σ_{u∈N(v)} B_{u,ℓ}
+</pre>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">VII. Policy (cost-aware, distributional)</h2>
+<pre class="code mono">
+Estimate posterior mass via Monte Carlo samples from Beta:
+  q_hi = P(p > hi)
+  q_lo = P(p < lo)
+
+With confidence δ:
+  if q_hi > 1-δ:  move forward   (cost 1)
+  elif q_lo > 1-δ: move backward (cost 1)
+  else:            VERIFY        (cost 2)
+
+Layer selection:
+  score_ℓ = ((max(p̂,1-p̂)-0.5)/cost) × η_ℓ
+  pick ℓ with max score_ℓ
+</pre>
+    <p class="small">
+      This yields “multiple long and short tails with different probabilities” across layers, matching your requirement.
+    </p>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">VIII. Interactive Demonstration (Rigorous Simulation)</h2>
+    <p class="subtitle">
+      Runs GG-Topo and multiple baselines under identical evaluation budgets, plots mean cumulative improvement ±95% CI,
+      shows calibration, and highlights flip cross-sections.
+    </p>
+
+    <div class="split">
+      <div class="canvasCard">
+        <div class="controls" style="margin-bottom:10px">
+          <button class="btn primary" id="runBtn">Run experiment</button>
+          <button class="btn" id="stopBtn" disabled>Stop</button>
+          <button class="btn" id="resetBtn">Reset</button>
+
+          <label style="margin-left:auto;">Budget (evals)
+            <input id="budget" type="number" min="200" step="200" value="1200" style="width:120px;margin-left:6px">
+          </label>
+          <label>Seeds
+            <input id="seeds" type="number" min="10" step="10" value="50" style="width:90px;margin-left:6px">
+          </label>
+          <label>Layers
+            <select id="layers" style="margin-left:6px">
+              <option value="3" selected>3</option>
+              <option value="5">5</option>
+            </select>
+          </label>
+          <label>Noise σ
+            <select id="noise" style="margin-left:6px">
+              <option value="0.10">0.10</option>
+              <option value="0.25" selected>0.25</option>
+              <option value="0.40">0.40</option>
+              <option value="0.55">0.55</option>
+            </select>
+          </label>
+          <label>δ
+            <select id="delta" style="margin-left:6px">
+              <option value="0.05">0.05</option>
+              <option value="0.10" selected>0.10</option>
+              <option value="0.20">0.20</option>
+            </select>
+          </label>
+          <label>MC
+            <select id="mc" style="margin-left:6px">
+              <option value="80" selected>80</option>
+              <option value="150">150</option>
+              <option value="250">250</option>
+            </select>
+          </label>
+          <label>Checkpoints
+            <select id="ckpt" style="margin-left:6px">
+              <option value="10">10</option>
+              <option value="20" selected>20</option>
+              <option value="40">40</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="kpiGrid" id="kpi"></div>
+
+        <div class="tabs">
+          <button class="tabBtn active" data-tab="res">Results</button>
+          <button class="tabBtn" data-tab="proto">Protocol</button>
+          <button class="tabBtn" data-tab="algo">Algorithm</button>
+        </div>
+
+        <div id="tab-res">
+          <div class="small mono" style="display:flex;justify-content:space-between;gap:10px;margin-top:10px">
+            <div><b>Primary:</b> cumulative improvement vs eval budget (±95% CI)</div>
+            <div id="status">Ready (click Run)</div>
+          </div>
+          <div class="plot" style="margin-top:10px"><canvas id="mainChart" height="280"></canvas></div>
+
+          <div class="legendRow" style="margin-top:10px">
+            <span><span class="dot" style="background:var(--gold)"></span> GG-Topo</span>
+            <span><span class="dot" style="background:rgba(212,175,55,.55)"></span> GG-Local</span>
+            <span><span class="dot" style="background:#3ec7d3"></span> Thompson</span>
+            <span><span class="dot" style="background:#9b7bff"></span> UCB</span>
+            <span><span class="dot" style="background:#ffb020"></span> Always-Verify</span>
+            <span><span class="dot" style="background:rgba(232,238,252,.75)"></span> Always-Forward</span>
+            <span><span class="dot" style="background:rgba(241,70,104,.85)"></span> Always-Backward</span>
+            <span><span class="dot" style="background:rgba(255,255,255,.32)"></span> Random-Verify</span>
+          </div>
+
+          <div class="split" style="margin-top:14px">
+            <div class="plot"><canvas id="calChart" height="260"></canvas></div>
+            <div class="plot"><canvas id="flipChart" height="260"></canvas></div>
+          </div>
+          <div class="small" style="display:flex;justify-content:space-between;margin-top:6px">
+            <span><b>Calibration:</b> posterior mean vs true p̄ by node</span>
+            <span><b>Flip cross-sections:</b> nodes closest to p̄=0.5</span>
+          </div>
+        </div>
+
+        <div id="tab-proto" class="hidden">
+          <p class="small">
+            <b>Rigor checklist:</b> (1) equal evaluation budgets, (2) VERIFY costs 2 evals for all methods,
+            (3) no updates without VERIFY (no oracle leakage), (4) shared topology across methods, (5) 95% CI across seeds.
+          </p>
+<pre class="code mono">
+Environment:
+  f(x) = 0.5 (x-x*)^2, x*=0
+  g_true = x-x*
+  g_obs = ε g_true + σ N(0,1),   ε=+1 w.p. p_{v,ℓ} else -1
+
+Topology:
+  V = 16 nodes (4D hypercube), edges connect Hamming-distance-1 neighbors.
+  p_{v,ℓ} built to create corridors and shifting cross-sections across layers.
+
+Baselines:
+  Always-Forward, Always-Backward, Always-Verify,
+  Random-Verify (verify-rate matched to GG-Topo),
+  Thompson, UCB, GG-Local (no topology propagation).
+</pre>
+        </div>
+
+        <div id="tab-algo" class="hidden">
+<pre class="code mono">
+GG-Topo step:
+  1) Identify current node v.
+  2) For each layer ℓ:
+       smooth Beta(Ā,B̂) with λ
+       estimate q_hi=P(p>hi), q_lo=P(p<lo)
+       choose forward/backward/verify by δ
+       score by edge-per-eval × η_ℓ
+  3) Choose layer with best score.
+  4) Execute; update only if VERIFY.
+</pre>
+        </div>
+      </div>
+
+      <div class="canvasCard">
+        <h3 style="margin:0 0 8px">True Probability Topology</h3>
+        <p class="small">Green=forward corridor (p̄&gt;hi), Magenta=backward corridor (p̄&lt;lo), Orange=verify band.</p>
+        <div id="heat"></div>
+        <hr class="sep"/>
+        <h3 style="margin:0 0 8px">Per-Layer Cross-sections (multi-tail)</h3>
+        <p class="small">Different layers induce different long/short tails and different flip cross-sections.</p>
+        <div id="heatLayers"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">IX. Why This Works (mechanism-level)</h2>
+    <ul class="bullet-list">
+      <li><b>Corridor riding:</b> act when posterior mass is in a long tail (p&gt;hi or p&lt;lo).</li>
+      <li><b>Junction disambiguation:</b> verify inside the short band (lo≤p≤hi) to prevent drift.</li>
+      <li><b>Topology leverage:</b> propagate beliefs across neighbors so you can predict Z from A/B even with sparse revisits.</li>
+      <li><b>Multi-layer tails:</b> layers provide different tail lengths/probabilities; selecting ℓ is a second navigation axis.</li>
+    </ul>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">X. Limitations and Next Steps</h2>
+    <p class="small">
+      This simulation isolates the decision mechanics. For publication-grade completeness, extend to:
+      (a) nonconvex objectives, (b) higher-dimensional x, (c) nonstationary p fields, (d) explicit cost models, (e) empirical workloads.
+      The current code already supports ablations via λ, δ, σ, L, budget, and seed count.
+    </p>
+  </section>
+
+  
+<section class="section">
+  <h2 class="section-title">XI. Full Benchmark (Real Data + Visualizations)</h2>
+  <div class="note">
+    Main benchmark: L=5, σ=0.25, budget=3000, seeds=40, δ=0.1, λ=0.35.
+    Random-Verify matched at p=0.830.
+  </div>
+
+  <h3 class="section-title" style="font-size:1.25rem;margin-top:14px">Figure 1 — Cumulative improvement vs evaluation budget (±95% CI)</h3>
+  <div class="plot"><canvas id="fig_main" height="360"></canvas></div>
+
+  <h3 class="section-title" style="font-size:1.25rem;margin-top:18px">Table 1 — Summary</h3>
+  
+<div class="table-wrap">
+<table class="table">
+<thead><tr><th>Method</th><th>Final mean</th><th>VERIFY rate</th><th>VERIFY count</th><th>IQR</th><th>5–95%</th></tr></thead>
+<tbody><tr><td class='mono'>GG-Topo</td><td class='mono'>1.3899</td><td class='mono'>0.889</td><td class='mono'>1343.6</td><td class='mono'>0.208 / 0.932 / 2.633</td><td class='mono'>0.009 … 3.691</td></tr><tr><td class='mono'>GG-Local</td><td class='mono'>1.1625</td><td class='mono'>0.536</td><td class='mono'>925.9</td><td class='mono'>0.135 / 0.570 / 1.887</td><td class='mono'>0.019 … 4.019</td></tr><tr><td class='mono'>Thompson</td><td class='mono'>1.5601</td><td class='mono'>0.002</td><td class='mono'>5.5</td><td class='mono'>0.342 / 1.596 / 2.405</td><td class='mono'>0.021 … 3.463</td></tr><tr><td class='mono'>UCB</td><td class='mono'>1.4470</td><td class='mono'>0.000</td><td class='mono'>0.0</td><td class='mono'>0.472 / 1.364 / 2.264</td><td class='mono'>0.019 … 3.192</td></tr><tr><td class='mono'>Always-Verify</td><td class='mono'>1.3466</td><td class='mono'>1.000</td><td class='mono'>1500.0</td><td class='mono'>0.432 / 0.846 / 2.047</td><td class='mono'>0.065 … 3.807</td></tr><tr><td class='mono'>Always-Forward</td><td class='mono'>1.4812</td><td class='mono'>0.000</td><td class='mono'>0.0</td><td class='mono'>0.134 / 1.195 / 2.824</td><td class='mono'>0.011 … 3.888</td></tr><tr><td class='mono'>Always-Backward</td><td class='mono'>1.8707</td><td class='mono'>0.000</td><td class='mono'>0.0</td><td class='mono'>0.507 / 1.917 / 3.268</td><td class='mono'>0.010 … 3.978</td></tr><tr><td class='mono'>Random-Verify</td><td class='mono'>1.1508</td><td class='mono'>0.827</td><td class='mono'>1357.5</td><td class='mono'>0.241 / 0.582 / 1.675</td><td class='mono'>0.017 … 3.947</td></tr></tbody>
+</table>
+</div>
+
+
+  <div class="split" style="margin-top:14px">
+    <div><h3 class="section-title" style="font-size:1.25rem">Figure 2 — Verification counts</h3><div class="plot"><canvas id="fig_verify" height="320"></canvas></div></div>
+    <div><h3 class="section-title" style="font-size:1.25rem">Figure 3 — Final distribution (quantiles)</h3><div class="plot"><canvas id="fig_dist" height="320"></canvas></div></div>
+  </div>
+
+  <div class="split" style="margin-top:14px">
+    <div><h3 class="section-title" style="font-size:1.25rem">Figure 4 — Calibration</h3><div class="plot"><canvas id="fig_cal" height="320"></canvas></div></div>
+    <div><h3 class="section-title" style="font-size:1.25rem">Figure 5 — Flip cross-sections</h3><div class="plot"><canvas id="fig_flip" height="320"></canvas></div></div>
+  </div>
+
+  <h3 class="section-title" style="font-size:1.25rem;margin-top:18px">Figure 6 — True probability topology (per-layer)</h3>
+  <div class="split">
+    <div class="plot"><canvas id="fig_p_layer0" height="220"></canvas></div>
+    <div class="plot"><canvas id="fig_p_layer1" height="220"></canvas></div>
+  </div>
+  <div class="split" style="margin-top:10px">
+    <div class="plot"><canvas id="fig_p_layer2" height="220"></canvas></div>
+    <div class="plot"><canvas id="fig_p_layer3" height="220"></canvas></div>
+  </div>
+  <div class="plot" style="margin-top:10px"><canvas id="fig_p_layer4" height="220"></canvas></div>
+
+  <h3 class="section-title" style="font-size:1.25rem;margin-top:18px">Figure 7 — Suite (6 configs) dashboard</h3>
+  <div class="controls" style="margin-bottom:10px">
+    <label>Config
+      <select id="suite_pick" style="margin-left:6px"></select>
+    </label>
+    <span class="badge2" id="suite_meta"></span>
+  </div>
+  <div class="plot"><canvas id="fig_suite" height="340"></canvas></div>
+</section>
+
+<footer class="footer">
+    <p>
+      <b>Reproducibility:</b> open this single HTML file locally. The simulation is fully self-contained (no CDN).
+      All randomness is seeded; comparisons share the same topology.
+    </p>
+  </footer>
+</div>
+
+<script>
+(function(){
+  const btns=[...document.querySelectorAll(".tabBtn")];
+  const tabs={res:"tab-res", proto:"tab-proto", algo:"tab-algo"};
+  btns.forEach(b=>b.addEventListener("click",()=>{
+    btns.forEach(x=>x.classList.remove("active"));
+    b.classList.add("active");
+    const key=b.dataset.tab;
+    for(const k in tabs){
+      document.getElementById(tabs[k]).classList.toggle("hidden", k!==key);
+    }
+  }));
+})();
+</script>
+
+<script>
+
+const PHI=(1+Math.sqrt(5))/2;
+const HI=1/PHI;
+const LO=1/(PHI*PHI);
+
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const mean=a=>a.reduce((s,v)=>s+v,0)/Math.max(1,a.length);
+
+function fmt(x,d=3){
+  if(!isFinite(x)) return "—";
+  if(Math.abs(x)>=1000) return x.toFixed(0);
+  return x.toFixed(d);
+}
+function hash32(str){
+  let h=2166136261>>>0;
+  for(let i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=Math.imul(h,16777619); }
+  return h>>>0;
+}
+function makeRng(seed){
+  let t=seed>>>0;
+  return function(){
+    t += 0x6D2B79F5;
+    let r=Math.imul(t^(t>>>15), t|1);
+    r^=r+Math.imul(r^(r>>>7), r|61);
+    return ((r^(r>>>14))>>>0)/4294967296;
+  }
+}
+function randn(rng){
+  let u=0,v=0; while(u===0)u=rng(); while(v===0)v=rng();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+function gammaSample(alpha,rng){
+  if(alpha<1){
+    const u=rng();
+    return gammaSample(alpha+1,rng)*Math.pow(u,1/alpha);
+  }
+  const d=alpha-1/3;
+  const c=1/Math.sqrt(9*d);
+  for(;;){
+    let x=randn(rng);
+    let v=1+c*x;
+    if(v<=0) continue;
+    v=v*v*v;
+    const u=rng();
+    if(u<1-0.0331*(x*x)*(x*x)) return d*v;
+    if(Math.log(u)<0.5*x*x + d*(1-v+Math.log(v))) return d*v;
+  }
+}
+function betaSample(a,b,rng){
+  const x=gammaSample(a,rng), y=gammaSample(b,rng);
+  return x/(x+y);
+}
+function posteriorMasses(a,b,mc,rng){
+  let gt=0, lt=0, sm=0;
+  for(let i=0;i<mc;i++){
+    const p=betaSample(a,b,rng);
+    sm+=p;
+    if(p>HI) gt++;
+    if(p<LO) lt++;
+  }
+  return {pMean:sm/mc, massHi:gt/mc, massLo:lt/mc};
+}
+function neighbors16(){
+  const N=Array.from({length:16},()=>[]);
+  for(let v=0;v<16;v++){
+    for(let b=0;b<4;b++) N[v].push(v^(1<<b));
+  }
+  return N;
+}
+const NBR=neighbors16();
+
+function makeEnvironment({layers, noise, rng}){
+  const xStar=0;
+  const baseStep=0.16;
+  const steps=[];
+  for(let l=0;l<layers;l++){
+    const m=Math.pow(2,(l-(layers-1)/2)/1.55);
+    steps.push(baseStep*m);
+  }
+  const p=Array.from({length:16},()=>Array(layers).fill(0));
+  const w=[0.33,0.11,0.21,0.10];
+  const base=0.48;
+  for(let v=0;v<16;v++){
+    const bits=[(v>>3)&1,(v>>2)&1,(v>>1)&1,(v)&1];
+    const lin=base + bits.reduce((acc,b,i)=>acc + (b? w[i] : -0.55*w[i]),0);
+    for(let l=0;l<layers;l++){
+      const layerBias=(l-(layers-1)/2)*0.07;
+      const ripple=0.06*Math.sin((v+1)*(l+1)*0.77) + 0.03*Math.cos((v+3)*(l+2)*0.41);
+      p[v][l]=clamp(lin+layerBias+ripple,0.05,0.95);
+    }
+  }
+  function f(x){ return 0.5*(x-xStar)*(x-xStar); }
+  function gTrue(x){ return (x-xStar); }
+  function gObs(x,v,l){
+    const gt=gTrue(x);
+    const eps=(rng()<p[v][l])?+1:-1;
+    return eps*gt + noise*randn(rng);
+  }
+  return {f,gObs,p,steps};
+}
+
+function makeStateComputer(){
+  let t=0;
+  const period=20;
+  let dx1=0, dx2=0;
+  let absXema=1.0, absDxEma=0.5;
+  return {
+    compute(x){
+      const absX=Math.abs(x)+1e-12;
+      absXema=0.92*absXema+0.08*absX;
+      const mu=absX/(absXema+1e-12);
+      const muBit=(mu>=LO && mu<=(HI+0.35))?1:0;
+
+      const aBit=(Math.sign(dx1)===0 || Math.sign(dx2)===0)?1:((Math.sign(dx1)===Math.sign(dx2))?1:0);
+
+      const absDx=Math.abs(dx1)+1e-12;
+      absDxEma=0.90*absDxEma+0.10*absDx;
+      const kappa=Math.abs(absDx-absDxEma);
+      const kBit=(kappa <= (0.8*absDxEma+1e-12))?1:0;
+
+      const tau=(t%period)/period;
+      const tauBit=(tau<=LO || (tau>=HI && tau<=HI+0.236))?1:0;
+
+      const v=(aBit<<3)|(muBit<<2)|(kBit<<1)|tauBit;
+      t++;
+      return {v};
+    },
+    update(dx){ dx2=dx1; dx1=dx; }
+  };
+}
+
+function makeBeliefs(layers){
+  const A=Array.from({length:16},()=>Array(layers).fill(1));
+  const B=Array.from({length:16},()=>Array(layers).fill(1));
+  return {
+    get(v,l){ return {a:A[v][l], b:B[v][l]}; },
+    update(v,l,y){ if(y) A[v][l]++; else B[v][l]++; },
+    mean(v,l){ const a=A[v][l], b=B[v][l]; return a/(a+b); },
+    smooth(v,l,lambda){
+      if(lambda<=0) return this.get(v,l);
+      let sa=0, sb=0;
+      for(const u of NBR[v]){ const g=this.get(u,l); sa+=g.a; sb+=g.b; }
+      const g0=this.get(v,l);
+      const deg=NBR[v].length;
+      const a=(1-lambda)*g0.a + (lambda/deg)*sa;
+      const b=(1-lambda)*g0.b + (lambda/deg)*sb;
+      return {a,b};
+    }
+  };
+}
+
+function chooseLayerAndAction({v,layers,steps,beliefs,delta,mc,rng,mode,lambda}){
+  const cand=[];
+  for(let l=0;l<layers;l++){
+    const {a,b} = (mode==="gg_topo") ? beliefs.smooth(v,l,lambda) : beliefs.get(v,l);
+    const masses=posteriorMasses(a,b,mc,rng);
+    let action="verify", cost=2;
+
+    if(mode==="gg_topo" || mode==="gg_local"){
+      if(masses.massHi > 1-delta){ action="forward"; cost=1; }
+      else if(masses.massLo > 1-delta){ action="backward"; cost=1; }
+      else { action="verify"; cost=2; }
+    }else if(mode==="thompson"){
+      const ps=betaSample(a,b,rng);
+      if(ps>HI){ action="forward"; cost=1; }
+      else if(ps<LO){ action="backward"; cost=1; }
+      else { action="verify"; cost=2; }
+    }else{
+      const m=a/(a+b);
+      const var=(a*b)/(((a+b)**2)*(a+b+1));
+      const bonus=Math.sqrt(Math.max(0,var))*2.2;
+      const upper=m+bonus, lower=m-bonus;
+      if(upper > HI){ action="forward"; cost=1; }
+      else if(lower < LO){ action="backward"; cost=1; }
+      else { action="verify"; cost=2; }
+    }
+
+    const pMean=masses.pMean;
+    const edge=(Math.max(pMean,1-pMean)-0.5)/cost;
+    const score=edge*steps[l];
+    cand.push({l,action,cost,score});
+  }
+  cand.sort((x,y)=>(y.score-x.score));
+  return cand[0];
+}
+
+function runOne({method, env, budget, delta, mc, lambda, rngSeed}){
+  const rng=makeRng(rngSeed);
+  const layers=env.steps.length;
+  const beliefs=makeBeliefs(layers);
+  const state=makeStateComputer();
+
+  let x=(rng()*2-1)*3.0;
+  let f=env.f(x);
+  let evals=0;
+
+  let verifyCount=0, stepCount=0;
+
+  const ckpt=window.__ckpt;
+  const checkpoints=[], cum=[];
+  let cumImp=0;
+
+  function record(){
+    if(evals%ckpt===0 || evals===budget){
+      checkpoints.push(evals);
+      cum.push(cumImp);
+    }
+  }
+  record();
+
+  while(evals<budget){
+    const {v}=state.compute(x);
+
+    let action="forward", l=Math.floor(layers/2), cost=1;
+
+    if(method==="always_verify"){
+      action="verify"; cost=2;
+    }else if(method==="always_forward"){
+      action="forward"; cost=1;
+    }else if(method==="always_backward"){
+      action="backward"; cost=1;
+    }else if(method==="random_verify"){
+      const p=window.__rvProb ?? 0.25;
+      if(rng()<p){ action="verify"; cost=2; }
+      else { action=(rng()<0.5?"forward":"backward"); cost=1; }
+    }else{
+      const mode = (method==="gg_topo") ? "gg_topo"
+                 : (method==="gg_local") ? "gg_local"
+                 : (method==="thompson") ? "thompson"
+                 : "ucb";
+      const pick=chooseLayerAndAction({v,layers,steps:env.steps,beliefs,delta,mc,rng,mode,lambda});
+      action=pick.action; l=pick.l; cost=pick.cost;
+    }
+
+    if(evals+cost>budget) break;
+
+    const step=env.steps[l];
+    const g=env.gObs(x,v,l);
+    const sgn=Math.sign(g || 1);
+    const xf=x - step*sgn;
+    const xb=x + step*sgn;
+
+    if(action==="forward"){
+      const ff=env.f(xf); evals+=1;
+      const imp=f-ff; if(imp>0){ x=xf; state.update(xf-x); f=ff; cumImp+=imp; }
+      stepCount++;
+    }else if(action==="backward"){
+      const fb=env.f(xb); evals+=1;
+      const imp=f-fb; if(imp>0){ x=xb; state.update(xb-x); f=fb; cumImp+=imp; }
+      stepCount++;
+    }else{
+      const ff=env.f(xf), fb=env.f(xb); evals+=2;
+      const y=(ff<=fb)?1:0; // label ONLY from verify (no leakage)
+      beliefs.update(v,l,y);
+      verifyCount++;
+      if(ff<fb){
+        const imp=f-ff; if(imp>0){ x=xf; state.update(xf-x); f=ff; cumImp+=imp; }
+      }else{
+        const imp=f-fb; if(imp>0){ x=xb; state.update(xb-x); f=fb; cumImp+=imp; }
+      }
+      stepCount++;
+    }
+
+    record();
+  }
+
+  return {checkpoints, cum, cumImp, verifyCount, stepCount, beliefs};
+}
+
+function setupCanvas(canvas){
+  const ctx=canvas.getContext("2d");
+  const dpr=window.devicePixelRatio||1;
+  const W=canvas.clientWidth*dpr, H=canvas.clientHeight*dpr;
+  canvas.width=W; canvas.height=H;
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.scale(dpr,dpr);
+  return {ctx, w:canvas.clientWidth, h:canvas.clientHeight};
+}
+function axes(ctx,w,h,pad=34){
+  ctx.clearRect(0,0,w,h);
+  ctx.lineWidth=1;
+  ctx.strokeStyle="rgba(255,255,255,.10)";
+  ctx.beginPath();
+  ctx.rect(pad,12,w-pad-12,h-pad-12);
+  ctx.stroke();
+  return {x0:pad,y0:h-pad,x1:w-12,y1:12};
+}
+function band(ctx, upper, lower, color){
+  ctx.fillStyle=color;
+  ctx.globalAlpha=0.12;
+  ctx.beginPath();
+  for(let i=0;i<upper.length;i++){
+    const [x,y]=upper[i];
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  }
+  for(let i=lower.length-1;i>=0;i--){
+    const [x,y]=lower[i];
+    ctx.lineTo(x,y);
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.globalAlpha=1;
+}
+function line(ctx, pts, color){
+  ctx.strokeStyle=color;
+  ctx.lineWidth=2;
+  ctx.beginPath();
+  for(let i=0;i<pts.length;i++){
+    const [x,y]=pts[i];
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+}
+function text(ctx,x,y,s,color="rgba(232,238,252,.55)",align="left"){
+  ctx.fillStyle=color;
+  ctx.font="12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
+  ctx.textAlign=align;
+  ctx.fillText(s,x,y);
+}
+
+function colorForP(p){
+  if(p>HI) return `rgba(72,199,116,${0.25+0.55*(p-HI)/(1-HI)})`;
+  if(p<LO) return `rgba(241,70,104,${0.25+0.55*(LO-p)/LO})`;
+  return `rgba(255,176,32,${0.18+0.45*(1-Math.abs(p-0.5)/0.5)})`;
+}
+function buildHeat(container, pAvg){
+  container.innerHTML="";
+  const grid=document.createElement("div");
+  grid.className="heatgrid";
+  for(let v=0;v<16;v++){
+    const d=document.createElement("div");
+    d.className="cell";
+    d.style.background=colorForP(pAvg[v]);
+    d.title=`v=${v} p̄=${pAvg[v].toFixed(3)}`;
+    d.textContent=v.toString(16).toUpperCase();
+    grid.appendChild(d);
+  }
+  container.appendChild(grid);
+}
+function buildHeatLayers(container, p){
+  container.innerHTML="";
+  for(let l=0;l<p[0].length;l++){
+    const head=document.createElement("div");
+    head.className="tiny mono";
+    head.style.margin="6px 0 6px";
+    head.textContent=`Layer ℓ=${l+1}`;
+    container.appendChild(head);
+
+    const grid=document.createElement("div");
+    grid.className="heatgrid";
+    for(let v=0;v<16;v++){
+      const d=document.createElement("div");
+      d.className="cell";
+      d.style.background=colorForP(p[v][l]);
+      d.title=`v=${v} ℓ=${l+1} p=${p[v][l].toFixed(3)}`;
+      d.textContent=v.toString(16).toUpperCase();
+      grid.appendChild(d);
+    }
+    container.appendChild(grid);
+
+    const hr=document.createElement("div");
+    hr.className="hr"; hr.style.margin="10px 0";
+    container.appendChild(hr);
+  }
+}
+
+function computeCI(seriesBySeed){
+  const S=seriesBySeed.length, T=seriesBySeed[0].length;
+  const m=new Array(T).fill(0), se=new Array(T).fill(0);
+  for(let t=0;t<T;t++){
+    let sm=0; for(let s=0;s<S;s++) sm+=seriesBySeed[s][t];
+    const mu=sm/S; m[t]=mu;
+    let v=0; for(let s=0;s<S;s++){ const d=seriesBySeed[s][t]-mu; v+=d*d; }
+    const varr=v/Math.max(1,(S-1));
+    se[t]=Math.sqrt(varr/S);
+  }
+  return {m, lo:m.map((x,i)=>x-1.96*se[i]), hi:m.map((x,i)=>x+1.96*se[i])};
+}
+
+function drawMain({checkpoints, curves, colors, labels}){
+  const {ctx,w,h}=setupCanvas(document.getElementById("mainChart"));
+  const ax=axes(ctx,w,h);
+  const xMin=checkpoints[0], xMax=checkpoints[checkpoints.length-1];
+  let yMax=0;
+  for(const c of curves) yMax=Math.max(yMax, ...c.hi);
+  yMax=(yMax<=0)?1:yMax*1.05;
+
+  for(let i=0;i<=5;i++){
+    const xv=xMin+(xMax-xMin)*i/5;
+    const x=ax.x0+(ax.x1-ax.x0)*(xv-xMin)/(xMax-xMin);
+    ctx.strokeStyle="rgba(255,255,255,.07)";
+    ctx.beginPath(); ctx.moveTo(x,ax.y0); ctx.lineTo(x,ax.y1); ctx.stroke();
+    text(ctx,x,ax.y0+18,`${Math.round(xv)}`,"rgba(232,238,252,.55)","center");
+  }
+  for(let i=0;i<=5;i++){
+    const yv=yMax*i/5;
+    const y=ax.y0-(ax.y0-ax.y1)*(yv/yMax);
+    ctx.strokeStyle="rgba(255,255,255,.07)";
+    ctx.beginPath(); ctx.moveTo(ax.x0,y); ctx.lineTo(ax.x1,y); ctx.stroke();
+    text(ctx,ax.x0-8,y+4,`${fmt(yv,2)}`,"rgba(232,238,252,.55)","right");
+  }
+  text(ctx,(ax.x0+ax.x1)/2,ax.y0+30,"Evaluation budget (evals)","rgba(232,238,252,.65)","center");
+  text(ctx,ax.x0,ax.y1-10,"Cumulative improvement","rgba(232,238,252,.65)","left");
+
+  curves.forEach((c,idx)=>{
+    const upper=[], lower=[], mid=[];
+    for(let i=0;i<checkpoints.length;i++){
+      const xv=checkpoints[i];
+      const x=ax.x0+(ax.x1-ax.x0)*(xv-xMin)/(xMax-xMin);
+      const yU=ax.y0-(ax.y0-ax.y1)*(c.hi[i]/yMax);
+      const yL=ax.y0-(ax.y0-ax.y1)*(c.lo[i]/yMax);
+      const yM=ax.y0-(ax.y0-ax.y1)*(c.m[i]/yMax);
+      upper.push([x,yU]); lower.push([x,yL]); mid.push([x,yM]);
+    }
+    band(ctx, upper, lower, colors[idx]);
+    line(ctx, mid, colors[idx]);
+  });
+}
+
+function drawCalibration({truePavg, estPavg}){
+  const {ctx,w,h}=setupCanvas(document.getElementById("calChart"));
+  const ax=axes(ctx,w,h);
+  const x0=ax.x0, x1=ax.x1, y0=ax.y0, y1=ax.y1;
+
+  for(let i=0;i<=5;i++){
+    const t=i/5;
+    const x=x0+(x1-x0)*t;
+    const y=y0-(y0-y1)*t;
+    ctx.strokeStyle="rgba(255,255,255,.06)";
+    ctx.beginPath(); ctx.moveTo(x,y0); ctx.lineTo(x,y1); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x0,y); ctx.lineTo(x1,y); ctx.stroke();
+    text(ctx,x,y0+18,`${t.toFixed(1)}`,"rgba(232,238,252,.55)","center");
+    text(ctx,x0-8,y+4,`${t.toFixed(1)}`,"rgba(232,238,252,.55)","right");
+  }
+  ctx.strokeStyle="rgba(212,175,55,.35)";
+  ctx.setLineDash([6,5]);
+  ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.stroke();
+  ctx.setLineDash([]);
+
+  text(ctx,(x0+x1)/2,y0+30,"Estimated posterior mean p̂","rgba(232,238,252,.65)","center");
+  text(ctx,x0,y1-10,"True p̄ (layer‑avg)","rgba(232,238,252,.65)","left");
+
+  for(let v=0;v<16;v++){
+    const x=x0+(x1-x0)*estPavg[v];
+    const y=y0-(y0-y1)*truePavg[v];
+    ctx.fillStyle="rgba(62,199,211,.85)";
+    ctx.beginPath(); ctx.arc(x,y,4,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle="rgba(232,238,252,.65)";
+    ctx.font="10px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
+    ctx.fillText(v.toString(16).toUpperCase(), x+6, y-6);
+  }
+}
+
+function drawFlip({pAvg}){
+  const {ctx,w,h}=setupCanvas(document.getElementById("flipChart"));
+  const ax=axes(ctx,w,h);
+  const x0=ax.x0,x1=ax.x1,y0=ax.y0,y1=ax.y1;
+
+  const vals=pAvg.map(p=>Math.abs(p-0.5));
+  const maxv=Math.max(...vals)*1.05;
+  const bw=(x1-x0)/16;
+
+  for(let i=0;i<=5;i++){
+    const yv=maxv*i/5;
+    const y=y0-(y0-y1)*(yv/maxv);
+    ctx.strokeStyle="rgba(255,255,255,.06)";
+    ctx.beginPath(); ctx.moveTo(x0,y); ctx.lineTo(x1,y); ctx.stroke();
+    text(ctx,x0-8,y+4,fmt(yv,3),"rgba(232,238,252,.55)","right");
+  }
+  text(ctx,(x0+x1)/2,y0+30,"Node v (hex) — smaller bars ≈ flip cross‑section","rgba(232,238,252,.65)","center");
+  text(ctx,x0,y1-10,"|p̄_v − 0.5|","rgba(232,238,252,.65)","left");
+
+  for(let v=0;v<16;v++){
+    const x=x0+v*bw+2;
+    const hbar=(y0-y1)*(vals[v]/maxv);
+    const y=y0-hbar;
+    ctx.fillStyle=colorForP(pAvg[v]);
+    ctx.globalAlpha=0.85;
+    ctx.fillRect(x,y,bw-4,hbar);
+    ctx.globalAlpha=1;
+    ctx.fillStyle="rgba(232,238,252,.7)";
+    ctx.font="10px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
+    ctx.textAlign="center";
+    ctx.fillText(v.toString(16).toUpperCase(), x+(bw-4)/2, y0+14);
+  }
+  const order=[...vals.map((v,i)=>[v,i])].sort((a,b)=>a[0]-b[0]).slice(0,3);
+  ctx.fillStyle="rgba(212,175,55,.85)";
+  ctx.font="12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
+  ctx.textAlign="left";
+  ctx.fillText(`Closest flip nodes: ${order.map(o=>o[1].toString(16).toUpperCase()).join(", ")}`, x0, y1+18);
+}
+
+let stopFlag=false;
+const els={
+  run:document.getElementById("runBtn"),
+  stop:document.getElementById("stopBtn"),
+  reset:document.getElementById("resetBtn"),
+  status:document.getElementById("status"),
+  budget:document.getElementById("budget"),
+  seeds:document.getElementById("seeds"),
+  layers:document.getElementById("layers"),
+  noise:document.getElementById("noise"),
+  delta:document.getElementById("delta"),
+  mc:document.getElementById("mc"),
+  ckpt:document.getElementById("ckpt"),
+  kpi:document.getElementById("kpi"),
+  heat:document.getElementById("heat"),
+  heatLayers:document.getElementById("heatLayers"),
+};
+
+function setTabs(){
+  const tabs=[...document.querySelectorAll(".tab")];
+  tabs.forEach(t=>{
+    t.addEventListener("click",()=>{
+      tabs.forEach(x=>x.classList.remove("active"));
+      t.classList.add("active");
+      const name=t.dataset.tab;
+      document.getElementById("tab-results").classList.toggle("hide", name!=="results");
+      document.getElementById("tab-paper").classList.toggle("hide", name!=="paper");
+      document.getElementById("tab-methods").classList.toggle("hide", name!=="methods");
+    });
+  });
+}
+setTabs();
+
+function kpiBox(v,l){ return `<div class="box"><div class="v mono">${v}</div><div class="l">${l}</div></div>`; }
+
+function reset(){
+  stopFlag=false;
+  els.status.textContent="Ready (click Run)";
+  els.kpi.innerHTML="";
+  for(const id of ["mainChart","calChart","flipChart"]){
+    const c=document.getElementById(id);
+    const {ctx,w,h}=setupCanvas(c);
+    ctx.clearRect(0,0,w,h);
+  }
+}
+els.reset.addEventListener("click", reset);
+
+els.stop.addEventListener("click", ()=>{
+  stopFlag=true;
+  els.status.textContent="Stopping…";
+  els.stop.disabled=true;
+});
+
+async function run(){
+  stopFlag=false;
+  els.run.disabled=true;
+  els.stop.disabled=false;
+  els.status.textContent="Running…";
+
+  const budget=+els.budget.value;
+  const seeds=+els.seeds.value;
+  const layers=+els.layers.value;
+  const noise=+els.noise.value;
+  const delta=+els.delta.value;
+  const mc=+els.mc.value;
+  window.__ckpt=+els.ckpt.value;
+
+  const envRng=makeRng(hash32(`env|L=${layers}|σ=${noise}`));
+  const env=makeEnvironment({layers, noise, rng: envRng});
+
+  const pAvg=Array(16).fill(0);
+  for(let v=0;v<16;v++){
+    let sm=0; for(let l=0;l<layers;l++) sm+=env.p[v][l];
+    pAvg[v]=sm/layers;
+  }
+  buildHeat(els.heat, pAvg);
+  buildHeatLayers(els.heatLayers, env.p);
+
+  const methods=[
+    {key:"gg_topo", label:"GG‑Topo", color:getComputedStyle(document.documentElement).getPropertyValue("--gold").trim()},
+    {key:"gg_local", label:"GG‑Local", color:"rgba(212,175,55,.55)"},
+    {key:"thompson", label:"Thompson", color:getComputedStyle(document.documentElement).getPropertyValue("--cyan").trim()},
+    {key:"ucb", label:"UCB", color:getComputedStyle(document.documentElement).getPropertyValue("--purple").trim()},
+    {key:"always_verify", label:"Always‑Verify", color:getComputedStyle(document.documentElement).getPropertyValue("--warn").trim()},
+    {key:"always_forward", label:"Always‑Forward", color:"rgba(232,238,252,.75)"},
+    {key:"always_backward", label:"Always‑Backward", color:"rgba(241,70,104,.85)"},
+    {key:"random_verify", label:"Random‑Verify", color:"rgba(255,255,255,.32)"},
+  ];
+
+  const lambda=0.35;
+
+  // pilot verify rate for GG‑Topo to cost‑match random verify
+  const pilot=[];
+  for(let s=0;s<Math.min(10,seeds);s++){
+    const r=runOne({method:"gg_topo", env, budget, delta, mc, lambda, rngSeed:hash32(`pilot|${s}`)});
+    pilot.push(r);
+  }
+  const vr=mean(pilot.map(r=>r.verifyCount/Math.max(1,r.stepCount)));
+  window.__rvProb=clamp(vr,0.05,0.85);
+
+  const ref=runOne({method:"always_forward", env, budget, delta, mc, lambda:0, rngSeed:hash32("ref")});
+  const checkpoints=ref.checkpoints;
+  const T=checkpoints.length;
+
+  const series={}, finals={};
+
+  for(const m of methods){
+    if(stopFlag) break;
+    series[m.key]=[];
+    for(let s=0;s<seeds;s++){
+      if(stopFlag) break;
+      const seed=hash32(`${m.key}|${s}|L=${layers}|σ=${noise}`);
+      const lam=(m.key==="gg_topo")?lambda:0;
+      const r=runOne({method:m.key, env, budget, delta, mc, lambda:lam, rngSeed:seed});
+
+      const arr=new Array(T).fill(0);
+      const map=new Map(r.checkpoints.map((x,i)=>[x,i]));
+      for(let i=0;i<T;i++){
+        const idx=map.get(checkpoints[i]);
+        arr[i]=(idx!==undefined)?r.cum[idx]:r.cum[r.cum.length-1];
+      }
+      series[m.key].push(arr);
+
+      if(s%8===0){
+        els.status.textContent=`Running… ${m.label} seed ${s+1}/${seeds}`;
+        await new Promise(res=>setTimeout(res,0));
+      }
+    }
+    finals[m.key]=mean(series[m.key].map(a=>a[T-1]));
+  }
+
+  const curves=[], colors=[], labels=[];
+  for(const m of methods){
+    curves.push(computeCI(series[m.key]));
+    colors.push(m.color);
+    labels.push(m.label);
+  }
+  drawMain({checkpoints, curves, colors, labels});
+
+  // calibration from a representative GG‑Topo run
+  const rep=runOne({method:"gg_topo", env, budget, delta, mc, lambda, rngSeed:hash32("cal")});
+  const estPavg=Array(16).fill(0);
+  for(let v=0;v<16;v++){
+    let sm=0;
+    for(let l=0;l<layers;l++){
+      const g=rep.beliefs.smooth(v,l,lambda);
+      sm += g.a/(g.a+g.b);
+    }
+    estPavg[v]=sm/layers;
+  }
+  drawCalibration({truePavg:pAvg, estPavg});
+  drawFlip({pAvg});
+
+  const best=methods.map(m=>[finals[m.key],m.label]).sort((a,b)=>b[0]-a[0])[0];
+  els.kpi.innerHTML=[
+    kpiBox(fmt(best[0],3),"Best final (mean)"),
+    kpiBox(best[1],"Winner"),
+    kpiBox(fmt(finals["gg_topo"],3),"GG‑Topo final"),
+    kpiBox(fmt(finals["always_verify"],3),"Always‑Verify final"),
+    kpiBox(fmt(finals["always_forward"],3),"Always‑Forward final"),
+    kpiBox(fmt(window.__rvProb,3),"Random‑Verify p"),
+  ].join("");
+
+  els.status.textContent=stopFlag?"Stopped.":"Done.";
+  els.run.disabled=false;
+  els.stop.disabled=true;
+}
+
+els.run.addEventListener("click", run);
+reset();
+
+</script>
+
+<script>
+window.__PRECOMPUTED__ = {"meta":{"phi":1.618033988749895,"hi":0.6180339887498948,"lo":0.38196601125010515,"main_cfg":{"layers":5,"noise":0.25,"budget":3000,"seeds":40,"delta":0.1,"ckpt":100,"lambda":0.35},"rv_prob":0.8295844962191751,"suite":{"seeds":12,"delta":0.1,"lambda":0.35}},"main":{"checkpoints":[0,100,200,300,400,500,600,700,800,900,1000,1100,1200,1300,1400,1500,1600,1700,1800,1900,2000,2100,2200,2300,2400,2500,2600,2700,2800,2900,3000],"curves":{"gg_topo":{"label":"GG-Topo","mean":[0.0,1.253851230106906,1.3899324492350411,1.3899324492350411,1.3899324492350411,1.3899324492350411,1.3899324492350411,1.3899324492350411,1.3899324492350411,1.3899324492350411,1.3899324492350411,1.3899324492350411,1.3899324492350411,1.3899324492350411,1.3899324492350411,1.3899324492350411,1.3899324492350411,1.3899324492350411,1.3899324492350411,1.3899324492350411,1.3899324492350411,1.3899324492350411,1.3899324492350411,1.3899324492350411,1.3899324492350411,1.3899324492350411,1.3899324492350411,1.3899324492350411,1.3899324492350411,1.3899324492350411,1.3899324492350411],"lo":[0.0,0.8186312201964909,0.9528826992459899,0.9528826992459899,0.9528826992459899,0.9528826992459899,0.9528826992459899,0.9528826992459899,0.9528826992459899,0.9528826992459899,0.9528826992459899,0.9528826992459899,0.9528826992459899,0.9528826992459899,0.9528826992459899,0.9528826992459899,0.9528826992459899,0.9528826992459899,0.9528826992459899,0.9528826992459899,0.9528826992459899,0.9528826992459899,0.9528826992459899,0.9528826992459899,0.9528826992459899,0.9528826992459899,0.9528826992459899,0.9528826992459899,0.9528826992459899,0.9528826992459899,0.9528826992459899],"hi":[0.0,1.6890712400173211,1.8269821992240924,1.8269821992240924,1.8269821992240924,1.8269821992240924,1.8269821992240924,1.8269821992240924,1.8269821992240924,1.8269821992240924,1.8269821992240924,1.8269821992240924,1.8269821992240924,1.8269821992240924,1.8269821992240924,1.8269821992240924,1.8269821992240924,1.8269821992240924,1.8269821992240924,1.8269821992240924,1.8269821992240924,1.8269821992240924,1.8269821992240924,1.8269821992240924,1.8269821992240924,1.8269821992240924,1.8269821992240924,1.8269821992240924,1.8269821992240924,1.8269821992240924,1.8269821992240924]},"gg_local":{"label":"GG-Local","mean":[0.0,0.8296194541261718,1.0548016539403569,1.0622525947033998,1.1625014732063899,1.1625014732063899,1.1625014732063899,1.1625014732063899,1.1625014732063899,1.1625014732063899,1.1625014732063899,1.1625014732063899,1.1625014732063899,1.1625014732063899,1.1625014732063899,1.1625014732063899,1.1625014732063899,1.1625014732063899,1.1625014732063899,1.1625014732063899,1.1625014732063899,1.1625014732063899,1.1625014732063899,1.1625014732063899,1.1625014732063899,1.1625014732063899,1.1625014732063899,1.1625014732063899,1.1625014732063899,1.1625014732063899,1.1625014732063899],"lo":[0.0,0.44323725745378034,0.6642034535695465,0.6734970793776689,0.7516982313614462,0.7516982313614462,0.7516982313614462,0.7516982313614462,0.7516982313614462,0.7516982313614462,0.7516982313614462,0.7516982313614462,0.7516982313614462,0.7516982313614462,0.7516982313614462,0.7516982313614462,0.7516982313614462,0.7516982313614462,0.7516982313614462,0.7516982313614462,0.7516982313614462,0.7516982313614462,0.7516982313614462,0.7516982313614462,0.7516982313614462,0.7516982313614462,0.7516982313614462,0.7516982313614462,0.7516982313614462,0.7516982313614462,0.7516982313614462],"hi":[0.0,1.2160016507985631,1.4453998543111672,1.4510081100291308,1.5733047150513335,1.5733047150513335,1.5733047150513335,1.5733047150513335,1.5733047150513335,1.5733047150513335,1.5733047150513335,1.5733047150513335,1.5733047150513335,1.5733047150513335,1.5733047150513335,1.5733047150513335,1.5733047150513335,1.5733047150513335,1.5733047150513335,1.5733047150513335,1.5733047150513335,1.5733047150513335,1.5733047150513335,1.5733047150513335,1.5733047150513335,1.5733047150513335,1.5733047150513335,1.5733047150513335,1.5733047150513335,1.5733047150513335,1.5733047150513335]},"thompson":{"label":"Thompson","mean":[0.0,1.5596482810429328,1.5598240615128451,1.5599685269328027,1.5599864689185443,1.5600028421776053,1.5600343937610466,1.5600629294405048,1.5600629294405048,1.5600900402693647,1.5601133320645493,1.5601133320645493,1.5601133320645493,1.5601133320645493,1.5601133320645493,1.5601133320645493,1.5601133320645493,1.5601133320645493,1.5601400924801183,1.5601400924801183,1.5601400924801183,1.5601400924801183,1.5601400924801183,1.5601400924801183,1.5601400924801183,1.5601400924801183,1.5601400924801183,1.5601400924801183,1.5601400924801183,1.5601400924801183,1.5601400924801183],"lo":[0.0,1.1940394128915477,1.1942211116884642,1.1943435649495309,1.1943584742643563,1.1943759079563219,1.194416710512399,1.1944564891510967,1.1944564891510967,1.1944731567054099,1.19450562089812,1.19450562089812,1.19450562089812,1.19450562089812,1.19450562089812,1.19450562089812,1.19450562089812,1.19450562089812,1.1945243282714186,1.1945243282714186,1.1945243282714186,1.1945243282714186,1.1945243282714186,1.1945243282714186,1.1945243282714186,1.1945243282714186,1.1945243282714186,1.1945243282714186,1.1945243282714186,1.1945243282714186,1.1945243282714186],"hi":[0.0,1.925257149194318,1.925427011337226,1.9255934889160746,1.9256144635727324,1.9256297763988888,1.925652077009694,1.925669369729913,1.925669369729913,1.9257069238333195,1.9257210432309786,1.9257210432309786,1.9257210432309786,1.9257210432309786,1.9257210432309786,1.9257210432309786,1.9257210432309786,1.9257210432309786,1.925755856688818,1.925755856688818,1.925755856688818,1.925755856688818,1.925755856688818,1.925755856688818,1.925755856688818,1.925755856688818,1.925755856688818,1.925755856688818,1.925755856688818,1.925755856688818,1.925755856688818]},"ucb":{"label":"UCB","mean":[0.0,1.4470052343520436,1.4470052343520436,1.4470052343520436,1.4470052343520436,1.4470052343520436,1.4470052343520436,1.4470052343520436,1.4470052343520436,1.4470052343520436,1.4470052343520436,1.4470052343520436,1.4470052343520436,1.4470052343520436,1.4470052343520436,1.4470052343520436,1.4470052343520436,1.4470052343520436,1.4470052343520436,1.4470052343520436,1.4470052343520436,1.4470052343520436,1.4470052343520436,1.4470052343520436,1.4470052343520436,1.4470052343520436,1.4470052343520436,1.4470052343520436,1.4470052343520436,1.4470052343520436,1.4470052343520436],"lo":[0.0,1.0819633443739003,1.0819633443739003,1.0819633443739003,1.0819633443739003,1.0819633443739003,1.0819633443739003,1.0819633443739003,1.0819633443739003,1.0819633443739003,1.0819633443739003,1.0819633443739003,1.0819633443739003,1.0819633443739003,1.0819633443739003,1.0819633443739003,1.0819633443739003,1.0819633443739003,1.0819633443739003,1.0819633443739003,1.0819633443739003,1.0819633443739003,1.0819633443739003,1.0819633443739003,1.0819633443739003,1.0819633443739003,1.0819633443739003,1.0819633443739003,1.0819633443739003,1.0819633443739003,1.0819633443739003],"hi":[0.0,1.812047124330187,1.812047124330187,1.812047124330187,1.812047124330187,1.812047124330187,1.812047124330187,1.812047124330187,1.812047124330187,1.812047124330187,1.812047124330187,1.812047124330187,1.812047124330187,1.812047124330187,1.812047124330187,1.812047124330187,1.812047124330187,1.812047124330187,1.812047124330187,1.812047124330187,1.812047124330187,1.812047124330187,1.812047124330187,1.812047124330187,1.812047124330187,1.812047124330187,1.812047124330187,1.812047124330187,1.812047124330187,1.812047124330187,1.812047124330187]},"always_verify":{"label":"Always-Verify","mean":[0.0,1.34659502741769,1.34659502741769,1.34659502741769,1.34659502741769,1.34659502741769,1.34659502741769,1.34659502741769,1.34659502741769,1.34659502741769,1.34659502741769,1.34659502741769,1.34659502741769,1.34659502741769,1.34659502741769,1.34659502741769,1.34659502741769,1.34659502741769,1.34659502741769,1.34659502741769,1.34659502741769,1.34659502741769,1.34659502741769,1.34659502741769,1.34659502741769,1.34659502741769,1.34659502741769,1.34659502741769,1.34659502741769,1.34659502741769,1.34659502741769],"lo":[0.0,0.9567069492220905,0.9567069492220905,0.9567069492220905,0.9567069492220905,0.9567069492220905,0.9567069492220905,0.9567069492220905,0.9567069492220905,0.9567069492220905,0.9567069492220905,0.9567069492220905,0.9567069492220905,0.9567069492220905,0.9567069492220905,0.9567069492220905,0.9567069492220905,0.9567069492220905,0.9567069492220905,0.9567069492220905,0.9567069492220905,0.9567069492220905,0.9567069492220905,0.9567069492220905,0.9567069492220905,0.9567069492220905,0.9567069492220905,0.9567069492220905,0.9567069492220905,0.9567069492220905,0.9567069492220905],"hi":[0.0,1.7364831056132897,1.7364831056132897,1.7364831056132897,1.7364831056132897,1.7364831056132897,1.7364831056132897,1.7364831056132897,1.7364831056132897,1.7364831056132897,1.7364831056132897,1.7364831056132897,1.7364831056132897,1.7364831056132897,1.7364831056132897,1.7364831056132897,1.7364831056132897,1.7364831056132897,1.7364831056132897,1.7364831056132897,1.7364831056132897,1.7364831056132897,1.7364831056132897,1.7364831056132897,1.7364831056132897,1.7364831056132897,1.7364831056132897,1.7364831056132897,1.7364831056132897,1.7364831056132897,1.7364831056132897]},"always_forward":{"label":"Always-Forward","mean":[0.0,1.4811844906254112,1.4811844906254112,1.4811844906254112,1.4811844906254112,1.4811844906254112,1.4811844906254112,1.4811844906254112,1.4811844906254112,1.4811844906254112,1.4811844906254112,1.4811844906254112,1.4811844906254112,1.4811844906254112,1.4811844906254112,1.4811844906254112,1.4811844906254112,1.4811844906254112,1.4811844906254112,1.4811844906254112,1.4811844906254112,1.4811844906254112,1.4811844906254112,1.4811844906254112,1.4811844906254112,1.4811844906254112,1.4811844906254112,1.4811844906254112,1.4811844906254112,1.4811844906254112,1.4811844906254112],"lo":[0.0,1.039881915955269,1.039881915955269,1.039881915955269,1.039881915955269,1.039881915955269,1.039881915955269,1.039881915955269,1.039881915955269,1.039881915955269,1.039881915955269,1.039881915955269,1.039881915955269,1.039881915955269,1.039881915955269,1.039881915955269,1.039881915955269,1.039881915955269,1.039881915955269,1.039881915955269,1.039881915955269,1.039881915955269,1.039881915955269,1.039881915955269,1.039881915955269,1.039881915955269,1.039881915955269,1.039881915955269,1.039881915955269,1.039881915955269,1.039881915955269],"hi":[0.0,1.9224870652955535,1.9224870652955535,1.9224870652955535,1.9224870652955535,1.9224870652955535,1.9224870652955535,1.9224870652955535,1.9224870652955535,1.9224870652955535,1.9224870652955535,1.9224870652955535,1.9224870652955535,1.9224870652955535,1.9224870652955535,1.9224870652955535,1.9224870652955535,1.9224870652955535,1.9224870652955535,1.9224870652955535,1.9224870652955535,1.9224870652955535,1.9224870652955535,1.9224870652955535,1.9224870652955535,1.9224870652955535,1.9224870652955535,1.9224870652955535,1.9224870652955535,1.9224870652955535,1.9224870652955535]},"always_backward":{"label":"Always-Backward","mean":[0.0,1.3542369372321659,1.7855855107714231,1.8706678345470127,1.8706678345470127,1.8706678345470127,1.8706678345470127,1.8706678345470127,1.8706678345470127,1.8706678345470127,1.8706678345470127,1.8706678345470127,1.8706678345470127,1.8706678345470127,1.8706678345470127,1.8706678345470127,1.8706678345470127,1.8706678345470127,1.8706678345470127,1.8706678345470127,1.8706678345470127,1.8706678345470127,1.8706678345470127,1.8706678345470127,1.8706678345470127,1.8706678345470127,1.8706678345470127,1.8706678345470127,1.8706678345470127,1.8706678345470127,1.8706678345470127],"lo":[0.0,1.034893916745001,1.3631045402286834,1.4222463263105853,1.4222463263105853,1.4222463263105853,1.4222463263105853,1.4222463263105853,1.4222463263105853,1.4222463263105853,1.4222463263105853,1.4222463263105853,1.4222463263105853,1.4222463263105853,1.4222463263105853,1.4222463263105853,1.4222463263105853,1.4222463263105853,1.4222463263105853,1.4222463263105853,1.4222463263105853,1.4222463263105853,1.4222463263105853,1.4222463263105853,1.4222463263105853,1.4222463263105853,1.4222463263105853,1.4222463263105853,1.4222463263105853,1.4222463263105853,1.4222463263105853],"hi":[0.0,1.6735799577193307,2.208066481314163,2.31908934278344,2.31908934278344,2.31908934278344,2.31908934278344,2.31908934278344,2.31908934278344,2.31908934278344,2.31908934278344,2.31908934278344,2.31908934278344,2.31908934278344,2.31908934278344,2.31908934278344,2.31908934278344,2.31908934278344,2.31908934278344,2.31908934278344,2.31908934278344,2.31908934278344,2.31908934278344,2.31908934278344,2.31908934278344,2.31908934278344,2.31908934278344,2.31908934278344,2.31908934278344,2.31908934278344,2.31908934278344]},"random_verify":{"label":"Random-Verify","mean":[0.0,0.4780281670542806,0.7128652440685033,0.9812222089188543,1.1421098748576641,1.1421098748576641,1.150818850813508,1.150818850813508,1.150818850813508,1.150818850813508,1.150818850813508,1.150818850813508,1.150818850813508,1.150818850813508,1.150818850813508,1.150818850813508,1.150818850813508,1.150818850813508,1.150818850813508,1.150818850813508,1.150818850813508,1.150818850813508,1.150818850813508,1.150818850813508,1.150818850813508,1.150818850813508,1.150818850813508,1.150818850813508,1.150818850813508,1.150818850813508,1.150818850813508],"lo":[0.0,0.21748500629440243,0.42031197885139004,0.6140080492845044,0.765611561314737,0.765611561314737,0.776542457719054,0.776542457719054,0.776542457719054,0.776542457719054,0.776542457719054,0.776542457719054,0.776542457719054,0.776542457719054,0.776542457719054,0.776542457719054,0.776542457719054,0.776542457719054,0.776542457719054,0.776542457719054,0.776542457719054,0.776542457719054,0.776542457719054,0.776542457719054,0.776542457719054,0.776542457719054,0.776542457719054,0.776542457719054,0.776542457719054,0.776542457719054,0.776542457719054],"hi":[0.0,0.7385713278141588,1.0054185092856165,1.3484363685532041,1.5186081884005913,1.5186081884005913,1.5250952439079621,1.5250952439079621,1.5250952439079621,1.5250952439079621,1.5250952439079621,1.5250952439079621,1.5250952439079621,1.5250952439079621,1.5250952439079621,1.5250952439079621,1.5250952439079621,1.5250952439079621,1.5250952439079621,1.5250952439079621,1.5250952439079621,1.5250952439079621,1.5250952439079621,1.5250952439079621,1.5250952439079621,1.5250952439079621,1.5250952439079621,1.5250952439079621,1.5250952439079621,1.5250952439079621,1.5250952439079621]}},"finals":{"gg_topo":1.389932449235041,"gg_local":1.1625014732063899,"thompson":1.5601400924801188,"ucb":1.447005234352044,"always_verify":1.3465950274176894,"always_forward":1.4811844906254115,"always_backward":1.8706678345470131,"random_verify":1.1508188508135082},"verify_stats":{"gg_topo":{"verify_mean":1343.6,"verify_rate":0.8886458711001936},"gg_local":{"verify_mean":925.85,"verify_rate":0.5355490216774724},"thompson":{"verify_mean":5.525,"verify_rate":0.0018458750996734924},"ucb":{"verify_mean":0.0,"verify_rate":0.0},"always_verify":{"verify_mean":1500.0,"verify_rate":1.0},"always_forward":{"verify_mean":0.0,"verify_rate":0.0},"always_backward":{"verify_mean":0.0,"verify_rate":0.0},"random_verify":{"verify_mean":1357.475,"verify_rate":0.8267065975385808}},"final_dist":{"gg_topo":{"q05":0.009172445801136865,"q25":0.20844217997091552,"q50":0.9317901656647649,"q75":2.6334069409724115,"q95":3.6914166071161216,"mean":1.4658886285984831,"std":1.3730538803572683},"gg_local":{"q05":0.019343553425901047,"q25":0.1347584783540245,"q50":0.5696280663141302,"q75":1.8868817065372796,"q95":4.019003421616756,"mean":1.1625014732063899,"std":1.3255856269500137},"thompson":{"q05":0.020947346487952247,"q25":0.34215360063684075,"q50":1.596319296069294,"q75":2.404864072745252,"q95":3.4628952024010875,"mean":1.5601400924801188,"std":1.1797740442475113},"ucb":{"q05":0.019170517460552778,"q25":0.4724327208699869,"q50":1.3640382845645864,"q75":2.2644248869370855,"q95":3.191611093723795,"mean":1.447005234352044,"std":1.177922258881149},"always_verify":{"q05":0.06483657328531146,"q25":0.43199383409768344,"q50":0.8457815741181374,"q75":2.046870796614885,"q95":3.8066234754152597,"mean":1.3465950274176894,"std":1.2580962853509456},"always_forward":{"q05":0.011090440557152035,"q25":0.13384495105147362,"q50":1.194845838919282,"q75":2.8237833251059055,"q95":3.887900263404101,"mean":1.4811844906254115,"std":1.4240012992389581},"always_backward":{"q05":0.009664959286153317,"q25":0.507145440196991,"q50":1.9173844303965568,"q75":3.2675868350982666,"q95":3.977685813318193,"mean":1.8706678345470131,"std":1.4469727733010866},"random_verify":{"q05":0.016795811303108935,"q25":0.2410782932162285,"q50":0.5818365273475647,"q75":1.6745092948548495,"q95":3.9472339036568997,"mean":1.1508188508135082,"std":1.2077202822561133}}},"calibration":{"p_true_avg":[0.11422140230987647,0.22720827354752515,0.3913343398158177,0.5509532228110212,0.24235811786617453,0.38453402241965545,0.5530104269264478,0.7009802778646892,0.6090376608051364,0.7387453162596993,0.8700233963503201,0.9488989406916932,0.7735617215598787,0.8891455158555395,0.9354087779345598,0.95],"p_true_layers":[[0.05,0.05,0.11802400099958694,0.1709275412328488,0.1821554693169466],[0.11275844031340446,0.16237690736181346,0.19161381478435108,0.27495291446409187,0.394339290813965],[0.28009559828757014,0.2929902078033193,0.41898420827580324,0.45367188120097957,0.5109298035114163],[0.41787690736181343,0.4843205378344636,0.53157289349654,0.6323088316952532,0.6886869436670358],[0.08464449133120752,0.20670919522721148,0.20095883171808882,0.31985020504368455,0.39962786601068023],[0.2221138147843511,0.30657289349654004,0.47622872706929675,0.41822947899398266,0.4995251977541067],[0.3904486171829724,0.4371194880343848,0.5192535100381805,0.6862118876250451,0.7320186317516555],[0.5609529144640919,0.6628088316952532,0.6737294789939826,0.7577305253960014,0.849679638774117],[0.44758315824139033,0.5838263623303065,0.6556418801303967,0.6551466831989439,0.7029902201246445],[0.625839290813965,0.6646869436670357,0.7005251977541067,0.7951796387741171,0.9074955102892721],[0.8035917837494269,0.7490952265540165,0.8974299714481568,0.95,0.95],[0.9444947034584658,0.95,0.95,0.95,0.95],[0.6052989094061958,0.7623924409583723,0.7163649298122162,0.8861611460238028,0.8975911815988065],[0.7314074337138565,0.8798113123840468,0.95,0.9345088331797943,0.95],[0.8898645835030111,0.9371793061697877,0.95,0.95,0.95],[0.95,0.95,0.95,0.95,0.95]],"p_hat_avg":[0.5,0.5,0.5058286328229922,0.502700296735905,0.5,0.5074468085106383,0.5051470588235294,0.48328912466843504,0.5058286328229922,0.5028959810874705,0.5054261704681873,0.5028511927300265,0.5093333333333334,0.507008547008547,0.505406538139145,0.49696184644371166],"flip_dist":[0.3857785976901235,0.27279172645247485,0.10866566018418228,0.050953222811021215,0.25764188213382544,0.11546597758034455,0.05301042692644775,0.2009802778646892,0.10903766080513644,0.2387453162596993,0.3700233963503201,0.4488989406916932,0.2735617215598787,0.38914551585553947,0.4354087779345598,0.44999999999999996],"closest_flip_nodes":[3,6,2,8,5,7]},"verify_concentration":{"gg_topo":{"verify_by_node":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"visits":[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]},"random_verify":{"verify_by_node":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"visits":[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]}},"suite":[{"cfg":{"layers":5,"noise":0.1,"budget":1000},"rv_prob":0.85,"finals":{"gg_topo":{"mean":1.812855917899732,"se":0.3057332583809257},"gg_local":{"mean":2.757667548614512,"se":0.412744504649834},"thompson":{"mean":2.1509263203916573,"se":0.33441603755945326},"ucb":{"mean":1.2935742645759318,"se":0.3053513639008506},"always_verify":{"mean":1.2622359597037236,"se":0.30463041005599795},"always_forward":{"mean":0.9805544213391841,"se":0.3674736731309724},"always_backward":{"mean":1.5932928786426783,"se":0.42849283024731255},"random_verify":{"mean":1.1683067871607842,"se":0.3694682707445622}}},{"cfg":{"layers":5,"noise":0.1,"budget":3000},"rv_prob":0.85,"finals":{"gg_topo":{"mean":1.6450060287456727,"se":0.430949362792854},"gg_local":{"mean":1.4939699860421476,"se":0.34687358844855154},"thompson":{"mean":1.7265444467356865,"se":0.4149591956451237},"ucb":{"mean":1.6451998606505214,"se":0.36526113441299657},"always_verify":{"mean":1.9985758660214639,"se":0.4472145160536002},"always_forward":{"mean":1.1159409672215581,"se":0.2813655981787023},"always_backward":{"mean":1.167587837521732,"se":0.3648597528855451},"random_verify":{"mean":0.9825012879277267,"se":0.229505728530981}}},{"cfg":{"layers":5,"noise":0.55,"budget":1000},"rv_prob":0.7616342871411721,"finals":{"gg_topo":{"mean":1.053526287382816,"se":0.34230890655500446},"gg_local":{"mean":1.489581751095191,"se":0.35027050678262},"thompson":{"mean":1.2052489865398484,"se":0.3915065575077649},"ucb":{"mean":1.64811130507984,"se":0.319508897115104},"always_verify":{"mean":1.6832292800394197,"se":0.39753413134657795},"always_forward":{"mean":1.3908238572575156,"se":0.42668153139364834},"always_backward":{"mean":1.1021413620382547,"se":0.31500962535945015},"random_verify":{"mean":1.1379384076744319,"se":0.3346080626205425}}},{"cfg":{"layers":5,"noise":0.55,"budget":3000},"rv_prob":0.85,"finals":{"gg_topo":{"mean":1.3276407531266763,"se":0.23468369898832167},"gg_local":{"mean":0.8051618535396758,"se":0.23092020103866137},"thompson":{"mean":1.5824505038522532,"se":0.3600456611541756},"ucb":{"mean":0.8544135970109568,"se":0.24858167363295783},"always_verify":{"mean":1.26898600065882,"se":0.29814170976839266},"always_forward":{"mean":1.2687782135965924,"se":0.35916171248463685},"always_backward":{"mean":1.460451261332879,"se":0.40133291289129486},"random_verify":{"mean":1.223818908919394,"se":0.4789990846141942}}},{"cfg":{"layers":3,"noise":0.25,"budget":1000},"rv_prob":0.85,"finals":{"gg_topo":{"mean":1.0975889015922593,"se":0.25337763280339115},"gg_local":{"mean":1.8188383851963659,"se":0.3706522397167968},"thompson":{"mean":1.1282508220873382,"se":0.3576317067687278},"ucb":{"mean":1.4428106854361822,"se":0.34864050909070027},"always_verify":{"mean":1.4451506958613791,"se":0.2968675942692422},"always_forward":{"mean":1.5493048586289089,"se":0.4547230469626173},"always_backward":{"mean":1.2181730719149113,"se":0.3755038671090437},"random_verify":{"mean":1.6074701863619187,"se":0.449667604754816}}},{"cfg":{"layers":3,"noise":0.25,"budget":3000},"rv_prob":0.85,"finals":{"gg_topo":{"mean":1.402726022843529,"se":0.32712805145822477},"gg_local":{"mean":1.6691164081728427,"se":0.44512409306823836},"thompson":{"mean":1.3196672442127302,"se":0.3556602383358296},"ucb":{"mean":1.5726790161913948,"se":0.387166460301939},"always_verify":{"mean":1.1806629394896329,"se":0.41716605323409495},"always_forward":{"mean":1.1320576012060046,"se":0.28178388008024197},"always_backward":{"mean":1.0659341007468601,"se":0.3679798340144894},"random_verify":{"mean":1.3354324613523978,"se":0.36014829450138375}}}]};
+</script>
+<script>
+function setupCanvas(canvas){
+  const ctx=canvas.getContext("2d");
+  const dpr=window.devicePixelRatio||1;
+  const W=canvas.clientWidth*dpr, H=canvas.clientHeight*dpr;
+  canvas.width=W; canvas.height=H;
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.scale(dpr,dpr);
+  return {ctx, w:canvas.clientWidth, h:canvas.clientHeight};
+}
+function axes(ctx,w,h,pad=38){
+  ctx.clearRect(0,0,w,h);
+  ctx.lineWidth=1;
+  ctx.strokeStyle="rgba(255,255,255,.10)";
+  ctx.beginPath();
+  ctx.rect(pad,14,w-pad-14,h-pad-14);
+  ctx.stroke();
+  return {x0:pad,y0:h-pad,x1:w-14,y1:14};
+}
+function fmt(x,d=3){
+  if(!isFinite(x)) return "—";
+  if(Math.abs(x)>=1000) return x.toFixed(0);
+  return x.toFixed(d);
+}
+function band(ctx, upper, lower, color){
+  ctx.fillStyle=color;
+  ctx.globalAlpha=0.12;
+  ctx.beginPath();
+  for(let i=0;i<upper.length;i++){
+    const [x,y]=upper[i];
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  }
+  for(let i=lower.length-1;i>=0;i--){
+    const [x,y]=lower[i];
+    ctx.lineTo(x,y);
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.globalAlpha=1;
+}
+function line(ctx, pts, color){
+  ctx.strokeStyle=color;
+  ctx.lineWidth=2;
+  ctx.beginPath();
+  for(let i=0;i<pts.length;i++){
+    const [x,y]=pts[i];
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+}
+function text(ctx,x,y,s,color="rgba(232,238,252,.60)",align="left"){
+  ctx.fillStyle=color;
+  ctx.font="12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
+  ctx.textAlign=align;
+  ctx.fillText(s,x,y);
+}
+function colorForKey(k){
+  const css=getComputedStyle(document.documentElement);
+  const gold=css.getPropertyValue("--gold")?.trim() || "#d4af37";
+  const cyan="#3ec7d3", purple="#9b7bff", warn="#ffb020";
+  if(k==="gg_topo") return gold;
+  if(k==="gg_local") return "rgba(212,175,55,.55)";
+  if(k==="thompson") return cyan;
+  if(k==="ucb") return purple;
+  if(k==="always_verify") return warn;
+  if(k==="always_forward") return "rgba(232,238,252,.75)";
+  if(k==="always_backward") return "rgba(241,70,104,.85)";
+  if(k==="random_verify") return "rgba(255,255,255,.32)";
+  return "rgba(255,255,255,.6)";
+}
+function drawMainFrom(pre){
+  const chk=pre.main.checkpoints;
+  const curves=pre.main.curves;
+  const order=["gg_topo","gg_local","thompson","ucb","always_verify","always_forward","always_backward","random_verify"];
+  const {ctx,w,h}=setupCanvas(document.getElementById("fig_main"));
+  const ax=axes(ctx,w,h);
+  const xMin=chk[0], xMax=chk[chk.length-1];
+  let yMax=0;
+  for(const k of order){ yMax=Math.max(yMax, ...curves[k].hi); }
+  yMax=(yMax<=0)?1:yMax*1.06;
+
+  for(let i=0;i<=5;i++){
+    const xv=xMin+(xMax-xMin)*i/5;
+    const x=ax.x0+(ax.x1-ax.x0)*(xv-xMin)/(xMax-xMin);
+    ctx.strokeStyle="rgba(255,255,255,.06)";
+    ctx.beginPath(); ctx.moveTo(x,ax.y0); ctx.lineTo(x,ax.y1); ctx.stroke();
+    text(ctx,x,ax.y0+20,`${Math.round(xv)}`,"rgba(232,238,252,.55)","center");
+  }
+  for(let i=0;i<=5;i++){
+    const yv=yMax*i/5;
+    const y=ax.y0-(ax.y0-ax.y1)*(yv/yMax);
+    ctx.strokeStyle="rgba(255,255,255,.06)";
+    ctx.beginPath(); ctx.moveTo(ax.x0,y); ctx.lineTo(ax.x1,y); ctx.stroke();
+    text(ctx,ax.x0-10,y+4,`${fmt(yv,2)}`,"rgba(232,238,252,.55)","right");
+  }
+  text(ctx,(ax.x0+ax.x1)/2,ax.y0+34,"Evaluation budget (evals)","rgba(232,238,252,.70)","center");
+  text(ctx,ax.x0,ax.y1-10,"Cumulative improvement","rgba(232,238,252,.70)","left");
+
+  for(const k of order){
+    const c=curves[k];
+    const color=colorForKey(k);
+    const upper=[], lower=[], mid=[];
+    for(let i=0;i<chk.length;i++){
+      const xv=chk[i];
+      const x=ax.x0+(ax.x1-ax.x0)*(xv-xMin)/(xMax-xMin);
+      upper.push([x, ax.y0-(ax.y0-ax.y1)*(c.hi[i]/yMax)]);
+      lower.push([x, ax.y0-(ax.y0-ax.y1)*(c.lo[i]/yMax)]);
+      mid.push([x, ax.y0-(ax.y0-ax.y1)*(c.mean[i]/yMax)]);
+    }
+    band(ctx, upper, lower, color);
+    line(ctx, mid, color);
+  }
+}
+function drawVerifyBar(pre){
+  const {ctx,w,h}=setupCanvas(document.getElementById("fig_verify"));
+  const ax=axes(ctx,w,h);
+  const stats=pre.main.verify_stats;
+  const keys=["gg_topo","gg_local","thompson","ucb","always_verify","always_forward","always_backward","random_verify"];
+  const vals=keys.map(k=>stats[k]?.verify_mean ?? 0);
+  const maxv=Math.max(...vals)*1.15 || 1;
+  const bw=(ax.x1-ax.x0)/keys.length;
+
+  for(let i=0;i<=5;i++){
+    const yv=maxv*i/5;
+    const y=ax.y0-(ax.y0-ax.y1)*(yv/maxv);
+    ctx.strokeStyle="rgba(255,255,255,.06)";
+    ctx.beginPath(); ctx.moveTo(ax.x0,y); ctx.lineTo(ax.x1,y); ctx.stroke();
+    text(ctx,ax.x0-10,y+4,fmt(yv,1),"rgba(232,238,252,.55)","right");
+  }
+  text(ctx,(ax.x0+ax.x1)/2,ax.y0+34,"Method","rgba(232,238,252,.70)","center");
+  text(ctx,ax.x0,ax.y1-10,"Mean VERIFY count (per run)","rgba(232,238,252,.70)","left");
+
+  ctx.textAlign="center";
+  for(let i=0;i<keys.length;i++){
+    const x=ax.x0+i*bw+3;
+    const hbar=(ax.y0-ax.y1)*(vals[i]/maxv);
+    const y=ax.y0-hbar;
+    ctx.fillStyle=colorForKey(keys[i]);
+    ctx.globalAlpha=0.85;
+    ctx.fillRect(x,y,bw-6,hbar);
+    ctx.globalAlpha=1;
+    ctx.fillStyle="rgba(232,238,252,.70)";
+    ctx.font="10px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
+    const label=pre.main.curves[keys[i]].label;
+    ctx.fillText(label.replace("Always-","A-"), x+(bw-6)/2, ax.y0+14);
+  }
+  ctx.textAlign="left";
+}
+function drawCalibration(pre){
+  const {ctx,w,h}=setupCanvas(document.getElementById("fig_cal"));
+  const ax=axes(ctx,w,h);
+  const x0=ax.x0,x1=ax.x1,y0=ax.y0,y1=ax.y1;
+  for(let i=0;i<=5;i++){
+    const t=i/5;
+    const x=x0+(x1-x0)*t;
+    const y=y0-(y0-y1)*t;
+    ctx.strokeStyle="rgba(255,255,255,.05)";
+    ctx.beginPath(); ctx.moveTo(x,y0); ctx.lineTo(x,y1); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x0,y); ctx.lineTo(x1,y); ctx.stroke();
+    text(ctx,x,y0+20,`${t.toFixed(1)}`,"rgba(232,238,252,.55)","center");
+    text(ctx,x0-10,y+4,`${t.toFixed(1)}`,"rgba(232,238,252,.55)","right");
+  }
+  ctx.strokeStyle="rgba(212,175,55,.35)";
+  ctx.setLineDash([6,5]);
+  ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.stroke();
+  ctx.setLineDash([]);
+
+  text(ctx,(x0+x1)/2,y0+34,"Estimated p̂","rgba(232,238,252,.70)","center");
+  text(ctx,x0,y1-10,"True p̄","rgba(232,238,252,.70)","left");
+
+  const tp=pre.calibration.p_true_avg;
+  const ph=pre.calibration.p_hat_avg;
+  for(let v=0;v<16;v++){
+    const x=x0+(x1-x0)*ph[v];
+    const y=y0-(y0-y1)*tp[v];
+    ctx.fillStyle="rgba(62,199,211,.85)";
+    ctx.beginPath(); ctx.arc(x,y,4,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle="rgba(232,238,252,.65)";
+    ctx.font="10px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
+    ctx.fillText(v.toString(16).toUpperCase(), x+6, y-6);
+  }
+}
+function drawFlip(pre){
+  const {ctx,w,h}=setupCanvas(document.getElementById("fig_flip"));
+  const ax=axes(ctx,w,h);
+  const x0=ax.x0,x1=ax.x1,y0=ax.y0,y1=ax.y1;
+  const vals=pre.calibration.flip_dist;
+  const maxv=Math.max(...vals)*1.15 || 1;
+  const bw=(x1-x0)/16;
+  for(let i=0;i<=5;i++){
+    const yv=maxv*i/5;
+    const y=y0-(y0-y1)*(yv/maxv);
+    ctx.strokeStyle="rgba(255,255,255,.05)";
+    ctx.beginPath(); ctx.moveTo(x0,y); ctx.lineTo(x1,y); ctx.stroke();
+    text(ctx,x0-10,y+4,fmt(yv,3),"rgba(232,238,252,.55)","right");
+  }
+  text(ctx,(x0+x1)/2,y0+34,"Node v (hex) — smaller bars ≈ flip cross-section","rgba(232,238,252,.70)","center");
+  text(ctx,x0,y1-10,"|p̄_v − 0.5|","rgba(232,238,252,.70)","left");
+
+  const tp=pre.calibration.p_true_avg;
+  for(let v=0;v<16;v++){
+    const x=x0+v*bw+2;
+    const hbar=(y0-y1)*(vals[v]/maxv);
+    const y=y0-hbar;
+    const p=tp[v];
+    let c="rgba(255,176,32,.75)";
+    if(p>pre.meta.hi) c="rgba(72,199,116,.75)";
+    if(p<pre.meta.lo) c="rgba(241,70,104,.75)";
+    ctx.fillStyle=c; ctx.globalAlpha=0.9;
+    ctx.fillRect(x,y,bw-4,hbar);
+    ctx.globalAlpha=1;
+    ctx.fillStyle="rgba(232,238,252,.70)";
+    ctx.font="10px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
+    ctx.textAlign="center";
+    ctx.fillText(v.toString(16).toUpperCase(), x+(bw-4)/2, y0+14);
+  }
+  ctx.textAlign="left";
+  ctx.fillStyle="rgba(212,175,55,.85)";
+  ctx.font="12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
+  const close=pre.calibration.closest_flip_nodes.map(x=>x.toString(16).toUpperCase()).join(", ");
+  ctx.fillText(`Closest flip nodes: ${close}`, x0, y1+18);
+}
+function drawAblation(pre, which, canvasId, title){
+  const {ctx,w,h}=setupCanvas(document.getElementById(canvasId));
+  const ax=axes(ctx,w,h);
+  const ab=pre.ablations[which];
+  const keys=Object.keys(ab);
+  const pts=keys.map(k=>{
+    const v=ab[k].finals.gg_topo.mean;
+    const se=ab[k].finals.gg_topo.se;
+    return {k, v, lo:v-1.96*se, hi:v+1.96*se};
+  });
+  let yMax=Math.max(...pts.map(p=>p.hi))*1.10;
+  if(!isFinite(yMax) || yMax<=0) yMax=1;
+  for(let i=0;i<=5;i++){
+    const yv=yMax*i/5;
+    const y=ax.y0-(ax.y0-ax.y1)*(yv/yMax);
+    ctx.strokeStyle="rgba(255,255,255,.06)";
+    ctx.beginPath(); ctx.moveTo(ax.x0,y); ctx.lineTo(ax.x1,y); ctx.stroke();
+    text(ctx,ax.x0-10,y+4,fmt(yv,2),"rgba(232,238,252,.55)","right");
+  }
+  text(ctx,(ax.x0+ax.x1)/2,ax.y1-10,title,"rgba(232,238,252,.70)","center");
+  text(ctx,ax.x0,ax.y0+34,which,"rgba(232,238,252,.70)","left");
+
+  const xMin=0, xMax=pts.length-1;
+  const gold=colorForKey("gg_topo");
+  const upper=[], lower=[], mid=[];
+  for(let i=0;i<pts.length;i++){
+    const x=ax.x0+(ax.x1-ax.x0)*(i-xMin)/(Math.max(1,(xMax-xMin)));
+    upper.push([x, ax.y0-(ax.y0-ax.y1)*(pts[i].hi/yMax)]);
+    lower.push([x, ax.y0-(ax.y0-ax.y1)*(pts[i].lo/yMax)]);
+    mid.push([x, ax.y0-(ax.y0-ax.y1)*(pts[i].v/yMax)]);
+    text(ctx,x,ax.y0+18,pts[i].k,"rgba(232,238,252,.55)","center");
+  }
+  band(ctx, upper, lower, gold);
+  line(ctx, mid, gold);
+}
+function drawSuite(pre){
+  const sel=document.getElementById("suite_pick");
+  const idx=parseInt(sel.value,10);
+  const item=pre.suite[idx];
+  const meta=document.getElementById("suite_meta");
+  meta.textContent = item ? `seeds=${pre.meta.suite.seeds}, rv_prob=${item.rv_prob.toFixed(3)}` : "—";
+  const {ctx,w,h}=setupCanvas(document.getElementById("fig_suite"));
+  const ax=axes(ctx,w,h);
+  if(!item){ text(ctx,ax.x0,ax.y1+20,"No suite item.", "rgba(232,238,252,.7)"); return; }
+  const keys=["gg_topo","gg_local","thompson","ucb","always_verify","always_forward","always_backward","random_verify"];
+  const vals=keys.map(k=>item.finals[k].mean);
+  const se=keys.map(k=>item.finals[k].se);
+  const maxv=Math.max(...vals.map((v,i)=>v+1.96*se[i]))*1.10 || 1;
+  const bw=(ax.x1-ax.x0)/keys.length;
+  for(let i=0;i<=5;i++){
+    const yv=maxv*i/5;
+    const y=ax.y0-(ax.y0-ax.y1)*(yv/maxv);
+    ctx.strokeStyle="rgba(255,255,255,.06)";
+    ctx.beginPath(); ctx.moveTo(ax.x0,y); ctx.lineTo(ax.x1,y); ctx.stroke();
+    text(ctx,ax.x0-10,y+4,fmt(yv,2),"rgba(232,238,252,.55)","right");
+  }
+  text(ctx,(ax.x0+ax.x1)/2,ax.y0+38,"Mean final improvement ±95% CI","rgba(232,238,252,.70)","center");
+  text(ctx,ax.x0,ax.y1-10,`Suite: L=${item.cfg.layers}, σ=${item.cfg.noise.toFixed(2)}, budget=${item.cfg.budget}`,"rgba(232,238,252,.70)","left");
+  ctx.textAlign="center";
+  for(let i=0;i<keys.length;i++){
+    const k=keys[i];
+    const x=ax.x0+i*bw+3;
+    const barH=(ax.y0-ax.y1)*(vals[i]/maxv);
+    const y=ax.y0-barH;
+    ctx.fillStyle=colorForKey(k); ctx.globalAlpha=0.85;
+    ctx.fillRect(x,y,bw-6,barH); ctx.globalAlpha=1;
+    const yHi=ax.y0-(ax.y0-ax.y1)*((vals[i]+1.96*se[i])/maxv);
+    const yLo=ax.y0-(ax.y0-ax.y1)*((Math.max(0,vals[i]-1.96*se[i]))/maxv);
+    ctx.strokeStyle="rgba(232,238,252,.70)";
+    const xc=x+(bw-6)/2;
+    ctx.beginPath(); ctx.moveTo(xc,yHi); ctx.lineTo(xc,yLo); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(xc-8,yHi); ctx.lineTo(xc+8,yHi); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(xc-8,yLo); ctx.lineTo(xc+8,yLo); ctx.stroke();
+    ctx.fillStyle="rgba(232,238,252,.70)";
+    ctx.font="10px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
+    ctx.fillText(pre.main.curves[k].label.replace("Always-","A-"), x+(bw-6)/2, ax.y0+16);
+  }
+  ctx.textAlign="left";
+}
+
+</script>
+<script>
+(function(){
+  const pre=window.__PRECOMPUTED__;
+  try {
+    drawMainFrom(pre);
+    drawVerifyBar(pre);
+    drawDist(pre);
+    drawCalibration(pre);
+    drawFlip(pre);
+    const pLayers=pre.calibration.p_true_layers;
+    for(let l=0;l<pLayers[0].length;l++) {
+      const vals=pLayers.map(row=>row[l]);
+      drawGridHeat("fig_p_layer"+l, vals, "Layer "+l+" true p(v,ℓ)", 0, 1);
+    }
+    // suite dropdown
+    const labels=["L=5 \u03c3=0.1 B=1000", "L=5 \u03c3=0.1 B=3000", "L=5 \u03c3=0.55 B=1000", "L=5 \u03c3=0.55 B=3000", "L=3 \u03c3=0.25 B=1000", "L=3 \u03c3=0.25 B=3000"];
+    const sel=document.getElementById("suite_pick");
+    labels.forEach((lab,i)=>{ const o=document.createElement("option"); o.value=i; o.textContent=lab; sel.appendChild(o); });
+    sel.value="1";
+    const rer=()=>drawSuite(pre);
+    sel.addEventListener("change", rer);
+    rer();
+  } catch(e) { console.error(e); }
+})();
+</script>
+
+</body>
+</html>
