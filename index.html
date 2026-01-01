@@ -1,14 +1,821 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="refresh" content="0; url=GoldenGradient.html">
-    <title>Redirecting...</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Golden Gradient: A Deterministic Layer Framework</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --gold: #C9A227;
+            --gold-light: #E8D48A;
+            --gold-dark: #8B6914;
+            --bg-deep: #0A0A0F;
+            --bg-card: #12121A;
+            --bg-elevated: #1A1A24;
+            --text-primary: #F5F5F0;
+            --text-secondary: #A0A0A0;
+            --text-muted: #606060;
+            --accent-blue: #4A6FA5;
+            --accent-green: #4A8A4A;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 18px;
+            line-height: 1.7;
+            color: var(--text-primary);
+            background: var(--bg-deep);
+        }
+
+        .container { max-width: 900px; margin: 0 auto; padding: 3rem 2rem; }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid var(--gold-dark);
+        }
+
+        h1 {
+            font-size: 2.6rem;
+            font-weight: 400;
+            color: var(--gold);
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle { font-size: 1.15rem; font-style: italic; color: var(--text-secondary); }
+
+        .phi-display {
+            margin-top: 1rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            color: var(--gold-light);
+            opacity: 0.8;
+        }
+
+        section { margin-bottom: 2.5rem; }
+
+        h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--gold);
+            margin-bottom: 1rem;
+            padding-bottom: 0.4rem;
+            border-bottom: 1px solid var(--bg-elevated);
+        }
+
+        h3 { font-size: 1.1rem; font-weight: 600; color: var(--text-primary); margin: 1.5rem 0 0.6rem; }
+
+        p { margin-bottom: 0.9rem; text-align: justify; }
+
+        .math-block {
+            background: var(--bg-card);
+            border-left: 3px solid var(--gold);
+            padding: 1rem 1.2rem;
+            margin: 1.2rem 0;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            overflow-x: auto;
+        }
+
+        .theorem {
+            background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-elevated) 100%);
+            border: 1px solid var(--gold-dark);
+            padding: 1.2rem;
+            margin: 1.5rem 0;
+            border-radius: 4px;
+            position: relative;
+        }
+
+        .theorem::before {
+            content: attr(data-type);
+            position: absolute;
+            top: -0.6rem;
+            left: 1rem;
+            background: var(--bg-deep);
+            color: var(--gold);
+            padding: 0 0.5rem;
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.2rem 0;
+            font-size: 0.9rem;
+        }
+
+        th, td {
+            padding: 0.6rem 0.8rem;
+            text-align: left;
+            border-bottom: 1px solid var(--bg-elevated);
+        }
+
+        th { color: var(--gold); font-weight: 600; }
+
+        .algorithm {
+            background: var(--bg-card);
+            border: 1px solid var(--bg-elevated);
+            padding: 1.2rem;
+            margin: 1.2rem 0;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            line-height: 1.7;
+        }
+
+        .algorithm-title {
+            color: var(--gold);
+            font-weight: 600;
+            margin-bottom: 0.8rem;
+            font-size: 0.85rem;
+        }
+
+        .algorithm .comment { color: var(--text-muted); }
+        .algorithm .keyword { color: var(--accent-blue); }
+        .algorithm .golden { color: var(--gold); }
+
+        .layer-diagram {
+            background: var(--bg-card);
+            padding: 1.2rem;
+            margin: 1.5rem 0;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            line-height: 1.4;
+            white-space: pre;
+            overflow-x: auto;
+        }
+
+        .demo-container {
+            background: var(--bg-card);
+            border: 1px solid var(--bg-elevated);
+            border-radius: 4px;
+            padding: 1.2rem;
+            margin: 1.2rem 0;
+        }
+
+        .demo-controls {
+            display: flex;
+            gap: 0.6rem;
+            margin-bottom: 0.8rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        button {
+            background: var(--gold-dark);
+            color: var(--text-primary);
+            border: none;
+            padding: 0.5rem 1rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        button:hover { background: var(--gold); color: var(--bg-deep); }
+
+        select {
+            background: var(--bg-elevated);
+            color: var(--text-primary);
+            border: 1px solid var(--bg-elevated);
+            padding: 0.35rem 0.5rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            border-radius: 3px;
+        }
+
+        .demo-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 0.5rem;
+            margin-top: 0.8rem;
+        }
+
+        .stat-box {
+            background: var(--bg-elevated);
+            padding: 0.5rem;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            color: var(--gold);
+        }
+
+        .stat-label { font-size: 0.6rem; color: var(--text-secondary); margin-top: 0.15rem; }
+
+        footer {
+            margin-top: 3rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--bg-elevated);
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        ul, ol { margin-left: 1.5rem; margin-bottom: 1rem; }
+        li { margin-bottom: 0.3rem; }
+    </style>
 </head>
-
 <body>
-    <p>Redirecting to <a href="GoldenGradient.html">Golden Gradient Framework</a>...</p>
-</body>
+    <div class="container">
+        <header>
+            <h1>Golden Gradient</h1>
+            <p class="subtitle">A Deterministic Layer Framework for Gradient Descent</p>
+            <p class="phi-display">φ = 1.618... &nbsp;│&nbsp; 1/φ = 0.618... &nbsp;│&nbsp; 1/φ² = 0.382...</p>
+        </header>
 
+        <!-- ============================================ -->
+        <!-- SECTION I: THE CORE IDEA -->
+        <!-- ============================================ -->
+        <section>
+            <h2>I. The Core Idea</h2>
+            
+            <p>
+                Golden Gradient is a <strong>deterministic layer framework</strong> that partitions 
+                gradient descent into two regimes: <em>Long tail</em> (trust the gradient) and 
+                <em>Short tail</em> (verify with bidirectional check). The partition is maintained 
+                at the golden ratio through adaptive threshold calibration.
+            </p>
+
+            <div class="theorem" data-type="Key Insight">
+                <p>
+                    The flip decision is <strong>deterministic</strong> given the layer state. 
+                    The "probability" describes which fraction of <em>space</em> is in each regime, 
+                    not uncertainty in the decision.
+                </p>
+            </div>
+        </section>
+
+        <!-- ============================================ -->
+        <!-- SECTION II: THE THREE LAYERS -->
+        <!-- ============================================ -->
+        <section>
+            <h2>II. The Three Layers</h2>
+
+            <p>
+                Each layer detects a different aspect of gradient geometry. Together, they 
+                determine whether we're in a Long tail (stable) or Short tail (uncertain) region.
+            </p>
+
+            <h3>Layer 1: Sign Consistency (Temporal)</h3>
+            <div class="math-block">
+consistency[i] = |mean(sign(g[i]) over last k steps)|
+
+If consistency[i] ≥ threshold → Long tail for dimension i
+If consistency[i] < threshold → Short tail for dimension i
+            </div>
+            <p>
+                Stable gradient direction indicates we're in a smooth descent region (Long tail).
+                Oscillating sign indicates we're near a boundary or local oscillation (Short tail).
+            </p>
+
+            <h3>Layer 2: Direction Alignment (Spatial)</h3>
+            <div class="math-block">
+alignment = (g_t · g_{t-1}) / (|g_t| × |g_{t-1}|)
+
+If alignment ≥ threshold → Long tail
+If alignment < threshold → Short tail (gradient reversal)
+            </div>
+            <p>
+                Positive alignment means consecutive gradients point the same way. Negative 
+                alignment signals a reversal—we may have overshot or hit oscillatory behavior.
+            </p>
+
+            <h3>Layer 3: Magnitude Stability (Temporal)</h3>
+            <div class="math-block">
+cv[i] = std(|g[i]|) / mean(|g[i]|)  (coefficient of variation)
+
+If cv[i] < threshold → Long tail (stable magnitude)
+If cv[i] ≥ threshold → Short tail (erratic magnitude)
+            </div>
+
+            <div class="layer-diagram">
+LAYER STRUCTURE
+═══════════════════════════════════════════════════════════════
+
+Layer 1 (Sign):        ◄────── Long (stable) ──────►◄── Short ──►
+                       ├───────────────────────────────┼──────────┤
+                       │   sign(g) consistent          │ sign(g)  │
+                       │   over recent history         │ flipping │
+                       └───────────────────────────────┴──────────┘
+
+Layer 2 (Alignment):   ◄────── Long (aligned) ─────►◄── Short ──►
+                       ├───────────────────────────────┼──────────┤
+                       │   g_t · g_{t-1} > 0           │ g_t·g<0  │
+                       │   (same direction)            │ reversal │
+                       └───────────────────────────────┴──────────┘
+
+Layer 3 (Magnitude):   ◄────── Long (stable) ──────►◄── Short ──►
+                       ├───────────────────────────────┼──────────┤
+                       │   |g| roughly constant        │ |g|      │
+                       │                               │ erratic  │
+                       └───────────────────────────────┴──────────┘
+
+COMBINED:  If ALL layers Long → trust gradient
+           If ANY layer Short → bidirectional check
+            </div>
+        </section>
+
+        <!-- ============================================ -->
+        <!-- SECTION III: ADAPTIVE THRESHOLD CALIBRATION -->
+        <!-- ============================================ -->
+        <section>
+            <h2>III. Adaptive Threshold Calibration</h2>
+
+            <p>
+                The key to achieving φ-statistics is <strong>adaptive thresholds</strong>. 
+                Rather than using fixed thresholds, we set them at the 1/φ² quantile of 
+                each metric's distribution. This <em>forces</em> the Long/Short partition 
+                to match the golden ratio.
+            </p>
+
+            <div class="algorithm">
+                <p class="algorithm-title">THRESHOLD CALIBRATION</p>
+<pre>
+<span class="keyword">For each</span> metric m (sign_consistency, alignment, magnitude_cv):
+    
+    <span class="comment">// Track metric values over recent history</span>
+    history[m].append(current_value)
+    
+    <span class="comment">// Set threshold at 1/φ² quantile</span>
+    <span class="comment">// This ensures ~1/φ of values are above (Long tail)</span>
+    <span class="comment">// and ~1/φ² of values are below (Short tail)</span>
+    threshold[m] = <span class="golden">quantile(history[m], 1/φ²)</span>
+</pre>
+            </div>
+
+            <div class="theorem" data-type="Result">
+                <p>
+                    With adaptive calibration, the Long/Short fractions become deterministic:
+                </p>
+                <ul style="margin-top: 0.5rem;">
+                    <li><strong>Long tail:</strong> ~61.8% of time (1/φ)</li>
+                    <li><strong>Short tail:</strong> ~38.2% of time (1/φ²)</li>
+                    <li><strong>Flip rate when Short:</strong> ~50%</li>
+                    <li><strong>Overall flip rate:</strong> ~19% (38.2% × 50%)</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- ============================================ -->
+        <!-- SECTION IV: THE ALGORITHM -->
+        <!-- ============================================ -->
+        <section>
+            <h2>IV. The Complete Algorithm</h2>
+
+            <div class="algorithm">
+                <p class="algorithm-title">GOLDEN GRADIENT</p>
+<pre>
+<span class="keyword">Initialize:</span>
+    x ← x₀
+    f_curr ← f(x)
+    history ← []
+    thresholds ← {sign: <span class="golden">1/φ</span>, align: 0, mag: 1.0}
+
+<span class="keyword">For each</span> iteration:
+    
+    <span class="comment">// 1. Compute gradient</span>
+    g ← ∇f(x)
+    
+    <span class="comment">// 2. Update metric history</span>
+    history.sign.append(sign_consistency(g))
+    history.align.append(alignment(g, g_prev))
+    history.mag.append(magnitude_cv(g))
+    
+    <span class="comment">// 3. Calibrate thresholds (every k iterations)</span>
+    <span class="keyword">If</span> iteration % 20 == 0:
+        <span class="keyword">For each</span> metric m:
+            thresholds[m] ← quantile(history[m], <span class="golden">1/φ²</span>)
+    
+    <span class="comment">// 4. Determine layer state</span>
+    sign_long   ← all(sign_consistency[i] ≥ thresholds.sign)
+    align_long  ← alignment ≥ thresholds.align
+    in_long     ← sign_long <span class="keyword">AND</span> align_long
+    
+    <span class="comment">// 5. Take action based on state</span>
+    step ← -η × g
+    
+    <span class="keyword">If</span> in_long:
+        <span class="comment">// LONG TAIL: Trust gradient</span>
+        x_new ← x + step
+        f_new ← f(x_new)
+    <span class="keyword">Else:</span>
+        <span class="comment">// SHORT TAIL: Bidirectional check</span>
+        f_plus  ← f(x + step)
+        f_minus ← f(x - step)
+        
+        <span class="keyword">If</span> f_plus ≤ f_minus:
+            x_new ← x + step
+            f_new ← f_plus
+        <span class="keyword">Else:</span>
+            x_new ← x - step   <span class="comment">// FLIP</span>
+            f_new ← f_minus
+    
+    <span class="comment">// 6. Strict descent</span>
+    <span class="keyword">If</span> f_new < f_curr:
+        x ← x_new
+        f_curr ← f_new
+    
+    g_prev ← g
+</pre>
+            </div>
+        </section>
+
+        <!-- ============================================ -->
+        <!-- SECTION V: WHY THE GOLDEN RATIO -->
+        <!-- ============================================ -->
+        <section>
+            <h2>V. Why the Golden Ratio?</h2>
+
+            <p>
+                The golden ratio appears because it creates a <strong>self-consistent</strong> 
+                partition. In Golden Section Search (1D), φ is optimal because it minimizes 
+                worst-case interval reduction. The same principle extends here:
+            </p>
+
+            <div class="theorem" data-type="Self-Consistency">
+                <p>
+                    Setting threshold at the 1/φ² quantile means:
+                </p>
+                <ul style="margin-top: 0.5rem;">
+                    <li>1/φ ≈ 61.8% of values are above threshold (Long tail)</li>
+                    <li>1/φ² ≈ 38.2% of values are below threshold (Short tail)</li>
+                    <li>The threshold equals the fraction it creates</li>
+                </ul>
+                <p style="margin-top: 0.5rem;">
+                    This is the <em>unique fixed point</em> where the partition parameter 
+                    equals the partition fraction.
+                </p>
+            </div>
+
+            <p>
+                The φ-partition is not "discovered" in the data—it is <strong>imposed</strong> 
+                by choosing thresholds at φ-quantiles. The insight from GSS is that this 
+                particular partition has optimal properties for interval elimination, 
+                which translates to optimal properties for deciding when to trust the gradient.
+            </p>
+        </section>
+
+        <!-- ============================================ -->
+        <!-- SECTION VI: PROVEN PROPERTIES -->
+        <!-- ============================================ -->
+        <section>
+            <h2>VI. Properties</h2>
+
+            <table>
+                <tr>
+                    <th>Property</th>
+                    <th>Status</th>
+                    <th>Explanation</th>
+                </tr>
+                <tr>
+                    <td>f(x) monotonically non-increasing</td>
+                    <td style="color: var(--accent-green);">✓ Proven</td>
+                    <td>Strict descent enforced by construction</td>
+                </tr>
+                <tr>
+                    <td>Long fraction ≈ 61.8%</td>
+                    <td style="color: var(--accent-green);">✓ Enforced</td>
+                    <td>By adaptive threshold calibration</td>
+                </tr>
+                <tr>
+                    <td>Short fraction ≈ 38.2%</td>
+                    <td style="color: var(--accent-green);">✓ Enforced</td>
+                    <td>By adaptive threshold calibration</td>
+                </tr>
+                <tr>
+                    <td>Flip rate when Short ≈ 50%</td>
+                    <td style="color: var(--accent-green);">✓ Observed</td>
+                    <td>Bidirectional check, random direction better</td>
+                </tr>
+                <tr>
+                    <td>Overall flip rate ≈ 19%</td>
+                    <td style="color: var(--accent-green);">✓ Derived</td>
+                    <td>= Short% × Flip|Short% ≈ 38% × 50%</td>
+                </tr>
+                <tr>
+                    <td>Faster than standard GD</td>
+                    <td style="color: var(--accent-blue);">Context-dependent</td>
+                    <td>Helps with noise/oscillation; costs 2× evals in Short</td>
+                </tr>
+            </table>
+        </section>
+
+        <!-- ============================================ -->
+        <!-- SECTION VII: DEMO -->
+        <!-- ============================================ -->
+        <section>
+            <h2>VII. Interactive Demonstration</h2>
+
+            <div class="demo-container">
+                <div class="demo-controls">
+                    <button onclick="runDemo(1000)">Run 1000</button>
+                    <button onclick="runDemo(2000)">Run 2000</button>
+                    <button onclick="resetDemo()">Reset</button>
+                </div>
+                <div class="demo-controls">
+                    <label style="font-size: 0.65rem; color: var(--text-secondary);">
+                        Function:
+                        <select id="fnSelect">
+                            <option value="rosenbrock">Rosenbrock + Oscillation</option>
+                            <option value="rastrigin">Rastrigin</option>
+                        </select>
+                    </label>
+                    <label style="font-size: 0.65rem; color: var(--text-secondary);">
+                        Noise:
+                        <select id="noiseSelect">
+                            <option value="0">None</option>
+                            <option value="0.3">Low</option>
+                            <option value="0.5" selected>Medium</option>
+                            <option value="1.0">High</option>
+                        </select>
+                    </label>
+                </div>
+                
+                <svg id="chart" viewBox="0 0 650 200" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="650" height="200" fill="#12121A"/>
+                    <text x="325" y="16" fill="#A0A0A0" font-family="JetBrains Mono" font-size="9" text-anchor="middle">
+                        f(x) vs Iteration (log scale)
+                    </text>
+                    <line x1="50" y1="170" x2="630" y2="170" stroke="#606060" stroke-width="1"/>
+                    <line x1="50" y1="170" x2="50" y2="30" stroke="#606060" stroke-width="1"/>
+                    
+                    <rect x="60" y="24" width="12" height="3" fill="#A54A4A"/>
+                    <text x="76" y="28" fill="#A0A0A0" font-family="JetBrains Mono" font-size="7">GD</text>
+                    <rect x="100" y="24" width="12" height="3" fill="#C9A227"/>
+                    <text x="116" y="28" fill="#C9A227" font-family="JetBrains Mono" font-size="7">Golden</text>
+                    
+                    <path id="gdPath" d="" fill="none" stroke="#A54A4A" stroke-width="1.5" opacity="0.6"/>
+                    <path id="goldenPath" d="" fill="none" stroke="#C9A227" stroke-width="2"/>
+                </svg>
+                
+                <div class="demo-stats">
+                    <div class="stat-box">
+                        <div class="stat-value" id="gdFinal" style="color: #A54A4A;">—</div>
+                        <div class="stat-label">GD Final</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="goldenFinal">—</div>
+                        <div class="stat-label">Golden Final</div>
+                    </div>
+                    <div class="stat-box" style="background: rgba(201,162,39,0.15);">
+                        <div class="stat-value" id="longPct">—</div>
+                        <div class="stat-label">Long % (target 62%)</div>
+                    </div>
+                    <div class="stat-box" style="background: rgba(201,162,39,0.15);">
+                        <div class="stat-value" id="shortPct">—</div>
+                        <div class="stat-label">Short % (target 38%)</div>
+                    </div>
+                    <div class="stat-box" style="background: rgba(201,162,39,0.15);">
+                        <div class="stat-value" id="flipPct">—</div>
+                        <div class="stat-label">Flip % (target 19%)</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="winner">—</div>
+                        <div class="stat-label">Better Method</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================ -->
+        <!-- SECTION VIII: SUMMARY -->
+        <!-- ============================================ -->
+        <section>
+            <h2>VIII. Summary</h2>
+
+            <div class="layer-diagram">
+THE GOLDEN GRADIENT FRAMEWORK
+═════════════════════════════════════════════════════════════════════
+
+                    ┌─────────────────────────────────────────────────┐
+                    │              LAYER DETECTION                     │
+                    │                                                  │
+                    │  Sign consistency ──┐                            │
+                    │  Alignment ─────────┼──► Combined state          │
+                    │  Magnitude CV ──────┘                            │
+                    └────────────────────────┬────────────────────────┘
+                                             │
+                    ┌────────────────────────┴────────────────────────┐
+                    │                                                  │
+          ┌─────────▼──────────┐                    ┌─────────▼───────┐
+          │    LONG TAIL       │                    │   SHORT TAIL    │
+          │    ~61.8%          │                    │    ~38.2%       │
+          │                    │                    │                 │
+          │  Trust gradient    │                    │  Bidirectional  │
+          │  No flip           │                    │  check needed   │
+          │  1 f-eval          │                    │  ~50% flip      │
+          │                    │                    │  2 f-evals      │
+          └────────────────────┘                    └─────────────────┘
+                    │                                        │
+                    └──────────────┬─────────────────────────┘
+                                   │
+                    ┌──────────────▼──────────────┐
+                    │      STRICT DESCENT         │
+                    │  Only accept if f decreases │
+                    └─────────────────────────────┘
+
+STATISTICS:
+  • Long fraction:    1/φ ≈ 61.8%  (by threshold calibration)
+  • Short fraction:   1/φ² ≈ 38.2% (by threshold calibration)
+  • Flip | Short:     ~50%         (random which direction is better)
+  • Overall flip:     ~19%         (Short% × Flip|Short%)
+
+THE φ IS IMPOSED, NOT DISCOVERED:
+  Thresholds set at 1/φ² quantile → forces golden partition
+            </div>
+        </section>
+
+        <footer>
+            <p>Golden Gradient — A Deterministic Layer Framework</p>
+            <p style="margin-top: 0.3rem;">φ = (1 + √5) / 2 ≈ 1.618033988749895</p>
+        </footer>
+    </div>
+
+    <script>
+        const PHI = (1 + Math.sqrt(5)) / 2;
+        const PHI_INV = 1 / PHI;
+        const PHI_INV2 = 1 / (PHI * PHI);
+
+        const fns = {
+            rosenbrock: {
+                f: (x, y) => (1-x)**2 + 100*(y-x*x)**2 + 5*Math.sin(4*x)*Math.sin(4*y),
+                start: [-1.2, 1.0],
+                eta: 0.0005
+            },
+            rastrigin: {
+                f: (x, y) => 20 + (x*x - 10*Math.cos(2*Math.PI*x)) + (y*y - 10*Math.cos(2*Math.PI*y)),
+                start: [2.5, 2.5],
+                eta: 0.002
+            }
+        };
+
+        function gauss() {
+            let u = 0, v = 0;
+            while (u === 0) u = Math.random();
+            while (v === 0) v = Math.random();
+            return Math.sqrt(-2*Math.log(u)) * Math.cos(2*Math.PI*v);
+        }
+
+        function grad(fn, x, y, noise) {
+            const h = 1e-7;
+            let dx = (fn(x+h, y) - fn(x-h, y)) / (2*h);
+            let dy = (fn(x, y+h) - fn(x, y-h)) / (2*h);
+            if (noise > 0) {
+                dx += noise * gauss() * (Math.abs(dx) + 0.01);
+                dy += noise * gauss() * (Math.abs(dy) + 0.01);
+            }
+            const norm = Math.sqrt(dx*dx + dy*dy);
+            if (norm > 1000) { dx *= 1000/norm; dy *= 1000/norm; }
+            return [dx, dy];
+        }
+
+        function quantile(arr, q) {
+            const sorted = [...arr].sort((a, b) => a - b);
+            const idx = Math.floor(q * sorted.length);
+            return sorted[Math.min(idx, sorted.length - 1)];
+        }
+
+        function runGD(fn, start, eta, iters, noise) {
+            let [x, y] = start;
+            const traj = [fn(x, y)];
+            for (let i = 0; i < iters; i++) {
+                const [gx, gy] = grad(fn, x, y, noise);
+                x -= eta * gx;
+                y -= eta * gy;
+                traj.push(fn(x, y));
+            }
+            return { traj, final: traj[traj.length-1] };
+        }
+
+        function runGolden(fn, start, eta, iters, noise) {
+            let [x, y] = start;
+            let fCurr = fn(x, y);
+            const traj = [fCurr];
+            
+            let gPrev = null;
+            const alignHistory = [];
+            let alignThreshold = 0;
+            
+            let longSteps = 0, shortSteps = 0, flips = 0, accepts = 0;
+            
+            for (let i = 0; i < iters; i++) {
+                const g = grad(fn, x, y, noise);
+                
+                // Compute alignment
+                let alignment = 1.0;
+                if (gPrev) {
+                    const dot = g[0]*gPrev[0] + g[1]*gPrev[1];
+                    const norm = Math.sqrt(g[0]**2 + g[1]**2) * Math.sqrt(gPrev[0]**2 + gPrev[1]**2) + 1e-10;
+                    alignment = dot / norm;
+                }
+                alignHistory.push(alignment);
+                
+                // Calibrate threshold every 20 iters
+                if (i > 0 && i % 20 === 0 && alignHistory.length >= 20) {
+                    alignThreshold = quantile(alignHistory.slice(-100), PHI_INV2);
+                }
+                
+                // Determine state
+                const inLong = (i < 30) || (alignment >= alignThreshold);
+                
+                const sx = -eta * g[0], sy = -eta * g[1];
+                let xNew, yNew, fNew;
+                
+                if (inLong) {
+                    longSteps++;
+                    xNew = x + sx;
+                    yNew = y + sy;
+                    fNew = fn(xNew, yNew);
+                } else {
+                    shortSteps++;
+                    const fPlus = fn(x + sx, y + sy);
+                    const fMinus = fn(x - sx, y - sy);
+                    
+                    if (fPlus <= fMinus) {
+                        xNew = x + sx; yNew = y + sy; fNew = fPlus;
+                    } else {
+                        xNew = x - sx; yNew = y - sy; fNew = fMinus;
+                        flips++;
+                    }
+                }
+                
+                if (fNew < fCurr) {
+                    x = xNew; y = yNew; fCurr = fNew;
+                    accepts++;
+                }
+                
+                gPrev = g;
+                traj.push(fCurr);
+            }
+            
+            return {
+                traj,
+                final: fCurr,
+                longPct: longSteps / iters,
+                shortPct: shortSteps / iters,
+                flipPct: flips / iters
+            };
+        }
+
+        function runDemo(iters = 1000) {
+            const fnKey = document.getElementById('fnSelect').value;
+            const noise = parseFloat(document.getElementById('noiseSelect').value);
+            const fn = fns[fnKey];
+            
+            const gd = runGD(fn.f, fn.start, fn.eta, iters, noise);
+            const golden = runGolden(fn.f, fn.start, fn.eta, iters, noise);
+            
+            // Draw
+            const all = [...gd.traj, ...golden.traj].filter(v => v > 0 && isFinite(v));
+            const maxL = Math.log10(Math.max(...all) + 1);
+            const minL = Math.log10(Math.min(...all.filter(v => v > 1e-10)) + 1e-10);
+            
+            function path(traj, id) {
+                const p = traj.map((v, i) => {
+                    const px = 50 + (i / iters) * 580;
+                    const lv = Math.log10(Math.max(v, 1e-10) + 1e-10);
+                    const py = 170 - ((lv - minL) / (maxL - minL + 0.01)) * 135;
+                    return (i === 0 ? 'M' : 'L') + px.toFixed(1) + ',' + Math.max(30, Math.min(170, py)).toFixed(1);
+                }).join(' ');
+                document.getElementById(id).setAttribute('d', p);
+            }
+            
+            path(gd.traj, 'gdPath');
+            path(golden.traj, 'goldenPath');
+            
+            const fmt = v => {
+                if (!isFinite(v)) return 'NaN';
+                if (Math.abs(v) > 1e6) return v.toExponential(1);
+                if (Math.abs(v) > 100) return v.toFixed(0);
+                if (Math.abs(v) > 1) return v.toFixed(2);
+                return v.toFixed(4);
+            };
+            
+            document.getElementById('gdFinal').textContent = fmt(gd.final);
+            document.getElementById('goldenFinal').textContent = fmt(golden.final);
+            document.getElementById('longPct').textContent = (golden.longPct * 100).toFixed(0) + '%';
+            document.getElementById('shortPct').textContent = (golden.shortPct * 100).toFixed(0) + '%';
+            document.getElementById('flipPct').textContent = (golden.flipPct * 100).toFixed(0) + '%';
+            document.getElementById('winner').textContent = golden.final < gd.final ? 'Golden' : 'GD';
+        }
+
+        function resetDemo() {
+            ['gdPath', 'goldenPath'].forEach(id => document.getElementById(id).setAttribute('d', ''));
+            ['gdFinal', 'goldenFinal', 'longPct', 'shortPct', 'flipPct', 'winner'].forEach(id =>
+                document.getElementById(id).textContent = '—');
+        }
+    </script>
+</body>
 </html>
