@@ -351,7 +351,28 @@ Layer selection:
   </section>
 
   <section class="section">
-    <h2 class="section-title">VIII. Interactive Demonstration (Rigorous Simulation)</h2>
+    <h2 class="section-title">VIII. Related Work</h2>
+    <p>
+      <b>Stochastic gradient methods</b> (SGD, momentum, RMSProp, Adam) treat noisy directionality as an additive
+      perturbation to be averaged out, assuming local gradients still define a stable descent direction.
+      GG-Topo instead models direction as a <em>distribution over correctness</em>, with explicit tail regimes and
+      verification costs that decide when to probe the counterfactual [1].
+    </p>
+    <p>
+      <b>Bandit strategies</b> such as UCB and Thompson sampling focus on exploration vs exploitation over arms.
+      GG-Topo borrows the belief-updating flavor but differs in that “arms” are not independent; they are nodes on a
+      topology with cross-section flips and message passing, so confidence is propagated through neighbors rather than
+      estimated in isolation [2].
+    </p>
+    <p>
+      <b>Line search and Golden-section methods</b> optimize along a 1D interval by shrinking brackets deterministically.
+      GG-Topo treats the search direction itself as uncertain and uses golden thresholds as probabilistic decision
+      boundaries, generalizing the spirit of golden-section to noisy, multi-layer dynamics [3].
+    </p>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">IX. Interactive Demonstration (Rigorous Simulation)</h2>
     <p class="subtitle">
       Runs GG-Topo and multiple baselines under identical evaluation budgets, plots mean cumulative improvement ±95% CI,
       shows calibration, and highlights flip cross-sections.
@@ -561,6 +582,15 @@ GG-Topo step:
     <span class="badge2" id="suite_meta"></span>
   </div>
   <div class="plot"><canvas id="fig_suite" height="340"></canvas></div>
+</section>
+
+<section class="section">
+  <h2 class="section-title">References</h2>
+  <ol class="small">
+    <li>Robbins, H., &amp; Monro, S. (1951). A stochastic approximation method. <em>Annals of Mathematical Statistics</em>.</li>
+    <li>Auer, P., Cesa-Bianchi, N., &amp; Fischer, P. (2002). Finite-time analysis of the multiarmed bandit problem. <em>Machine Learning</em>.</li>
+    <li>Kiefer, J. (1953). Sequential minimax search for a maximum. <em>Proceedings of the AMS</em>.</li>
+  </ol>
 </section>
 
 <footer class="footer">
