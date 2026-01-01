@@ -1,6 +1,0 @@
-
-Figure 1 (self-contained):
-Cumulative gain versus iteration on an oscillatory loss surface with rotating principal curvature.
-Gold: Golden Gradient; Red: gradient descent.
-Golden Gradient accumulates sustained monotonic gains by rejecting directionally inconsistent updates,
-while adaptive optimizers fail due to variance amplification and curvature misalignment.
