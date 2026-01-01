@@ -630,7 +630,7 @@ history ← []
                 <div class="demo-chart">
                     <svg id="trajectoryChart" viewBox="0 0 720 180" xmlns="http://www.w3.org/2000/svg">
                         <rect width="720" height="180" fill="#1C1C24"/>
-                        <text x="360" y="16" fill="#9A9A9A" font-family="Source Code Pro, monospace" font-size="10" text-anchor="middle">f(x) over iterations</text>
+                        <text x="360" y="16" fill="#9A9A9A" font-family="Source Code Pro, monospace" font-size="10" text-anchor="middle">cumulative φ-weighted gain/loss</text>
                         
                         <!-- Legend -->
                         <rect x="520" y="6" width="12" height="3" fill="#C45B5B"/>
@@ -821,6 +821,8 @@ history ← []
         
         const PHI = (1 + Math.sqrt(5)) / 2;
         const PHI_INV2 = 1 / (PHI * PHI);  // ≈ 0.382
+        const LONG_GAIN = 1 / PHI;         // ≈ 0.618
+        const SHORT_LOSS = -PHI_INV2;      // ≈ -0.382
 
         // Test functions with analytical gradients
         const functions = {
@@ -850,21 +852,40 @@ history ← []
             }
         };
 
+        // Deterministic RNG (Mulberry32) + hash for reproducible runs
+        function hashString(str) {
+            let hash = 2166136261;
+            for (let i = 0; i < str.length; i++) {
+                hash ^= str.charCodeAt(i);
+                hash = Math.imul(hash, 16777619);
+            }
+            return hash >>> 0;
+        }
+
+        function makeRng(seed) {
+            let t = seed >>> 0;
+            return function() {
+                t += 0x6D2B79F5;
+                let r = Math.imul(t ^ (t >>> 15), t | 1);
+                r ^= r + Math.imul(r ^ (r >>> 7), r | 61);
+                return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+            };
+        }
+
         // Box-Muller for Gaussian noise
-        function randn() {
+        function randn(rng) {
             let u = 0, v = 0;
-            while (u === 0) u = Math.random();
-            while (v === 0) v = Math.random();
+            while (u === 0) u = rng();
+            while (v === 0) v = rng();
             return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
         }
 
         // Add noise to gradient (multiplicative + additive)
-        function noisyGrad(gradFn, x, y, noise) {
+        function noisyGrad(gradFn, x, y, noise, rng) {
             const [gx, gy] = gradFn(x, y);
-            const mag = Math.sqrt(gx*gx + gy*gy) + 0.1;
             return [
-                gx * (1 + noise * randn()) + noise * 0.1 * randn(),
-                gy * (1 + noise * randn()) + noise * 0.1 * randn()
+                gx * (1 + noise * randn(rng)) + noise * 0.1 * randn(rng),
+                gy * (1 + noise * randn(rng)) + noise * 0.1 * randn(rng)
             ];
         }
 
@@ -879,24 +900,48 @@ history ← []
         }
 
         // Standard Gradient Descent
-        function runStandardGD(fn, iters, noise) {
+        function runStandardGD(fn, iters, noise, rng) {
             let [x, y] = [...fn.start];
             const traj = [];
+            const events = [];
+            const alignHist = [];
+            let threshold = 0;
+            let gPrev = null;
+            const warmup = Math.min(25, Math.floor(iters * 0.05));
             
             for (let i = 0; i < iters; i++) {
                 traj.push(fn.f(x, y));
-                const [gx, gy] = noisyGrad(fn.grad, x, y, noise);
+                const [gx, gy] = noisyGrad(fn.grad, x, y, noise, rng);
+
+                let align = 1;
+                if (gPrev !== null) {
+                    const dot = gx * gPrev[0] + gy * gPrev[1];
+                    const n1 = Math.sqrt(gx * gx + gy * gy) + 1e-10;
+                    const n2 = Math.sqrt(gPrev[0] * gPrev[0] + gPrev[1] * gPrev[1]) + 1e-10;
+                    align = dot / (n1 * n2);
+                }
+
+                alignHist.push(align);
+                if (alignHist.length > 100) alignHist.shift();
+
+                if (i >= warmup && i % 15 === 0 && alignHist.length >= 15) {
+                    threshold = quantile(alignHist, PHI_INV2);
+                }
+
+                const inLong = (i < warmup) || (align >= threshold);
+                events.push({ long: inLong, flipped: false });
                 x -= fn.lr * gx;
                 y -= fn.lr * gy;
                 x = Math.max(-10, Math.min(10, x));
                 y = Math.max(-10, Math.min(10, y));
+                gPrev = [gx, gy];
             }
             traj.push(fn.f(x, y));
-            return { traj, best: Math.min(...traj) };
+            return { traj, best: Math.min(...traj), events };
         }
 
         // Golden Gradient Descent
-        function runGoldenGD(fn, iters, noise) {
+        function runGoldenGD(fn, iters, noise, rng) {
             let [x, y] = [...fn.start];
             const traj = [];
             const events = [];
@@ -910,7 +955,7 @@ history ← []
             for (let i = 0; i < iters; i++) {
                 traj.push(fn.f(x, y));
                 
-                const g = noisyGrad(fn.grad, x, y, noise);
+                const g = noisyGrad(fn.grad, x, y, noise, rng);
                 
                 // Compute alignment with previous gradient
                 let align = 1;
@@ -982,16 +1027,15 @@ history ← []
 
         // Draw trajectory chart
         function drawTrajectory(gdTraj, goldenTraj) {
-            const all = [...gdTraj, ...goldenTraj].filter(v => isFinite(v) && v > 0);
+            const all = [...gdTraj, ...goldenTraj].filter(v => isFinite(v));
             if (all.length === 0) return;
-            
-            const sorted = [...all].sort((a, b) => a - b);
-            const minV = Math.max(sorted[Math.floor(sorted.length * 0.01)] || sorted[0], 1e-10);
-            const maxV = sorted[Math.floor(sorted.length * 0.99)] || sorted[sorted.length - 1];
-            
-            const logMin = Math.log10(minV);
-            const logMax = Math.log10(maxV);
-            const range = Math.max(logMax - logMin, 0.3);
+
+            const minRaw = Math.min(...all);
+            const maxRaw = Math.max(...all);
+            const span = Math.max(maxRaw - minRaw, 1e-6);
+            const padding = span * 0.1;
+            const minV = minRaw - padding;
+            const maxV = maxRaw + padding;
             
             const left = 50, right = 700, top = 25, bottom = 155;
             const w = right - left, h = bottom - top;
@@ -1001,10 +1045,9 @@ history ← []
                 const n = traj.length;
                 for (let i = 0; i < n; i++) {
                     const v = traj[i];
-                    if (!isFinite(v) || v <= 0) continue;
+                    if (!isFinite(v)) continue;
                     const px = left + (i / (n - 1)) * w;
-                    const lv = Math.log10(Math.max(v, minV));
-                    const py = bottom - ((lv - logMin) / range) * h;
+                    const py = bottom - ((v - minV) / (maxV - minV)) * h;
                     d += (d === '' ? 'M' : 'L') + px.toFixed(1) + ',' + Math.max(top, Math.min(bottom, py)).toFixed(1);
                 }
                 return d;
@@ -1013,10 +1056,25 @@ history ← []
             document.getElementById('gdPath').setAttribute('d', makePath(gdTraj));
             document.getElementById('goldenPath').setAttribute('d', makePath(goldenTraj));
             
-            const fmtY = v => v >= 100 ? v.toFixed(0) : v >= 1 ? v.toFixed(1) : v.toFixed(3);
+            const fmtY = v => {
+                const abs = Math.abs(v);
+                if (abs >= 100) return v.toFixed(0);
+                if (abs >= 1) return v.toFixed(2);
+                return v.toFixed(3);
+            };
             document.getElementById('yMaxLabel').textContent = fmtY(maxV);
             document.getElementById('yMinLabel').textContent = fmtY(minV);
             document.getElementById('xMaxLabel').textContent = (gdTraj.length - 1).toString();
+        }
+
+        function buildGainLossTrail(events) {
+            const trail = [0];
+            let total = 0;
+            for (const event of events) {
+                total += event.long ? LONG_GAIN : SHORT_LOSS;
+                trail.push(total);
+            }
+            return trail;
         }
 
         // Draw regime strip using canvas
@@ -1087,13 +1145,18 @@ history ← []
             const fnKey = document.getElementById('fnSelect').value;
             const noise = parseFloat(document.getElementById('noiseSelect').value);
             const fn = functions[fnKey];
+            const seed = hashString(`${fnKey}|${noise}|${iters}`);
+            const rngStandard = makeRng(seed);
+            const rngGolden = makeRng(seed);
             
             // Run both algorithms
-            const gd = runStandardGD(fn, iters, noise);
-            const golden = runGoldenGD(fn, iters, noise);
+            const gd = runStandardGD(fn, iters, noise, rngStandard);
+            const golden = runGoldenGD(fn, iters, noise, rngGolden);
+            const gdGainTrail = buildGainLossTrail(gd.events);
+            const goldenGainTrail = buildGainLossTrail(golden.events);
             
             // Draw visualizations
-            drawTrajectory(gd.traj, golden.traj);
+            drawTrajectory(gdGainTrail, goldenGainTrail);
             drawRegimeStrip(golden.events);
             drawConvergence(golden.events);
             
