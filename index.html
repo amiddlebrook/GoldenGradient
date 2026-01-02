@@ -286,60 +286,53 @@
     probabilities.
   </p>
   <p>
-    Cross‑sectional frequency‑state memory is crucial because heavy‑tailed phenomena mean not all long tails are
-    equal.  Some combinations of high/low moves across different dimensions lead to large improvements, whereas others
-    do not.  By maintaining separate success probabilities for each multi‑dimensional state, Golden Gradient learns
-    which long‑tail regimes are productive and which should be avoided.  Periodic verification steps and drift
-    detection continue to monitor changes in these state distributions.
-  </p>
-  <p>
-    In financial applications, for example, one can discretise market variables into high and low regimes.  Dimension 1
-    might reflect log‑returns (price direction), dimension 2 realised volatility (spread), dimension 3 order‑flow
-    imbalance (volume dominance), and dimension 4 time‑to‑maturity or correlation.  Each observed trade or optimisation
-    step maps to a pattern such as (L,S,L,S).  The algorithm updates success counts for this pattern and uses the
-    resulting probability to guide subsequent actions.  Because the number of possible states grows exponentially with
-    the number of dimensions, implementations may group similar states or apply hierarchical priors to share information
-    and keep the state space manageable.
-  </p>
-
-  <h3 style="font-size:1.25rem;margin-top:2rem;color:var(--gold-light);border-bottom:1px solid rgba(212,175,55,0.1);padding-bottom:0.3rem;">
-    Four‑Dimensional Hypercube Representation and Wasserstein Metrics
-  </h3>
-  <p>
     To understand decision‑making in truly multidimensional settings, consider a <em>4D hypercube</em>
     where each axis represents a distinct frequency layer.  Each layer applies <strong>Golden Section Search (GSS)</strong>—the
     frequency distribution itself is a golden‑ratio distribution where the center holds the most probability
-    mass.  In this representation, every point in the hypercube corresponds to a unique combination of states across
-    four dimensions—for instance, (L,S,L,S) indicates "long" decisions on dimensions 1 and 3, and "short" decisions
-    on dimensions 2 and 4.  Each such point carries a probability mass derived from historical observations.
+    mass.  Every point in the hypercube corresponds to a unique combination of states across four dimensions—for
+    instance, (L,S,L,S) indicates "long" decisions on dimensions 1 and 3, and "short" decisions on dimensions 2 and 4.
+    Each such point carries a probability mass derived from historical observations.
   </p>
   <p>
     In higher‑dimensional spaces, dimensional cross‑sections reveal a crucial phenomenon: rather than a single long tail
     and a single short tail, the distribution exhibits <em>multiple long tails</em> and <em>multiple short tails</em>,
-    each with different probabilities.  This multiplicity is what enables informed choice.  The <strong>Wasserstein
-    distance</strong> measures the minimum "transport cost" required to reshape one probability distribution into another.
-    Here, we compute Wasserstein distances between various long‑tail peaks and short‑tail peaks to identify which
-    specific long tail offers the highest likelihood of success.  A large Wasserstein distance between a particular
-    long‑tail peak and the short‑tail regime indicates that this long tail occupies a distinct, exploitable region of
-    the 4D state space.  A small distance suggests overlap or ambiguity, prompting more cautious exploration.
+    each with different probabilities.  This multiplicity is what enables informed choice—the algorithm selects among
+    different long tails based on which offers the highest likelihood of success.  Cross‑sectional frequency‑state
+    memory is crucial because heavy‑tailed phenomena mean not all long tails are equal.  Some combinations of high/low
+    moves across different dimensions lead to large improvements, whereas others do not.
   </p>
   <p>
-    At <em>cross‑sectional intersection points</em>—where multiple Golden Section Search applications from different frequency layers intersect—the
-    algorithm evaluates which combination of long or short moves yields the highest expected improvement.  For
-    example, one might find that moving long on dimension 1 (price direction) combined with short on dimension 2
-    (volatility) and long on dimensions 3 and 4 (order‑flow and correlation) produces the most reliable gains.
-    These intersections form a <strong>4D probability heat map</strong>: regions of the hypercube with consistently
-    high success rates glow "hot," while underperforming combinations remain "cold."  The algorithm preferentially
-    samples hot regions, yet periodically verifies cold zones to detect regime shifts.
+    At <em>cross‑sectional intersection points</em>—where multiple Golden Section Search applications from different
+    frequency layers intersect—the algorithm evaluates which combination of long or short moves yields the highest
+    expected improvement.  These intersections form a <strong>4D probability heat map</strong>: regions of the
+    hypercube with consistently high success rates glow "hot," while underperforming combinations remain "cold."
+    The algorithm preferentially samples hot regions, yet periodically verifies cold zones to detect regime shifts.
   </p>
   <p>
     Crucially, each frequency layer maintains its own <em>memory</em>—a record of past state transitions and their
-    outcomes—and its own Wasserstein distance to the baseline distribution.  When the Wasserstein distance for any
-    layer exceeds a threshold, the system flags a potential drift and triggers additional verification steps.
-    The interplay of these per‑layer memories allows Golden Gradient to adapt independently along each dimension
-    while still reasoning about their joint cross‑sectional structure.  In effect, the 4D hypercube serves as both
-    a navigational map and a diagnostic dashboard, revealing which multidimensional regimes are worth pursuing and
-    which have become stale.
+    outcomes.  In multidimensional space, state frequencies form a <em>topology of probabilities</em> where distances
+    between frequency layers carry meaningful information.  The <strong>Wasserstein distance</strong> measures the
+    minimum "transport cost" required to reshape one probability distribution into another, making it ideal for
+    comparing distances <em>between</em> state frequency layers.  When the Wasserstein distance between a frequency
+    layer's current distribution and its baseline exceeds a threshold, the system flags a potential drift and
+    triggers additional verification steps.  This metric is particularly powerful in multidimensional settings because
+    it captures the geometric structure of the probability topology—how probability mass is distributed across the
+    hypercube and how it shifts over time.  In one‑dimensional settings, Wasserstein distance offers little advantage
+    for understanding probability localities, but in higher dimensions it becomes essential for tracking which
+    combinations of states are drifting and which remain stable.
+  </p>
+  <p>
+    In financial applications, for example, one can discretise market variables into high and low regimes.  Dimension 1
+    might reflect log‑returns (price direction), dimension 2 realised volatility (spread), dimension 3 order‑flow
+    imbalance (volume dominance), and dimension 4 time‑to‑maturity or correlation.  Each observed trade or optimisation
+    step maps to a pattern such as (L,S,L,S).  The algorithm updates success counts for this pattern and uses the
+    resulting probability to guide subsequent actions.  By maintaining separate success probabilities for each
+    multi‑dimensional state, Golden Gradient learns which long‑tail regimes are productive and which should be avoided.
+    Because the number of possible states grows exponentially with the number of dimensions, implementations may group
+    similar states or apply hierarchical priors to share information and keep the state space manageable.  The interplay
+    of these per‑layer memories allows Golden Gradient to adapt independently along each dimension while still reasoning
+    about their joint cross‑sectional structure.  In effect, the 4D hypercube serves as both a navigational map and a
+    diagnostic dashboard, revealing which multidimensional regimes are worth pursuing and which have become stale.
   </p>
 </section>
 
