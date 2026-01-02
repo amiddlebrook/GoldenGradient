@@ -6,20 +6,20 @@
     <title>Unified Golden‑Ratio Decision Systems</title>
     <!--
         This document synthesises the mathematical, algorithmic and empirical
-        foundations of the GoldenGradient decision framework.  It is styled
+        foundations of the Golden Gradient decision framework.  It is styled
         using the colour palette and layout patterns of the original
-        GoldenGradient v2 prototype to retain a familiar look and feel.
+        Golden Gradient v2 prototype to retain a familiar look and feel.
         Sections outline how recursive golden‑ratio partitioning appears across
         mathematics, finance, machine learning, signal processing, game
         theory, biology, computer science and operations research.  The
         frequency‑state model is formalised, followed by a simple simulation
-        comparing GoldenGradient against CMA‑ES, Nelder–Mead, Bayesian
+        comparing Golden Gradient against CMA‑ES, Nelder–Mead, Bayesian
         optimisation and random search on a toy problem.  A summary table
         highlights the final performance of each method.  All charts are
         drawn with vanilla Canvas to avoid external dependencies.
     -->
     <style>
-    /* Colour palette adapted from the original GoldenGradient v2 */
+    /* Colour palette adapted from the original Golden Gradient v2 */
     :root {
         --gold: #D4AF37;
         --gold-light: #F4E4A6;
@@ -186,7 +186,7 @@
       resonances.  This property underpins many stability and optimisation results.  Here we
       synthesise the mathematical, economic, engineering and biological appearances of φ, and
       build a unified <strong>frequency‑state decision model</strong> that generalises golden‑ratio search.  We then
-      compare this GoldenGradient approach with traditional optimisers such as CMA‑ES, Nelder–Mead,
+      compare this Golden Gradient approach with traditional optimisers such as CMA‑ES, Nelder–Mead,
       Bayesian optimisation and random search.
     </p>
   </section>
@@ -221,7 +221,7 @@
     <p>
       <strong>Machine learning.</strong>  Modern hyperparameter and neural architecture search methods
       implicitly partition spaces into “good” and “bad” regions.  Golden‑ratio proximal algorithms
-      achieve large step sizes and provable convergence.  GoldenGradient extends this by
+      achieve large step sizes and provable convergence.  Golden Gradient extends this by
       treating the entire search process as a Markov decision problem with φ‑based priors.
     </p>
     <p>
@@ -248,7 +248,7 @@
   <section>
     <h2>The Frequency‑State Model</h2>
     <p>
-      GoldenGradient generalises golden‑section search by framing optimisation as navigation on a
+      Golden Gradient generalises golden‑section search by framing optimisation as navigation on a
       <em>frequency‑state graph</em>.  At each iteration, a decision is made to cut the search region in
       a φ ratio (hi≈0.618 vs lo≈0.382).  The algorithm records a history of long (L) or short (S)
       decisions, forming a discrete state sequence.  Each state s has an associated success
@@ -269,7 +269,7 @@
       This frequency‑state approach retains the interval‑reduction optimality of golden‑section
       search while learning from context.  It naturally incorporates additional optimisers
       (CMA‑ES, Nelder–Mead, Bayesian optimisation, random search) by allowing them to operate as
-      modules that propose candidate points.  GoldenGradient then uses its learned state
+      modules that propose candidate points.  Golden Gradient then uses its learned state
       probabilities to accept or reject these proposals and to decide when to verify.
     </p>
   </section>
@@ -277,7 +277,7 @@
 <section>
   <h2>Multi‑Dimensional Extensions</h2>
   <p>
-    GoldenGradient can be extended to multiple variables by treating each dimension as its own search axis.
+    Golden Gradient can be extended to multiple variables by treating each dimension as its own search axis.
     At each iteration the algorithm cuts along each dimension in the golden ratio and records whether the move
     was on the high side (L) or low side (S).  The collection of decisions across all dimensions forms a
     discrete <em>cross‑sectional state</em> represented by a tuple (s<sub>1</sub>, s<sub>2</sub>, …, s<sub>d</sub>).  
@@ -288,7 +288,7 @@
   <p>
     Cross‑sectional frequency‑state memory is crucial because heavy‑tailed phenomena mean not all long tails are
     equal.  Some combinations of high/low moves across different dimensions lead to large improvements, whereas others
-    do not.  By maintaining separate success probabilities for each multi‑dimensional state, GoldenGradient learns
+    do not.  By maintaining separate success probabilities for each multi‑dimensional state, Golden Gradient learns
     which long‑tail regimes are productive and which should be avoided.  Periodic verification steps and drift
     detection continue to monitor changes in these state distributions.
   </p>
@@ -307,7 +307,7 @@
   <section>
     <h2>Simulation and Benchmarks</h2>
     <p>
-      To illustrate how GoldenGradient compares against classical optimisers, we run a toy
+      To illustrate how Golden Gradient compares against classical optimisers, we run a toy
       optimisation on a simple one‑dimensional function f(x)=\,(x\!−\!10)^2.  Each algorithm
       receives the same evaluation budget.  Cumulative improvement is measured as the decrease in
       f relative to the initial value.  The curves below are averages of 30 random seeds; the
@@ -339,7 +339,7 @@
 
 <!-- Chart drawing script -->
 <script>
-// Basic drawing functions inspired by the original GoldenGradient
+// Basic drawing functions inspired by the original Golden Gradient
 function setupCanvas(canvas) {
   const ctx = canvas.getContext('2d');
   const dpr = window.devicePixelRatio || 1;
