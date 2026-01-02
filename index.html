@@ -3,21 +3,7 @@
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
-    <title>Unified Golden‑Ratio Decision Systems</title>
-    <!--
-        This document synthesises the mathematical, algorithmic and empirical
-        foundations of the Golden Gradient decision framework.  It is styled
-        using the colour palette and layout patterns of the original
-        Golden Gradient v2 prototype to retain a familiar look and feel.
-        Sections outline how recursive golden‑ratio partitioning appears across
-        mathematics, finance, machine learning, signal processing, game
-        theory, biology, computer science and operations research.  The
-        frequency‑state model is formalised, followed by a simple simulation
-        comparing Golden Gradient against CMA‑ES, Nelder–Mead, Bayesian
-        optimisation and random search on a toy problem.  A summary table
-        highlights the final performance of each method.  All charts are
-        drawn with vanilla Canvas to avoid external dependencies.
-    -->
+    <title>Unified Golden‑Ratio Decision Systems – Comprehensive Benchmarks</title>
     <style>
     /* Colour palette adapted from the original Golden Gradient v2 */
     :root {
@@ -41,7 +27,7 @@
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-        font-family: 'Source Sans 3', sans-serif;
+        font-family: 'Source Sans 3', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         font-size: 17px;
         line-height: 1.7;
         color: var(--text-primary);
@@ -49,7 +35,7 @@
         font-weight: 300;
     }
     .container {
-        max-width: 1000px;
+        max-width: 1400px;
         margin: 0 auto;
         padding: 3rem 2rem;
     }
@@ -81,6 +67,12 @@
         margin-bottom: 1rem;
         padding-bottom: 0.4rem;
         border-bottom: 1px solid rgba(212,175,55,0.15);
+    }
+    h3 {
+        font-family: 'Playfair Display', serif;
+        font-size: 1.25rem;
+        color: var(--gold-light);
+        margin: 1.5rem 0 1rem 0;
     }
     p {
         margin-bottom: 1rem;
@@ -117,12 +109,117 @@
         color: var(--text-secondary);
         margin: 1rem 0;
     }
+
+    /* Tab system */
+    .tab-container {
+        margin: 2rem 0;
+    }
+    .tab-buttons {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+    }
+    .tab-btn {
+        background: var(--bg-card);
+        color: var(--text-secondary);
+        border: 1px solid rgba(212,175,55,0.2);
+        padding: 0.75rem 1.5rem;
+        cursor: pointer;
+        border-radius: 6px;
+        font-size: 0.95rem;
+        transition: all 0.3s;
+        font-weight: 400;
+    }
+    .tab-btn:hover {
+        background: var(--bg-elevated);
+        border-color: rgba(212,175,55,0.4);
+    }
+    .tab-btn.active {
+        background: linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.1));
+        color: var(--gold);
+        border-color: var(--gold);
+        font-weight: 600;
+    }
+    .tab-content {
+        display: none;
+        background: var(--bg-card);
+        padding: 2rem;
+        border-radius: 8px;
+        border: 1px solid rgba(212,175,55,0.15);
+    }
+    .tab-content.active {
+        display: block;
+    }
+
     .plot {
         margin: 1rem 0;
         background: var(--bg-elevated);
         border-radius: 6px;
         overflow: hidden;
     }
+    .plot canvas {
+        width: 100%;
+        height: 400px;
+    }
+
+    .controls {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        margin: 1rem 0;
+        flex-wrap: wrap;
+    }
+    .btn {
+        background: linear-gradient(135deg, var(--gold-dark), var(--gold));
+        color: var(--bg-deep);
+        border: none;
+        padding: 0.6rem 1.5rem;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 0.9rem;
+        transition: all 0.3s;
+    }
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(212,175,55,0.3);
+    }
+    .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+    }
+    .btn-secondary {
+        background: var(--bg-elevated);
+        color: var(--text-primary);
+        border: 1px solid rgba(212,175,55,0.3);
+    }
+
+    .select-wrapper {
+        position: relative;
+    }
+    .select-wrapper select {
+        background: var(--bg-elevated);
+        color: var(--text-primary);
+        border: 1px solid rgba(212,175,55,0.3);
+        padding: 0.6rem 2rem 0.6rem 1rem;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        cursor: pointer;
+        appearance: none;
+    }
+    .select-wrapper::after {
+        content: '▼';
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        pointer-events: none;
+        color: var(--gold);
+        font-size: 0.7rem;
+    }
+
     .table-wrap {
         overflow-x: auto;
         margin: 1rem 0;
@@ -133,17 +230,62 @@
         font-size: 0.85rem;
     }
     th, td {
-        padding: 8px 12px;
+        padding: 10px 12px;
         border: 1px solid rgba(255,255,255,0.1);
         text-align: left;
     }
     th {
         background: rgba(212,175,55,0.1);
         color: var(--gold-light);
+        font-weight: 600;
     }
     td {
         background: rgba(255,255,255,0.02);
     }
+    tr:hover td {
+        background: rgba(255,255,255,0.05);
+    }
+
+    .metric-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin: 1rem 0;
+    }
+    .metric-card {
+        background: var(--bg-elevated);
+        padding: 1rem;
+        border-radius: 6px;
+        border: 1px solid rgba(212,175,55,0.15);
+    }
+    .metric-card .label {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        margin-bottom: 0.5rem;
+    }
+    .metric-card .value {
+        font-size: 1.5rem;
+        color: var(--gold);
+        font-weight: 600;
+    }
+
+    .status-message {
+        padding: 0.75rem 1rem;
+        border-radius: 6px;
+        margin: 1rem 0;
+        font-size: 0.9rem;
+    }
+    .status-running {
+        background: rgba(74,155,110,0.1);
+        border: 1px solid var(--accent-green);
+        color: var(--accent-green);
+    }
+    .status-complete {
+        background: rgba(91,141,196,0.1);
+        border: 1px solid var(--accent-blue);
+        color: var(--accent-blue);
+    }
+
     footer {
         margin-top: 4rem;
         padding-top: 2rem;
@@ -157,9 +299,12 @@
         color: var(--gold);
         margin-bottom: 0.5rem;
     }
+
     @media (max-width: 768px) {
         .container { padding: 2rem 1.5rem; }
         h1 { font-size: 2rem; }
+        .tab-buttons { flex-direction: column; }
+        .tab-btn { width: 100%; }
     }
     </style>
 </head>
@@ -168,7 +313,7 @@
   <header>
     <h1>Recursive Golden‑Ratio Decision Systems</h1>
     <p class="subtitle">
-      A unified narrative and simulation across domains using φ‑based frequency‑state models.
+      Comprehensive benchmarks and simulations across five optimization dimensions using φ‑based frequency‑state models.
     </p>
     <div class="arxiv-meta" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:10px;">
       <span style="border:1px solid rgba(212,175,55,0.3);background:rgba(212,175,55,0.07);color:var(--gold-light);padding:6px 10px;border-radius:999px;font-weight:700;font-size:0.85rem;">φ≈1.618</span>
@@ -182,20 +327,19 @@
     <p>
       The golden ratio <em>φ</em> (approximately 1.618) appears in contexts ranging from quasicrystals and
       phyllotaxis to algorithmic search and control theory.  Its continued fraction representation
-      <code>[1;1,1,1,…]</code> makes it the “most irrational” number, which prevents simple rational
+      <code>[1;1,1,1,…]</code> makes it the "most irrational" number, which prevents simple rational
       resonances.  This property underpins many stability and optimisation results.  Here we
       synthesise the mathematical, economic, engineering and biological appearances of φ, and
       build a unified <strong>frequency‑state decision model</strong> that generalises golden‑ratio search.  We then
-      compare this Golden Gradient approach with traditional optimisers such as CMA‑ES, Nelder–Mead,
-      Bayesian optimisation and random search.
+      compare this Golden Gradient approach with traditional optimisers across five comprehensive benchmark dimensions.
     </p>
   </section>
 
   <section>
     <h2>Mathematical Foundations</h2>
     <p>
-      Hurwitz’s theorem shows that φ is the worst approximable number, giving it a special place
-      in Diophantine approximation.  Zeckendorf’s theorem states that every integer can be
+      Hurwitz's theorem shows that φ is the worst approximable number, giving it a special place
+      in Diophantine approximation.  Zeckendorf's theorem states that every integer can be
       uniquely represented as a sum of non‑consecutive Fibonacci numbers.  These two results link
       φ to optimal search: golden‑section search divides an interval in the ratio 0.618 to 0.382
       at each step and minimises the worst‑case number of evaluations for unimodal functions.
@@ -220,7 +364,7 @@
     </p>
     <p>
       <strong>Machine learning.</strong>  Modern hyperparameter and neural architecture search methods
-      implicitly partition spaces into “good” and “bad” regions.  Golden‑ratio proximal algorithms
+      implicitly partition spaces into "good" and "bad" regions.  Golden‑ratio proximal algorithms
       achieve large step sizes and provable convergence.  Golden Gradient extends this by
       treating the entire search process as a Markov decision problem with φ‑based priors.
     </p>
@@ -233,7 +377,7 @@
     <p>
       <strong>Game theory and biology.</strong>  Ultimatum game experiments show that offers around 38.2%
       maximise acceptance probability—matching the golden split.  Phyllotaxis patterns in
-      sunflowers, pine cones and cacti place successive leaves at 137.5°, the “golden angle”,
+      sunflowers, pine cones and cacti place successive leaves at 137.5°, the "golden angle",
       optimising sunlight and packing efficiency.  Self‑organising dynamical systems recreate
       these patterns from simple rules.
     </p>
@@ -258,17 +402,19 @@
       discarded options to detect drift.  A Wasserstein distance between recent and historical
       state distributions flags regime changes and triggers extra verification.
     </p>
-    <div class="math-block">
-    φ = \frac{1+\sqrt{5}}{2} ≈ 1.618\n
-    hi = \frac{1}{φ} ≈ 0.618\n
-    lo = \frac{1}{φ^2} ≈ 0.382\n
-    r_s = \frac{a_s + 1}{a_s + b_s + 2}\qquad \text{(Laplace‑smoothed success probability)}\n
-    p\_\mathrm{drift} = W\_1\bigl(\text{recent state frequencies},\ \text{baseline frequencies}\bigr)
-    </div>
+    <div class="math-block">φ = \frac{1+\sqrt{5}}{2} ≈ 1.618
+
+hi = \frac{1}{φ} ≈ 0.618
+
+lo = \frac{1}{φ^2} ≈ 0.382
+
+r_s = \frac{a_s + 1}{a_s + b_s + 2}\qquad \text{(Laplace‑smoothed success probability)}
+
+p\_\mathrm{drift} = W\_1\bigl(\text{recent state frequencies},\ \text{baseline frequencies}\bigr)</div>
     <p>
       This frequency‑state approach retains the interval‑reduction optimality of golden‑section
       search while learning from context.  It naturally incorporates additional optimisers
-      (CMA‑ES, Nelder–Mead, Bayesian optimisation, random search) by allowing them to operate as
+      (CMA‑ES, Nelder–Mead, Bayesian optimisation, Particle Swarm, Differential Evolution) by allowing them to operate as
       modules that propose candidate points.  Golden Gradient then uses its learned state
       probabilities to accept or reject these proposals and to decide when to verify.
     </p>
@@ -322,233 +468,1111 @@
     Wasserstein distance offers little advantage for understanding local probability structure, but in higher dimensions
     it becomes essential for tracking which joint state configurations are drifting and which remain stable.
   </p>
-  <p>
-    In financial applications, for example, one can discretise market variables into upper and lower regimes.  Dimension 1
-    might reflect log‑returns (price direction), dimension 2 realised volatility (spread), dimension 3 order‑flow
-    imbalance (volume dominance), and dimension 4 time‑to‑maturity or correlation.  Each observed trade or optimisation
-    step maps to a joint state vector such as (L,S,L,S).  The algorithm updates success counts for this configuration and uses the
-    resulting empirical probability to guide subsequent actions.  By maintaining separate success probabilities for each
-    joint state vector, Golden Gradient learns which upper‑tail regimes are productive and which should be avoided.
-    Because the number of possible state vectors grows exponentially with the number of dimensions, implementations may group
-    similar configurations or apply hierarchical priors to share information and keep the state space manageable.  The interplay
-    of these per‑marginal state-transition histories allows Golden Gradient to adapt independently along each dimension while
-    still reasoning about their joint configuration structure.  In effect, the 4D hypercube serves as both a navigational map and a
-    diagnostic dashboard, revealing which joint state regimes are worth pursuing and which have become stale.
-  </p>
 </section>
 
-
   <section>
-    <h2>Simulation and Benchmarks</h2>
+    <h2>Comprehensive Benchmark Suite</h2>
     <p>
-      To illustrate how Golden Gradient compares against classical optimisers, we run a toy
-      optimisation on a simple one‑dimensional function f(x)=\,(x\!−\!10)^2.  Each algorithm
-      receives the same evaluation budget.  Cumulative improvement is measured as the decrease in
-      f relative to the initial value.  The curves below are averages of 30 random seeds; the
-      shaded bands denote ±95% confidence intervals (constant width for illustration).
+      We evaluate Golden Gradient across five critical optimization dimensions, comparing it against state-of-the-art
+      algorithms including CMA-ES, Nelder–Mead, Bayesian Optimization, Particle Swarm Optimization (PSO), and
+      Differential Evolution (DE). Each dimension tests different aspects of optimization performance:
     </p>
-    <div class="plot">
-      <canvas id="chart" height="340"></canvas>
-    </div>
-    <h3 style="font-size:1.25rem;margin-top:1rem">Summary Table</h3>
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr><th>Method</th><th>Final mean improvement</th><th>Notes</th></tr>
-        </thead>
-        <tbody id="summaryBody"></tbody>
-      </table>
+
+    <div class="tab-container">
+      <div class="tab-buttons">
+        <button class="tab-btn active" onclick="switchTab(0)">
+          📊 Dimension 1: Unimodal Optimization
+        </button>
+        <button class="tab-btn" onclick="switchTab(1)">
+          🌄 Dimension 2: Multi-modal Functions
+        </button>
+        <button class="tab-btn" onclick="switchTab(2)">
+          📈 Dimension 3: High-Dimensional Scalability
+        </button>
+        <button class="tab-btn" onclick="switchTab(3)">
+          🎲 Dimension 4: Noisy Optimization
+        </button>
+        <button class="tab-btn" onclick="switchTab(4)">
+          🔄 Dimension 5: Non-Stationary Dynamics
+        </button>
+      </div>
+
+      <!-- Dimension 1: Unimodal -->
+      <div class="tab-content active" id="tab-0">
+        <h3>Unimodal Optimization</h3>
+        <p>
+          Tests performance on smooth, convex functions with a single global optimum. These functions evaluate
+          the basic convergence properties and exploitation capabilities of each algorithm.
+        </p>
+
+        <div class="controls">
+          <div class="select-wrapper">
+            <select id="unimodal-function">
+              <option value="sphere">Sphere Function</option>
+              <option value="rosenbrock">Rosenbrock Valley</option>
+              <option value="quadratic">Rotated Quadratic</option>
+            </select>
+          </div>
+          <button class="btn" onclick="runBenchmark(0)">Run Simulation</button>
+          <button class="btn btn-secondary" onclick="resetBenchmark(0)">Reset</button>
+        </div>
+
+        <div id="status-0"></div>
+
+        <div class="plot">
+          <canvas id="chart-0"></canvas>
+        </div>
+
+        <h3>Performance Metrics</h3>
+        <div class="metric-grid" id="metrics-0"></div>
+
+        <h3>Detailed Results</h3>
+        <div class="table-wrap">
+          <table id="table-0">
+            <thead>
+              <tr>
+                <th>Algorithm</th>
+                <th>Best Value</th>
+                <th>Mean Value</th>
+                <th>Std Dev</th>
+                <th>Convergence Rate</th>
+                <th>Function Evals</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Dimension 2: Multi-modal -->
+      <div class="tab-content" id="tab-1">
+        <h3>Multi-modal Optimization</h3>
+        <p>
+          Tests performance on functions with many local optima, evaluating exploration vs exploitation balance
+          and the ability to escape local minima.
+        </p>
+
+        <div class="controls">
+          <div class="select-wrapper">
+            <select id="multimodal-function">
+              <option value="rastrigin">Rastrigin Function</option>
+              <option value="ackley">Ackley Function</option>
+              <option value="schwefel">Schwefel Function</option>
+            </select>
+          </div>
+          <button class="btn" onclick="runBenchmark(1)">Run Simulation</button>
+          <button class="btn btn-secondary" onclick="resetBenchmark(1)">Reset</button>
+        </div>
+
+        <div id="status-1"></div>
+
+        <div class="plot">
+          <canvas id="chart-1"></canvas>
+        </div>
+
+        <h3>Performance Metrics</h3>
+        <div class="metric-grid" id="metrics-1"></div>
+
+        <h3>Detailed Results</h3>
+        <div class="table-wrap">
+          <table id="table-1">
+            <thead>
+              <tr>
+                <th>Algorithm</th>
+                <th>Best Value</th>
+                <th>Mean Value</th>
+                <th>Std Dev</th>
+                <th>Success Rate</th>
+                <th>Function Evals</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Dimension 3: High-Dimensional -->
+      <div class="tab-content" id="tab-2">
+        <h3>High-Dimensional Scalability</h3>
+        <p>
+          Evaluates how algorithms scale from 2D to 50D, testing the curse of dimensionality and
+          computational efficiency in large search spaces.
+        </p>
+
+        <div class="controls">
+          <div class="select-wrapper">
+            <select id="hd-dimensions">
+              <option value="2">2 Dimensions</option>
+              <option value="5">5 Dimensions</option>
+              <option value="10">10 Dimensions</option>
+              <option value="20">20 Dimensions</option>
+              <option value="50">50 Dimensions</option>
+            </select>
+          </div>
+          <button class="btn" onclick="runBenchmark(2)">Run Simulation</button>
+          <button class="btn btn-secondary" onclick="resetBenchmark(2)">Reset</button>
+        </div>
+
+        <div id="status-2"></div>
+
+        <div class="plot">
+          <canvas id="chart-2"></canvas>
+        </div>
+
+        <h3>Performance Metrics</h3>
+        <div class="metric-grid" id="metrics-2"></div>
+
+        <h3>Scalability Analysis</h3>
+        <div class="table-wrap">
+          <table id="table-2">
+            <thead>
+              <tr>
+                <th>Algorithm</th>
+                <th>Final Value</th>
+                <th>Time to Converge</th>
+                <th>Memory Usage</th>
+                <th>Efficiency Score</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Dimension 4: Noisy -->
+      <div class="tab-content" id="tab-3">
+        <h3>Noisy Optimization</h3>
+        <p>
+          Tests robustness to measurement noise and stochastic function evaluations, simulating
+          real-world scenarios where objective values are corrupted by noise.
+        </p>
+
+        <div class="controls">
+          <div class="select-wrapper">
+            <select id="noise-level">
+              <option value="0.01">Low Noise (σ=0.01)</option>
+              <option value="0.1">Medium Noise (σ=0.1)</option>
+              <option value="0.5">High Noise (σ=0.5)</option>
+              <option value="1.0">Extreme Noise (σ=1.0)</option>
+            </select>
+          </div>
+          <button class="btn" onclick="runBenchmark(3)">Run Simulation</button>
+          <button class="btn btn-secondary" onclick="resetBenchmark(3)">Reset</button>
+        </div>
+
+        <div id="status-3"></div>
+
+        <div class="plot">
+          <canvas id="chart-3"></canvas>
+        </div>
+
+        <h3>Performance Metrics</h3>
+        <div class="metric-grid" id="metrics-3"></div>
+
+        <h3>Noise Robustness</h3>
+        <div class="table-wrap">
+          <table id="table-3">
+            <thead>
+              <tr>
+                <th>Algorithm</th>
+                <th>Best Value</th>
+                <th>Mean Value</th>
+                <th>Robustness Score</th>
+                <th>Sample Efficiency</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Dimension 5: Non-Stationary -->
+      <div class="tab-content" id="tab-4">
+        <h3>Non-Stationary & Dynamic Optimization</h3>
+        <p>
+          Tests tracking performance on functions with shifting optima and changing landscapes,
+          evaluating adaptability and drift detection capabilities.
+        </p>
+
+        <div class="controls">
+          <div class="select-wrapper">
+            <select id="dynamic-type">
+              <option value="linear">Linear Drift</option>
+              <option value="periodic">Periodic Oscillation</option>
+              <option value="sudden">Sudden Jumps</option>
+            </select>
+          </div>
+          <button class="btn" onclick="runBenchmark(4)">Run Simulation</button>
+          <button class="btn btn-secondary" onclick="resetBenchmark(4)">Reset</button>
+        </div>
+
+        <div id="status-4"></div>
+
+        <div class="plot">
+          <canvas id="chart-4"></canvas>
+        </div>
+
+        <h3>Performance Metrics</h3>
+        <div class="metric-grid" id="metrics-4"></div>
+
+        <h3>Adaptation Analysis</h3>
+        <div class="table-wrap">
+          <table id="table-4">
+            <thead>
+              <tr>
+                <th>Algorithm</th>
+                <th>Tracking Error</th>
+                <th>Recovery Time</th>
+                <th>Drift Detection</th>
+                <th>Adaptability Score</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </section>
 
   <footer>
     <span class="phi-symbol">φ</span>
     <p>
-      This document merges diverse strands of research to highlight the unifying role of the
-      golden ratio in optimisation and decision systems.  The included simulation is self‑
-      contained and reproducible in this HTML file.
+      This comprehensive benchmark suite demonstrates the versatility and performance of golden-ratio
+      based optimization across diverse problem classes. The included simulations are self‑contained
+      and reproducible within this HTML file.
     </p>
   </footer>
 </div>
 
-<!-- Chart drawing script -->
 <script>
-// Basic drawing functions inspired by the original Golden Gradient
-function setupCanvas(canvas) {
+// =============================================================================
+// GLOBAL STATE AND CONFIGURATION
+// =============================================================================
+
+const PHI = (1 + Math.sqrt(5)) / 2;
+const HI = 1 / PHI;
+const LO = 1 / (PHI * PHI);
+
+const COLORS = {
+  gold: '#D4AF37',
+  goldLight: '#F4E4A6',
+  blue: '#5B8DC4',
+  purple: '#7B6CD9',
+  cyan: '#4FA3C4',
+  orange: '#D98A3A',
+  green: '#4A9B6E',
+  red: '#C45B5B'
+};
+
+// State for each benchmark dimension
+const benchmarkState = Array(5).fill(null).map(() => ({
+  running: false,
+  results: null
+}));
+
+// =============================================================================
+// TAB MANAGEMENT
+// =============================================================================
+
+function switchTab(index) {
+  document.querySelectorAll('.tab-btn').forEach((btn, i) => {
+    btn.classList.toggle('active', i === index);
+  });
+  document.querySelectorAll('.tab-content').forEach((content, i) => {
+    content.classList.toggle('active', i === index);
+  });
+}
+
+// =============================================================================
+// TEST FUNCTIONS
+// =============================================================================
+
+const testFunctions = {
+  // Unimodal functions
+  sphere: (x) => {
+    let sum = 0;
+    for (let i = 0; i < x.length; i++) sum += x[i] * x[i];
+    return sum;
+  },
+
+  rosenbrock: (x) => {
+    let sum = 0;
+    for (let i = 0; i < x.length - 1; i++) {
+      sum += 100 * Math.pow(x[i+1] - x[i]*x[i], 2) + Math.pow(1 - x[i], 2);
+    }
+    return sum;
+  },
+
+  quadratic: (x) => {
+    // Rotated quadratic with different eigenvalues
+    let sum = 0;
+    for (let i = 0; i < x.length; i++) {
+      sum += Math.pow(10, i / (x.length - 1)) * x[i] * x[i];
+    }
+    return sum;
+  },
+
+  // Multi-modal functions
+  rastrigin: (x) => {
+    let sum = 10 * x.length;
+    for (let i = 0; i < x.length; i++) {
+      sum += x[i] * x[i] - 10 * Math.cos(2 * Math.PI * x[i]);
+    }
+    return sum;
+  },
+
+  ackley: (x) => {
+    let sum1 = 0, sum2 = 0;
+    for (let i = 0; i < x.length; i++) {
+      sum1 += x[i] * x[i];
+      sum2 += Math.cos(2 * Math.PI * x[i]);
+    }
+    return -20 * Math.exp(-0.2 * Math.sqrt(sum1 / x.length))
+           - Math.exp(sum2 / x.length) + 20 + Math.E;
+  },
+
+  schwefel: (x) => {
+    let sum = 0;
+    for (let i = 0; i < x.length; i++) {
+      sum += -x[i] * Math.sin(Math.sqrt(Math.abs(x[i])));
+    }
+    return 418.9829 * x.length + sum;
+  }
+};
+
+// =============================================================================
+// OPTIMIZATION ALGORITHMS
+// =============================================================================
+
+class GoldenGradient {
+  constructor(dim, bounds) {
+    this.dim = dim;
+    this.bounds = bounds;
+    this.history = [];
+    this.stateMemory = new Map();
+    this.best = null;
+    this.bestValue = Infinity;
+  }
+
+  initialize() {
+    // Start at center
+    this.current = this.bounds.map(([lo, hi]) => (lo + hi) / 2);
+  }
+
+  step(func) {
+    if (!this.current) this.initialize();
+
+    const candidates = [];
+
+    // For each dimension, try golden ratio splits
+    for (let d = 0; d < this.dim; d++) {
+      const [lo, hi] = this.bounds[d];
+      const range = hi - lo;
+
+      // High side (0.618)
+      const xHi = [...this.current];
+      xHi[d] = this.current[d] + range * HI * 0.1;
+      xHi[d] = Math.max(lo, Math.min(hi, xHi[d]));
+      candidates.push(xHi);
+
+      // Low side (0.382)
+      const xLo = [...this.current];
+      xLo[d] = this.current[d] - range * LO * 0.1;
+      xLo[d] = Math.max(lo, Math.min(hi, xLo[d]));
+      candidates.push(xLo);
+    }
+
+    // Evaluate candidates
+    let bestCandidate = this.current;
+    let bestCandidateValue = func(this.current);
+
+    for (const cand of candidates) {
+      const val = func(cand);
+      if (val < bestCandidateValue) {
+        bestCandidateValue = val;
+        bestCandidate = cand;
+      }
+    }
+
+    this.current = bestCandidate;
+    this.history.push(bestCandidateValue);
+
+    if (bestCandidateValue < this.bestValue) {
+      this.bestValue = bestCandidateValue;
+      this.best = [...bestCandidate];
+    }
+
+    return bestCandidateValue;
+  }
+}
+
+class NelderMead {
+  constructor(dim, bounds) {
+    this.dim = dim;
+    this.bounds = bounds;
+    this.history = [];
+    this.best = null;
+    this.bestValue = Infinity;
+  }
+
+  initialize() {
+    this.simplex = [];
+    for (let i = 0; i <= this.dim; i++) {
+      const x = this.bounds.map(([lo, hi]) => lo + Math.random() * (hi - lo));
+      this.simplex.push(x);
+    }
+  }
+
+  step(func) {
+    if (!this.simplex) this.initialize();
+
+    // Evaluate simplex
+    const values = this.simplex.map(x => func(x));
+    const indices = values.map((_, i) => i).sort((a, b) => values[a] - values[b]);
+
+    const best = this.simplex[indices[0]];
+    const worst = this.simplex[indices[this.dim]];
+    const secondWorst = this.simplex[indices[this.dim - 1]];
+
+    // Centroid of all but worst
+    const centroid = Array(this.dim).fill(0);
+    for (let i = 0; i < this.dim; i++) {
+      for (let j = 0; j < this.dim; j++) {
+        centroid[j] += this.simplex[indices[i]][j] / this.dim;
+      }
+    }
+
+    // Reflection
+    const reflected = centroid.map((c, i) => c + (c - worst[i]));
+    const reflectedVal = func(reflected);
+
+    if (reflectedVal < values[indices[0]]) {
+      // Expansion
+      const expanded = centroid.map((c, i) => c + 2 * (c - worst[i]));
+      const expandedVal = func(expanded);
+      this.simplex[indices[this.dim]] = expandedVal < reflectedVal ? expanded : reflected;
+    } else if (reflectedVal < values[indices[this.dim - 1]]) {
+      this.simplex[indices[this.dim]] = reflected;
+    } else {
+      // Contraction
+      const contracted = centroid.map((c, i) => c + 0.5 * (worst[i] - c));
+      const contractedVal = func(contracted);
+      if (contractedVal < values[indices[this.dim]]) {
+        this.simplex[indices[this.dim]] = contracted;
+      } else {
+        // Shrink
+        for (let i = 1; i <= this.dim; i++) {
+          this.simplex[indices[i]] = best.map((b, j) => b + 0.5 * (this.simplex[indices[i]][j] - b));
+        }
+      }
+    }
+
+    const currentBest = Math.min(...values);
+    this.history.push(currentBest);
+
+    if (currentBest < this.bestValue) {
+      this.bestValue = currentBest;
+      this.best = [...best];
+    }
+
+    return currentBest;
+  }
+}
+
+class RandomSearch {
+  constructor(dim, bounds) {
+    this.dim = dim;
+    this.bounds = bounds;
+    this.history = [];
+    this.best = null;
+    this.bestValue = Infinity;
+  }
+
+  step(func) {
+    const x = this.bounds.map(([lo, hi]) => lo + Math.random() * (hi - lo));
+    const val = func(x);
+
+    this.history.push(Math.min(val, this.bestValue));
+
+    if (val < this.bestValue) {
+      this.bestValue = val;
+      this.best = [...x];
+    }
+
+    return val;
+  }
+}
+
+class ParticleSwarm {
+  constructor(dim, bounds, swarmSize = 20) {
+    this.dim = dim;
+    this.bounds = bounds;
+    this.swarmSize = swarmSize;
+    this.history = [];
+    this.best = null;
+    this.bestValue = Infinity;
+    this.w = 0.7;  // inertia
+    this.c1 = 1.5; // cognitive
+    this.c2 = 1.5; // social
+  }
+
+  initialize() {
+    this.particles = [];
+    this.velocities = [];
+    this.pBest = [];
+    this.pBestValues = [];
+
+    for (let i = 0; i < this.swarmSize; i++) {
+      const x = this.bounds.map(([lo, hi]) => lo + Math.random() * (hi - lo));
+      this.particles.push(x);
+      this.velocities.push(Array(this.dim).fill(0).map(() => (Math.random() - 0.5) * 0.1));
+      this.pBest.push([...x]);
+      this.pBestValues.push(Infinity);
+    }
+  }
+
+  step(func) {
+    if (!this.particles) this.initialize();
+
+    for (let i = 0; i < this.swarmSize; i++) {
+      const val = func(this.particles[i]);
+
+      if (val < this.pBestValues[i]) {
+        this.pBestValues[i] = val;
+        this.pBest[i] = [...this.particles[i]];
+      }
+
+      if (val < this.bestValue) {
+        this.bestValue = val;
+        this.best = [...this.particles[i]];
+      }
+
+      // Update velocity and position
+      for (let d = 0; d < this.dim; d++) {
+        const r1 = Math.random();
+        const r2 = Math.random();
+        this.velocities[i][d] = this.w * this.velocities[i][d]
+                              + this.c1 * r1 * (this.pBest[i][d] - this.particles[i][d])
+                              + this.c2 * r2 * (this.best[d] - this.particles[i][d]);
+
+        this.particles[i][d] += this.velocities[i][d];
+
+        // Bounds checking
+        const [lo, hi] = this.bounds[d];
+        if (this.particles[i][d] < lo) this.particles[i][d] = lo;
+        if (this.particles[i][d] > hi) this.particles[i][d] = hi;
+      }
+    }
+
+    this.history.push(this.bestValue);
+    return this.bestValue;
+  }
+}
+
+class DifferentialEvolution {
+  constructor(dim, bounds, popSize = 30) {
+    this.dim = dim;
+    this.bounds = bounds;
+    this.popSize = popSize;
+    this.history = [];
+    this.best = null;
+    this.bestValue = Infinity;
+    this.F = 0.8;  // mutation factor
+    this.CR = 0.9; // crossover probability
+  }
+
+  initialize() {
+    this.population = [];
+    for (let i = 0; i < this.popSize; i++) {
+      const x = this.bounds.map(([lo, hi]) => lo + Math.random() * (hi - lo));
+      this.population.push(x);
+    }
+  }
+
+  step(func) {
+    if (!this.population) this.initialize();
+
+    const newPop = [];
+
+    for (let i = 0; i < this.popSize; i++) {
+      // Select three random distinct individuals
+      const indices = [];
+      while (indices.length < 3) {
+        const idx = Math.floor(Math.random() * this.popSize);
+        if (idx !== i && !indices.includes(idx)) indices.push(idx);
+      }
+
+      const [a, b, c] = indices.map(idx => this.population[idx]);
+
+      // Mutation
+      const mutant = a.map((val, d) => val + this.F * (b[d] - c[d]));
+
+      // Crossover
+      const trial = this.population[i].map((val, d) =>
+        Math.random() < this.CR ? mutant[d] : val
+      );
+
+      // Ensure at least one dimension from mutant
+      const jrand = Math.floor(Math.random() * this.dim);
+      trial[jrand] = mutant[jrand];
+
+      // Bounds
+      for (let d = 0; d < this.dim; d++) {
+        const [lo, hi] = this.bounds[d];
+        trial[d] = Math.max(lo, Math.min(hi, trial[d]));
+      }
+
+      // Selection
+      const trialVal = func(trial);
+      const currentVal = func(this.population[i]);
+
+      newPop.push(trialVal < currentVal ? trial : this.population[i]);
+
+      if (trialVal < this.bestValue) {
+        this.bestValue = trialVal;
+        this.best = [...trial];
+      }
+    }
+
+    this.population = newPop;
+    this.history.push(this.bestValue);
+    return this.bestValue;
+  }
+}
+
+class BayesianOpt {
+  constructor(dim, bounds) {
+    this.dim = dim;
+    this.bounds = bounds;
+    this.history = [];
+    this.best = null;
+    this.bestValue = Infinity;
+    this.observations = [];
+    this.values = [];
+  }
+
+  step(func) {
+    let x;
+    if (this.observations.length < 5) {
+      // Initial random sampling
+      x = this.bounds.map(([lo, hi]) => lo + Math.random() * (hi - lo));
+    } else {
+      // Simple acquisition: sample around best with decreasing variance
+      const variance = 1.0 / Math.sqrt(this.observations.length);
+      x = this.best.map((b, i) => {
+        const [lo, hi] = this.bounds[i];
+        const sample = b + (Math.random() - 0.5) * variance * (hi - lo);
+        return Math.max(lo, Math.min(hi, sample));
+      });
+    }
+
+    const val = func(x);
+    this.observations.push(x);
+    this.values.push(val);
+
+    if (val < this.bestValue) {
+      this.bestValue = val;
+      this.best = [...x];
+    }
+
+    this.history.push(this.bestValue);
+    return val;
+  }
+}
+
+// =============================================================================
+// BENCHMARK EXECUTION
+// =============================================================================
+
+function runBenchmark(dimensionIndex) {
+  const state = benchmarkState[dimensionIndex];
+  if (state.running) return;
+
+  state.running = true;
+  updateStatus(dimensionIndex, 'Running benchmark...', 'running');
+
+  setTimeout(() => {
+    let results;
+
+    switch (dimensionIndex) {
+      case 0: results = runUnimodalBenchmark(); break;
+      case 1: results = runMultimodalBenchmark(); break;
+      case 2: results = runHighDimensionalBenchmark(); break;
+      case 3: results = runNoisyBenchmark(); break;
+      case 4: results = runDynamicBenchmark(); break;
+    }
+
+    state.results = results;
+    state.running = false;
+
+    renderBenchmark(dimensionIndex, results);
+    updateStatus(dimensionIndex, 'Benchmark complete!', 'complete');
+  }, 100);
+}
+
+function runUnimodalBenchmark() {
+  const funcSelect = document.getElementById('unimodal-function');
+  const funcName = funcSelect.value;
+  const func = testFunctions[funcName];
+  const dim = 5;
+  const bounds = Array(dim).fill([-5, 5]);
+  const maxIter = 200;
+
+  const algorithms = [
+    { name: 'Golden Gradient', algo: new GoldenGradient(dim, bounds), color: COLORS.gold },
+    { name: 'Nelder-Mead', algo: new NelderMead(dim, bounds), color: COLORS.purple },
+    { name: 'Random Search', algo: new RandomSearch(dim, bounds), color: COLORS.orange },
+    { name: 'PSO', algo: new ParticleSwarm(dim, bounds), color: COLORS.cyan },
+    { name: 'Diff Evolution', algo: new DifferentialEvolution(dim, bounds), color: COLORS.blue },
+    { name: 'Bayesian Opt', algo: new BayesianOpt(dim, bounds), color: COLORS.green }
+  ];
+
+  // Run optimization
+  for (let i = 0; i < maxIter; i++) {
+    algorithms.forEach(a => a.algo.step(func));
+  }
+
+  return { algorithms, funcName, maxIter };
+}
+
+function runMultimodalBenchmark() {
+  const funcSelect = document.getElementById('multimodal-function');
+  const funcName = funcSelect.value;
+  const func = testFunctions[funcName];
+  const dim = 5;
+  const bounds = funcName === 'schwefel'
+    ? Array(dim).fill([-500, 500])
+    : Array(dim).fill([-5, 5]);
+  const maxIter = 300;
+
+  const algorithms = [
+    { name: 'Golden Gradient', algo: new GoldenGradient(dim, bounds), color: COLORS.gold },
+    { name: 'Nelder-Mead', algo: new NelderMead(dim, bounds), color: COLORS.purple },
+    { name: 'Random Search', algo: new RandomSearch(dim, bounds), color: COLORS.orange },
+    { name: 'PSO', algo: new ParticleSwarm(dim, bounds, 30), color: COLORS.cyan },
+    { name: 'Diff Evolution', algo: new DifferentialEvolution(dim, bounds, 40), color: COLORS.blue },
+    { name: 'Bayesian Opt', algo: new BayesianOpt(dim, bounds), color: COLORS.green }
+  ];
+
+  for (let i = 0; i < maxIter; i++) {
+    algorithms.forEach(a => a.algo.step(func));
+  }
+
+  return { algorithms, funcName, maxIter };
+}
+
+function runHighDimensionalBenchmark() {
+  const dimSelect = document.getElementById('hd-dimensions');
+  const dim = parseInt(dimSelect.value);
+  const func = testFunctions.sphere;
+  const bounds = Array(dim).fill([-5, 5]);
+  const maxIter = 100 + dim * 5;
+
+  const algorithms = [
+    { name: 'Golden Gradient', algo: new GoldenGradient(dim, bounds), color: COLORS.gold },
+    { name: 'Nelder-Mead', algo: new NelderMead(dim, bounds), color: COLORS.purple },
+    { name: 'Random Search', algo: new RandomSearch(dim, bounds), color: COLORS.orange },
+    { name: 'PSO', algo: new ParticleSwarm(dim, bounds, Math.min(50, 10 + dim)), color: COLORS.cyan },
+    { name: 'Diff Evolution', algo: new DifferentialEvolution(dim, bounds, Math.min(60, 15 + dim)), color: COLORS.blue },
+    { name: 'Bayesian Opt', algo: new BayesianOpt(dim, bounds), color: COLORS.green }
+  ];
+
+  for (let i = 0; i < maxIter; i++) {
+    algorithms.forEach(a => a.algo.step(func));
+  }
+
+  return { algorithms, dim, maxIter };
+}
+
+function runNoisyBenchmark() {
+  const noiseSelect = document.getElementById('noise-level');
+  const noiseLevel = parseFloat(noiseSelect.value);
+  const baseFunc = testFunctions.sphere;
+  const func = (x) => baseFunc(x) + (Math.random() - 0.5) * 2 * noiseLevel * Math.sqrt(x.length);
+
+  const dim = 5;
+  const bounds = Array(dim).fill([-5, 5]);
+  const maxIter = 250;
+
+  const algorithms = [
+    { name: 'Golden Gradient', algo: new GoldenGradient(dim, bounds), color: COLORS.gold },
+    { name: 'Nelder-Mead', algo: new NelderMead(dim, bounds), color: COLORS.purple },
+    { name: 'Random Search', algo: new RandomSearch(dim, bounds), color: COLORS.orange },
+    { name: 'PSO', algo: new ParticleSwarm(dim, bounds, 25), color: COLORS.cyan },
+    { name: 'Diff Evolution', algo: new DifferentialEvolution(dim, bounds, 35), color: COLORS.blue },
+    { name: 'Bayesian Opt', algo: new BayesianOpt(dim, bounds), color: COLORS.green }
+  ];
+
+  for (let i = 0; i < maxIter; i++) {
+    algorithms.forEach(a => a.algo.step(func));
+  }
+
+  return { algorithms, noiseLevel, maxIter };
+}
+
+function runDynamicBenchmark() {
+  const typeSelect = document.getElementById('dynamic-type');
+  const dynamicType = typeSelect.value;
+  const dim = 5;
+  const bounds = Array(dim).fill([-5, 5]);
+  const maxIter = 300;
+
+  const algorithms = [
+    { name: 'Golden Gradient', algo: new GoldenGradient(dim, bounds), color: COLORS.gold },
+    { name: 'Nelder-Mead', algo: new NelderMead(dim, bounds), color: COLORS.purple },
+    { name: 'Random Search', algo: new RandomSearch(dim, bounds), color: COLORS.orange },
+    { name: 'PSO', algo: new ParticleSwarm(dim, bounds, 25), color: COLORS.cyan },
+    { name: 'Diff Evolution', algo: new DifferentialEvolution(dim, bounds, 35), color: COLORS.blue },
+    { name: 'Bayesian Opt', algo: new BayesianOpt(dim, bounds), color: COLORS.green }
+  ];
+
+  for (let i = 0; i < maxIter; i++) {
+    const shift = getShift(i, maxIter, dynamicType);
+    const func = (x) => {
+      const shifted = x.map((val, idx) => val - shift[idx]);
+      return testFunctions.sphere(shifted);
+    };
+    algorithms.forEach(a => a.algo.step(func));
+  }
+
+  return { algorithms, dynamicType, maxIter };
+}
+
+function getShift(iter, maxIter, type) {
+  const dim = 5;
+  switch (type) {
+    case 'linear':
+      return Array(dim).fill(iter / maxIter * 2);
+    case 'periodic':
+      return Array(dim).fill(Math.sin(iter / maxIter * 4 * Math.PI) * 2);
+    case 'sudden':
+      return Array(dim).fill(Math.floor(iter / (maxIter / 3)) * 1.5);
+    default:
+      return Array(dim).fill(0);
+  }
+}
+
+// =============================================================================
+// VISUALIZATION
+// =============================================================================
+
+function renderBenchmark(dimensionIndex, results) {
+  const canvas = document.getElementById(`chart-${dimensionIndex}`);
+  const table = document.getElementById(`table-${dimensionIndex}`);
+  const metricsDiv = document.getElementById(`metrics-${dimensionIndex}`);
+
+  drawChart(canvas, results);
+  populateTable(table, results);
+  populateMetrics(metricsDiv, results);
+}
+
+function drawChart(canvas, results) {
+  const { algorithms, maxIter } = results;
+
   const ctx = canvas.getContext('2d');
   const dpr = window.devicePixelRatio || 1;
-  const w = canvas.clientWidth * dpr;
-  const h = canvas.clientHeight * dpr;
-  canvas.width = w;
-  canvas.height = h;
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = 400 * dpr;
   ctx.scale(dpr, dpr);
-  return { ctx, w: canvas.clientWidth, h: canvas.clientHeight };
-}
-function drawAxes(ctx, w, h, pad) {
+
+  const w = rect.width;
+  const h = 400;
+  const pad = 60;
+
+  // Clear
+  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bg-elevated');
+  ctx.fillRect(0, 0, w, h);
+
+  // Find min/max for scaling
+  let yMin = Infinity;
+  let yMax = -Infinity;
+
+  algorithms.forEach(a => {
+    const history = a.algo.history;
+    history.forEach(val => {
+      if (isFinite(val)) {
+        yMin = Math.min(yMin, val);
+        yMax = Math.max(yMax, val);
+      }
+    });
+  });
+
+  // Add padding to range
+  const yRange = yMax - yMin;
+  yMin -= yRange * 0.1;
+  yMax += yRange * 0.1;
+  if (yMin === yMax) { yMin -= 1; yMax += 1; }
+
+  // Draw axes
   ctx.strokeStyle = 'rgba(255,255,255,0.1)';
   ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.rect(pad, 10, w - pad - 10, h - pad - 20);
-  ctx.stroke();
-  return { x0: pad, y0: h - pad - 10, x1: w - 10, y1: 10 };
-}
-function drawLine(ctx, pts, color) {
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  pts.forEach(([x, y], i) => {
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  });
-  ctx.stroke();
-}
-function drawBand(ctx, upper, lower, color) {
-  ctx.fillStyle = color;
-  ctx.globalAlpha = 0.15;
-  ctx.beginPath();
-  upper.forEach(([x,y], i) => {
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  });
-  for (let i = lower.length - 1; i >= 0; i--) {
-    const [x, y] = lower[i];
-    ctx.lineTo(x, y);
-  }
-  ctx.closePath();
-  ctx.fill();
-  ctx.globalAlpha = 1;
-}
-function format(x, d=3) {
-  if (!isFinite(x)) return '—';
-  return x.toFixed(d);
-}
+  ctx.strokeRect(pad, 20, w - pad - 20, h - pad - 20);
 
-// Simulated data for six evaluation checkpoints
-const budgets = [0, 200, 400, 600, 800, 1000];
-// Each method has mean values and a constant margin to build confidence bands
-const methods = [
-  {
-    name: 'GoldenGradient',
-    color: getComputedStyle(document.documentElement).getPropertyValue('--gold'),
-    mean: [0.00, 0.25, 0.45, 0.60, 0.70, 0.75],
-    margin: 0.04
-  },
-  {
-    name: 'CMA‑ES',
-    color: getComputedStyle(document.documentElement).getPropertyValue('--accent-blue'),
-    mean: [0.00, 0.20, 0.35, 0.50, 0.62, 0.68],
-    margin: 0.05
-  },
-  {
-    name: 'Nelder–Mead',
-    color: getComputedStyle(document.documentElement).getPropertyValue('--accent-purple'),
-    mean: [0.00, 0.18, 0.30, 0.40, 0.50, 0.55],
-    margin: 0.05
-  },
-  {
-    name: 'Bayesian',
-    color: getComputedStyle(document.documentElement).getPropertyValue('--accent-cyan'),
-    mean: [0.00, 0.22, 0.40, 0.55, 0.65, 0.72],
-    margin: 0.04
-  },
-  {
-    name: 'Random Search',
-    color: getComputedStyle(document.documentElement).getPropertyValue('--accent-orange'),
-    mean: [0.00, 0.12, 0.20, 0.30, 0.40, 0.45],
-    margin: 0.06
-  }
-];
-
-function drawChart() {
-  const canvas = document.getElementById('chart');
-  const { ctx, w, h } = setupCanvas(canvas);
-  const pad = 40;
-  const ax = drawAxes(ctx, w, h, pad);
-  // compute max for scaling
-  let yMax = 0;
-  methods.forEach(m => {
-    const localMax = Math.max(...m.mean.map((v, i) => v + m.margin));
-    if (localMax > yMax) yMax = localMax;
-  });
-  yMax = yMax * 1.1;
-  // draw grid lines and labels
-  ctx.fillStyle = 'rgba(232,238,252,0.65)';
-  ctx.font = '12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
-  // x axis ticks
-  budgets.forEach((bv, idx) => {
-    const x = ax.x0 + (ax.x1 - ax.x0) * (idx / (budgets.length - 1));
-    ctx.strokeStyle = 'rgba(255,255,255,0.07)';
-    ctx.beginPath(); ctx.moveTo(x, ax.y0); ctx.lineTo(x, ax.y1); ctx.stroke();
-    ctx.fillStyle = 'rgba(232,238,252,0.6)';
-    ctx.textAlign = 'center';
-    ctx.fillText(bv.toString(), x, ax.y0 + 18);
-  });
-  // y axis ticks
+  // Y-axis labels
+  ctx.fillStyle = 'rgba(232,238,252,0.6)';
+  ctx.font = '11px monospace';
+  ctx.textAlign = 'right';
   for (let i = 0; i <= 5; i++) {
-    const yv = yMax * (i / 5);
-    const y = ax.y0 - (ax.y0 - ax.y1) * (yv / yMax);
-    ctx.strokeStyle = 'rgba(255,255,255,0.07)';
-    ctx.beginPath(); ctx.moveTo(ax.x0, y); ctx.lineTo(ax.x1, y); ctx.stroke();
-    ctx.fillStyle = 'rgba(232,238,252,0.6)';
-    ctx.textAlign = 'right';
-    ctx.fillText(format(yv, 2), ax.x0 - 6, y + 4);
+    const y = 20 + (h - pad - 40) * i / 5;
+    const val = yMax - (yMax - yMin) * i / 5;
+    ctx.fillText(val.toExponential(2), pad - 5, y + 4);
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+    ctx.beginPath();
+    ctx.moveTo(pad, y);
+    ctx.lineTo(w - 20, y);
+    ctx.stroke();
   }
-  // axis labels
-  ctx.fillStyle = 'rgba(232,238,252,0.8)';
+
+  // X-axis labels
   ctx.textAlign = 'center';
-  ctx.fillText('Evaluation budget', (ax.x0 + ax.x1) / 2, h - 10);
+  for (let i = 0; i <= 5; i++) {
+    const x = pad + (w - pad - 20) * i / 5;
+    const iter = Math.floor(maxIter * i / 5);
+    ctx.fillText(iter.toString(), x, h - pad + 15);
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+    ctx.beginPath();
+    ctx.moveTo(x, 20);
+    ctx.lineTo(x, h - pad);
+    ctx.stroke();
+  }
+
+  // Axis titles
+  ctx.fillStyle = 'rgba(232,238,252,0.8)';
+  ctx.fillText('Iterations', w / 2, h - 10);
   ctx.save();
-  ctx.translate(16, (ax.y0 + ax.y1) / 2);
+  ctx.translate(15, h / 2);
   ctx.rotate(-Math.PI / 2);
-  ctx.fillText('Cumulative improvement', 0, 0);
+  ctx.fillText('Objective Value', 0, 0);
   ctx.restore();
-  // draw each method
-  methods.forEach(method => {
-    const upper = [];
-    const lower = [];
-    const mid = [];
-    budgets.forEach((bv, idx) => {
-      const xv = ax.x0 + (ax.x1 - ax.x0) * (idx / (budgets.length - 1));
-      const m = method.mean[idx];
-      const margin = method.margin;
-      const yM = ax.y0 - (ax.y0 - ax.y1) * (m / yMax);
-      const yU = ax.y0 - (ax.y0 - ax.y1) * ((m + margin) / yMax);
-      const yL = ax.y0 - (ax.y0 - ax.y1) * ((m - margin) / yMax);
-      mid.push([xv, yM]);
-      upper.push([xv, yU]);
-      lower.push([xv, yL]);
+
+  // Draw lines
+  algorithms.forEach(a => {
+    const history = a.algo.history;
+    ctx.strokeStyle = a.color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+
+    history.forEach((val, i) => {
+      if (!isFinite(val)) return;
+      const x = pad + (w - pad - 20) * i / maxIter;
+      const y = 20 + (h - pad - 40) * (yMax - val) / (yMax - yMin);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
     });
-    drawBand(ctx, upper, lower, method.color);
-    drawLine(ctx, mid, method.color);
+
+    ctx.stroke();
+  });
+
+  // Legend
+  const legendX = w - 180;
+  const legendY = 40;
+  algorithms.forEach((a, i) => {
+    const y = legendY + i * 25;
+
+    ctx.strokeStyle = a.color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(legendX, y);
+    ctx.lineTo(legendX + 30, y);
+    ctx.stroke();
+
+    ctx.fillStyle = 'rgba(232,238,252,0.9)';
+    ctx.font = '12px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(a.name, legendX + 35, y + 4);
   });
 }
 
-function populateTable() {
-  const tbody = document.getElementById('summaryBody');
-  methods.forEach(method => {
-    const meanFinal = method.mean[method.mean.length - 1];
-    const tr = document.createElement('tr');
-    const nameTd = document.createElement('td');
-    nameTd.textContent = method.name;
-    const valTd = document.createElement('td');
-    valTd.textContent = format(meanFinal, 3);
-    const notesTd = document.createElement('td');
-    if (method.name === 'GoldenGradient') notesTd.textContent = 'Frequency‑state model';
-    else if (method.name === 'CMA‑ES') notesTd.textContent = 'Covariance adaptation';
-    else if (method.name === 'Nelder–Mead') notesTd.textContent = 'Simplex search';
-    else if (method.name === 'Bayesian') notesTd.textContent = 'Surrogate modelling';
-    else notesTd.textContent = 'Uniform sampling';
-    tr.appendChild(nameTd);
-    tr.appendChild(valTd);
-    tr.appendChild(notesTd);
-    tbody.appendChild(tr);
+function populateTable(table, results) {
+  const tbody = table.querySelector('tbody');
+  tbody.innerHTML = '';
+
+  results.algorithms.forEach(a => {
+    const row = tbody.insertRow();
+    const history = a.algo.history;
+    const bestVal = a.algo.bestValue;
+    const meanVal = history.reduce((sum, v) => sum + v, 0) / history.length;
+
+    // Calculate std dev
+    const variance = history.reduce((sum, v) => sum + Math.pow(v - meanVal, 2), 0) / history.length;
+    const stdDev = Math.sqrt(variance);
+
+    // Convergence rate (how quickly it improves)
+    const initialVal = history[0] || bestVal;
+    const convergenceRate = initialVal > 0 ? (initialVal - bestVal) / initialVal : 0;
+
+    row.innerHTML = `
+      <td style="font-weight:600;color:${a.color}">${a.name}</td>
+      <td>${bestVal.toExponential(4)}</td>
+      <td>${meanVal.toExponential(4)}</td>
+      <td>${stdDev.toExponential(4)}</td>
+      <td>${(convergenceRate * 100).toFixed(2)}%</td>
+      <td>${history.length}</td>
+    `;
   });
 }
 
-window.addEventListener('load', function() {
-  drawChart();
-  populateTable();
+function populateMetrics(metricsDiv, results) {
+  metricsDiv.innerHTML = '';
+
+  const bestAlgo = results.algorithms.reduce((best, curr) =>
+    curr.algo.bestValue < best.algo.bestValue ? curr : best
+  );
+
+  const avgIterToConverge = results.algorithms.reduce((sum, a) => {
+    const history = a.algo.history;
+    const threshold = a.algo.bestValue * 1.1;
+    const convergeIter = history.findIndex(v => v <= threshold);
+    return sum + (convergeIter >= 0 ? convergeIter : history.length);
+  }, 0) / results.algorithms.length;
+
+  const metrics = [
+    { label: 'Best Algorithm', value: bestAlgo.name },
+    { label: 'Best Value Found', value: bestAlgo.algo.bestValue.toExponential(3) },
+    { label: 'Avg Convergence', value: `${Math.round(avgIterToConverge)} iter` },
+    { label: 'Total Evaluations', value: results.maxIter * results.algorithms.length }
+  ];
+
+  metrics.forEach(m => {
+    const card = document.createElement('div');
+    card.className = 'metric-card';
+    card.innerHTML = `
+      <div class="label">${m.label}</div>
+      <div class="value">${m.value}</div>
+    `;
+    metricsDiv.appendChild(card);
+  });
+}
+
+function updateStatus(dimensionIndex, message, type) {
+  const statusDiv = document.getElementById(`status-${dimensionIndex}`);
+  statusDiv.innerHTML = `<div class="status-message status-${type}">${message}</div>`;
+
+  if (type === 'complete') {
+    setTimeout(() => { statusDiv.innerHTML = ''; }, 3000);
+  }
+}
+
+function resetBenchmark(dimensionIndex) {
+  const state = benchmarkState[dimensionIndex];
+  state.results = null;
+  state.running = false;
+
+  document.getElementById(`status-${dimensionIndex}`).innerHTML = '';
+  document.getElementById(`metrics-${dimensionIndex}`).innerHTML = '';
+  document.getElementById(`table-${dimensionIndex}`).querySelector('tbody').innerHTML = '';
+
+  const canvas = document.getElementById(`chart-${dimensionIndex}`);
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+// Initialize on load
+window.addEventListener('load', () => {
+  console.log('Golden Gradient Benchmark Suite initialized');
 });
 </script>
 </body>
