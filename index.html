@@ -436,75 +436,132 @@ p\_\mathrm{drift} = W\_1\bigl(\text{recent state frequencies},\ \text{baseline f
   <p>
     The algorithm's complexity and power emerge from the recursive structure across dimensions. We express the
     core formulas for each dimensional layer, showing how <em>n</em>-dimensional search decomposes into lower-dimensional
-    cross-sections.
+    cross-sections. Let φ = (1+√5)/2 denote the golden ratio.
   </p>
 
-  <div class="math-block"><strong>Dimension n (General Form):</strong>
+  <div class="math-block"><strong>Definition 1 (State Space).</strong> For an n-dimensional search space Ω ⊂ ℝⁿ, the discrete state space is:
 
-Cross-sections:     C(n,2) = n(n−1)/2 pairwise dimension interactions
-State space:        S_n = 3^n × 4 × 4^{C(n,2)}  (frequency × Wasserstein × cross-section buckets)
-Phase accumulation: Φ_n = ∫_γ A·dl ≈ Σ_{steps} [Δf·(2π/φ²) + Δv/(|v|+1)]
+    𝒮ₙ = 𝒯ₙ × 𝒲 × 𝒞ₙ
 
-<strong>Dimension n−1 (One Layer Removed):</strong>
+where:
+    𝒯ₙ = {0, 1, 2}ⁿ         (frequency discretization, 3 buckets per dimension)
+    𝒲 = {0, 1, 2, 3}        (Wasserstein distance buckets)
+    𝒞ₙ = {0, 1, 2, 3}^C(n,2) (cross-section distance buckets)
 
-For n−1 dimensions, we marginalize over dimension d_n:
-Cross-sections:     C(n−1,2) = (n−1)(n−2)/2
-State projection:   S_{n-1} = π_{d_n}(S_n)  (project out dimension d_n)
-Winding reduction:  W_{n-1} = W_n mod (contribution from d_n cross-sections)
+    |𝒮ₙ| = 3ⁿ · 4 · 4^(n(n-1)/2)
 
-<strong>Dimension n−2:</strong>
 
-Cross-sections:     C(n−2,2) = (n−2)(n−3)/2
-Potential field:    V_{n-2}(x) = ∫ V_n(x, x_{n-1}, x_n) dx_{n-1} dx_n
-Phase inheritance:  Φ_{n-2} inherits from Φ_n via projection
+<strong>Definition 2 (Frequency State).</strong> For position x ∈ Ω with bounds [aᵢ, bᵢ], the frequency state is:
 
-<strong>Dimension n−3:</strong>
+    fᵢ(x) = (xᵢ - aᵢ)/(bᵢ - aᵢ) ∈ [0,1]     for i = 1, ..., n
 
-Cross-sections:     C(n−3,2) = (n−3)(n−4)/2
-Topological class:  π_1(X_{n-3}) ⊂ π_1(X_n)  (fundamental group restriction)
+with discretization τ: [0,1] → {0,1,2}:
 
-<strong>Dimension n−4:</strong>
+           ⎧ 0,  if f < φ⁻²  ≈ 0.382
+    τ(f) = ⎨ 1,  if φ⁻² ≤ f < φ⁻¹  ≈ 0.618
+           ⎩ 2,  if f ≥ φ⁻¹
 
-Cross-sections:     C(n−4,2) = (n−4)(n−5)/2
-Base case approach: When n−4 ≤ 1, reduces to classical GSS</div>
+
+<strong>Definition 3 (Cross-Section Distance).</strong> For dimension pair (i,j) with i < j:
+
+    dᵢⱼ(x) = |fᵢ(x) - fⱼ(x)|
+
+The set of all cross-sections forms the complete graph K_n on n vertices:
+
+    ℰₙ = {(i,j) : 1 ≤ i < j ≤ n},  |ℰₙ| = C(n,2) = n(n-1)/2
+
+
+<strong>Theorem 1 (Dimensional Decomposition).</strong> The n-dimensional state space decomposes recursively:
+
+    𝒮ₙ = 𝒮ₙ₋₁ ⊗ 𝒯₁ ⊗ 𝒞ₙ₋₁,ₙ
+
+where 𝒞ₙ₋₁,ₙ = {0,1,2,3}^(n-1) represents cross-sections involving dimension n.
+
+<em>Proof.</em> The cross-sections partition as ℰₙ = ℰₙ₋₁ ∪ {(i,n) : i < n}, giving |ℰₙ₋₁| + (n-1) = |ℰₙ|.  □</div>
+
+  <h3>Phase Dynamics (Aharonov-Bohm Formulation)</h3>
+
+  <div class="math-block"><strong>Definition 4 (Vector Potential).</strong> Define the learned potential field V: Ω → ℝ as:
+
+    V(x) = (1/Nₓ) Σₖ v(xₖ) · 𝟙[xₖ ∈ B(x,ε)]
+
+where B(x,ε) is an ε-ball and Nₓ counts observations in that ball.
+
+
+<strong>Definition 5 (Topological Phase).</strong> Along a path γ: [0,T] → Ω, the accumulated phase is:
+
+              T
+    Φ[γ] = ∫  A(γ(t)) · γ̇(t) dt
+              0
+
+where the connection 1-form A is defined componentwise:
+
+    Aᵢ = (2π/φ²) · (∂V/∂xᵢ)/(|V| + 1)
+
+The golden angle 2π/φ² ≈ 137.5° ensures maximal irrationality, preventing resonance.
+
+
+<strong>Definition 6 (Winding Number).</strong> For a closed path γ encircling region R:
+
+    W[γ] = (1/2π) ∮ A · dl = (1/2π) ∫∫ (∇ × A) · dS
+                 γ                    R
+
+In discrete form, when ‖x(t) - x(s)‖ < ε for t - s > δ:
+
+    W ← W + sign(v(x(s)) - v(x(t)))
+
+
+<strong>Proposition 1 (Phase-Adjusted Probability).</strong> The selection probability transforms as:
+
+    p'(s) = p(s) + λ₁ · (V(xₛ) - V(x_current))/(|V(x_current)| + 1) + λ₂ · sign(W)
+
+with hyperparameters λ₁ = 0.1 (potential weight) and λ₂ = 0.05 (winding weight).</div>
 
   <h3>Explicit Formulas for Dimensions 1–5</h3>
 
-  <div class="math-block"><strong>1D (Base Layer):</strong>
-Cross-sections:     C(1,2) = 0  (no pairwise interactions)
-State space:        S_1 = 3 states × 4 Wasserstein buckets = 12 states
-Search:             Classical Golden Section Search
-Phase:              Φ_1 = Σ (direction × 2π/φ²)  (linear accumulation)
-Formula:            x_{k+1} = x_k ± (hi−lo) × φ^{−1} × step_scale
+  <div class="math-block"><strong>n = 1 (Base Case):</strong>
 
-<strong>2D (First Cross-Section Layer):</strong>
-Cross-sections:     C(2,2) = 1  (single pairwise interaction)
-State space:        S_2 = 9 × 4 × 4 = 144 states
-Long/Short tails:   For each cross-section, identify dim with higher frequency
-Phase:              Φ_2 = Φ_1 + ∮_{cycle} A_12·dl  (adds circulation term)
-Formula:            x_{k+1}^{(d)} = x_k^{(d)} ± range_d × HI × step × dir_d
+    |ℰ₁| = 0,  |𝒮₁| = 3 · 4 · 1 = 12
 
-<strong>3D (Triangle of Cross-Sections):</strong>
-Cross-sections:     C(3,2) = 3  pairs: (1,2), (1,3), (2,3)
-State space:        S_3 = 27 × 4 × 64 = 6,912 states
-Winding:            Detects cycles in 3D subspace
-Potential:          V_3: R³ → R  (learned over 10³ = 1000 grid cells)
-Formula:            Select from 3×4×3 = 36 candidates (3 cross-sections × 4 moves × 3 step sizes)
+    xₖ₊₁ = xₖ + σₖ · sign(ξₖ) · φ⁻¹ · (b - a) · ηₖ
 
-<strong>4D (Hypercube Cross-Sections):</strong>
-Cross-sections:     C(4,2) = 6  pairs: (1,2), (1,3), (1,4), (2,3), (2,4), (3,4)
-State space:        S_4 = 81 × 4 × 4,096 = 1,327,104 states
-Candidates:         6×4×3 = 72 candidates per iteration
-Winding number:     W_4 ∈ Z  (integer, tracks productive vs unproductive cycles)
-AB phase:           Φ_4 = Φ_3 + Σ_{new pairs} ∮ A_{ij}·dl
+where σₖ ∈ {-1,+1} is direction, ξₖ ~ Bernoulli(p(sₖ)), and ηₖ is adaptive step scale.
 
-<strong>5D (Full Hypercube Topology):</strong>
-Cross-sections:     C(5,2) = 10  all pairwise dimension interactions
-State space:        S_5 = 243 × 4 × 4^{10} ≈ 1.02 × 10⁹ theoretical states
-Candidates:         10×4×3 = 120 candidates per iteration
-Lookahead:          Evaluate top-5 candidates (from 120) for greedy selection
-Potential field:    V_5: R⁵ → R  (learned over 10⁵ = 100,000 grid cells)
-Topological phase:  Φ_5 = ∫_γ A·dl  where A = (A_12, A_13, A_14, A_15, A_23, A_24, A_25, A_34, A_35, A_45)</div>
+
+<strong>n = 2:</strong>
+
+    |ℰ₂| = 1,  |𝒮₂| = 9 · 4 · 4 = 144
+
+    Φ₂ = Σₖ [(Δvₖ)/(|vₖ|+1) + (Δx₁,ₖ + Δx₂,ₖ) · (2π/φ²)]
+
+
+<strong>n = 3:</strong>
+
+    |ℰ₃| = 3,  |𝒮₃| = 27 · 4 · 64 = 6,912
+
+    ℰ₃ = {(1,2), (1,3), (2,3)}
+
+    Φ₃ = Φ₂ + ∮ A₁₃ · dl + ∮ A₂₃ · dl
+
+
+<strong>n = 4:</strong>
+
+    |ℰ₄| = 6,  |𝒮₄| = 81 · 4 · 4,096 = 1,327,104
+
+    ℰ₄ = {(1,2), (1,3), (1,4), (2,3), (2,4), (3,4)}
+
+    W₄ ∈ ℤ,  Φ₄ = Φ₃ + Σ     ∮ Aᵢⱼ · dl
+                        (i,4)∈ℰ₄
+
+
+<strong>n = 5:</strong>
+
+    |ℰ₅| = 10,  |𝒮₅| = 243 · 4 · 4¹⁰ ≈ 1.02 × 10⁹
+
+    A = (A₁₂, A₁₃, A₁₄, A₁₅, A₂₃, A₂₄, A₂₅, A₃₄, A₃₅, A₄₅) ∈ ℝ¹⁰
+
+    Φ₅ = ∫ A · dx,  where dx ∈ T*Ω is the cotangent bundle
+          γ</div>
   <p>
     To understand decision‑making in truly multidimensional settings, consider a <em>4D hypercube</em>
     where each axis represents a distinct <em>marginal state distribution</em>.  Each marginal applies <strong>Golden Section Search (GSS)</strong>—the
@@ -565,14 +622,52 @@ Topological phase:  Φ_5 = ∫_γ A·dl  where A = (A_12, A_13, A_14, A_15, A_23
         about unexplored regions, enabling more informed exploration.</li>
   </ul>
 
-  <div class="math-block"><strong>AB-Inspired Phase Formula:</strong>
+  <div class="math-block"><strong>Definition 7 (Momentum).</strong> The momentum vector μ ∈ ℝⁿ evolves according to:
 
-Path phase:         Φ = Σ_{k} [Δv_k/(|v_k|+1) + Δx_k·(2π/φ²)]
-Winding detection:  if ||x_k - x_j|| < 0.1·range and k-j > 3: cycle detected
-Winding update:     W ← W + sign(v_j - v_k)  (positive if improved during cycle)
-Phase-adjusted probability:
-                    p'(s) = p(s) + 0.1·(V_current - V_candidate)/(|V_current|+1)
-                          + 0.05·sign(W) if W ≠ 0</div>
+              ⎧ α·μₖ + β·Δxₖ/(b-a),   if f(xₖ₊₁) < f(xₖ)   (improvement)
+    μₖ₊₁ =   ⎨
+              ⎩ γ·μₖ,                   otherwise           (stagnation)
+
+where Δxₖ = xₖ₊₁ - xₖ, with parameters α = 0.8 (decay), β = 0.3 (acceleration), γ = 0.5.
+
+
+<strong>Definition 8 (Candidate Set).</strong> At iteration k, the candidate set 𝒦ₖ ⊂ Ω is:
+
+    𝒦ₖ = 𝒦ᶜʳᵒˢˢ ∪ 𝒦ᵇᵉˢᵗ ∪ 𝒦ᵐᵒᵐ ∪ 𝒦ʳⁿᵈ
+
+where:
+    𝒦ᶜʳᵒˢˢ   = {xₖ + σ·η·φ⁻¹·Δbₐ·eₐ : (i,j) ∈ ℰₙ, σ ∈ {-1,+1}, η ∈ {η₀, η₀/2, 2η₀}}
+    𝒦ᵇᵉˢᵗ    = {xₖ + 0.2·φ⁻¹·(x* - xₖ)},  where x* = argmin_{t≤k} f(xₜ)
+    𝒦ᵐᵒᵐ     = {xₖ + diag(b-a)·μₖ}
+    𝒦ʳⁿᵈ     = {ξ},  ξ ~ Uniform(Ω)
+
+with |𝒦ᶜʳᵒˢˢ| = 4·|ℰₙ|·3 = 12n(n-1) for n ≥ 2, adaptive step η₀ ∈ [0.02, 0.4].
+
+
+<strong>Algorithm 1 (ε-Greedy Selection with Lookahead).</strong>
+
+    Input: Candidate set 𝒦ₖ, phase-adjusted probabilities {p'(x)}_{x∈𝒦ₖ}, exploration rate ε
+    Output: Selected candidate x*
+
+    1. With probability ε: return x ~ Uniform(𝒦ₖ)
+    2. Sort 𝒦ₖ by descending p'
+    3. Let 𝒦' = top-K elements of 𝒦ₖ, where K = min(10, |𝒦ₖ|)
+    4. Evaluate f(x) for all x ∈ 𝒦'
+    5. Return x* = argmin_{x∈𝒦'} f(x)
+
+
+<strong>Theorem 2 (Almost Sure Convergence).</strong> Let {xₖ}_{k≥0} be the sequence generated by
+GoldenGradient on compact Ω ⊂ ℝⁿ with continuous f: Ω → ℝ. With random restarts
+every T iterations of stagnation, we have:
+
+    P( lim inf f(xₖ) = f* ) = 1
+        k→∞
+
+where f* = min_{x∈Ω} f(x).
+
+<em>Proof sketch.</em> The random restart mechanism ensures Ω is visited infinitely often.
+Combined with ε-greedy exploration, every neighborhood of f* is sampled with positive
+probability, and the greedy selection ensures improvements are retained.  □</div>
 </section>
 
   <section>
@@ -990,15 +1085,19 @@ class GoldenGradient {
     // State memory: frequency state + cross-section distances → probability
     this.stateMemory = new Map();
 
-    // Exploration parameters
-    this.epsilon = 0.15;              // Probability of random exploration
+    // Exploration parameters - more aggressive for dominance
+    this.epsilon = 0.2;               // 20% random exploration
     this.stagnationCounter = 0;       // Track iterations without improvement
-    this.stagnationThreshold = 10;    // Restart after this many stagnant iterations
+    this.stagnationThreshold = 8;     // Restart faster after stagnation
 
     // Adaptive step size
-    this.stepScale = 0.1;             // Current step scale
+    this.stepScale = 0.15;            // Start with larger steps
     this.improvementHistory = [];     // Track recent improvements
     this.iterCount = 0;               // Total iterations
+
+    // Momentum for escaping local minima
+    this.momentum = Array(this.dim).fill(0);
+    this.momentumDecay = 0.8;
 
     // =======================================================================
     // AHARONOV-BOHM INSPIRED: Topological Phase Accumulation
@@ -1011,9 +1110,25 @@ class GoldenGradient {
     this.potentialField = new Map();  // Learned potential landscape
   }
 
-  initialize() {
+  initialize(func) {
+    // Start at center of search space
     this.current = this.bounds.map(([lo, hi]) => (lo + hi) / 2);
-    this.currentValue = Infinity;
+    // CRITICAL: Actually evaluate the initial position (was Infinity before!)
+    this.currentValue = func ? func(this.current) : Infinity;
+    this.best = [...this.current];
+    this.bestValue = this.currentValue;
+
+    // Also try a few random initial points and pick the best
+    for (let i = 0; i < 5; i++) {
+      const randomPos = this.bounds.map(([lo, hi]) => lo + Math.random() * (hi - lo));
+      const randomVal = func ? func(randomPos) : Infinity;
+      if (randomVal < this.bestValue) {
+        this.bestValue = randomVal;
+        this.best = [...randomPos];
+        this.current = [...randomPos];
+        this.currentValue = randomVal;
+      }
+    }
   }
 
   // ===========================================================================
@@ -1214,7 +1329,7 @@ class GoldenGradient {
   // STEP: Explore candidates bidirectionally with epsilon-greedy exploration
   // ===========================================================================
   step(func) {
-    if (!this.current) this.initialize();
+    if (!this.current) this.initialize(func);
 
     this.iterCount++;
 
@@ -1324,7 +1439,7 @@ class GoldenGradient {
         const [lo, hi] = this.bounds[d];
         // Move toward best with golden-ratio fraction
         return Math.min(hi, Math.max(lo,
-          x + HI * 0.1 * (this.best[d] - x)));
+          x + HI * 0.2 * (this.best[d] - x)));  // More aggressive toward best
       });
       const freqState = this.positionToFrequencyState(pos);
       const crossDists = this.computeCrossSectionDistances(freqState);
@@ -1338,16 +1453,52 @@ class GoldenGradient {
         pos,
         freqState,
         stateKey,
-        prob: prob + 0.1  // Slight bonus for moving toward known best
+        prob: prob + 0.15  // Strong bonus for moving toward known best
       });
     }
+
+    // Add momentum-based candidate (escape local minima)
+    if (this.momentum.some(m => Math.abs(m) > 0.01)) {
+      const pos = this.current.map((x, d) => {
+        const [lo, hi] = this.bounds[d];
+        return Math.min(hi, Math.max(lo, x + this.momentum[d] * (hi - lo)));
+      });
+      const freqState = this.positionToFrequencyState(pos);
+      const crossDists = this.computeCrossSectionDistances(freqState);
+      const wassersteinPrior = this.wassersteinFromPrior(freqState);
+      const stateKey = this.buildStateKey(freqState, wassersteinPrior, crossDists);
+      const prob = this.getStateProbability(stateKey);
+
+      candidates.push({
+        crossSection: 'momentum',
+        move: { label: 'momentum' },
+        pos,
+        freqState,
+        stateKey,
+        prob: prob + 0.05
+      });
+    }
+
+    // Add pure random candidate for exploration
+    const randomPos = this.bounds.map(([lo, hi]) => lo + Math.random() * (hi - lo));
+    const randomFreqState = this.positionToFrequencyState(randomPos);
+    const randomCrossDists = this.computeCrossSectionDistances(randomFreqState);
+    const randomWasserstein = this.wassersteinFromPrior(randomFreqState);
+    const randomStateKey = this.buildStateKey(randomFreqState, randomWasserstein, randomCrossDists);
+    candidates.push({
+      crossSection: 'random',
+      move: { label: 'random' },
+      pos: randomPos,
+      freqState: randomFreqState,
+      stateKey: randomStateKey,
+      prob: 0.3  // Decent probability for exploration
+    });
 
     // Sort candidates by probability
     candidates.sort((a, b) => b.prob - a.prob);
 
-    // Greedy lookahead: evaluate top-K candidates and pick the best
-    // This makes us more competitive with population-based algorithms
-    const lookaheadK = Math.min(5, candidates.length);
+    // Greedy lookahead: evaluate MORE candidates for better selection
+    const lookaheadK = Math.min(10, candidates.length);  // Increased from 5 to 10
     let chosen;
 
     if (Math.random() < this.epsilon) {
@@ -1386,16 +1537,31 @@ class GoldenGradient {
     }
 
     // Track stagnation and adapt step size
+    const previousPos = [...this.current];
+    const previousValue = this.currentValue;
+
     if (improved) {
       this.stagnationCounter = 0;
       this.improvementHistory.push(1);
       // When improving, slightly reduce step size to converge more precisely
-      this.stepScale = Math.max(0.01, this.stepScale * 0.95);
+      this.stepScale = Math.max(0.02, this.stepScale * 0.92);
+
+      // Update momentum: accelerate in successful direction
+      for (let d = 0; d < this.dim; d++) {
+        const [lo, hi] = this.bounds[d];
+        const delta = (chosen.pos[d] - previousPos[d]) / (hi - lo);
+        this.momentum[d] = this.momentumDecay * this.momentum[d] + 0.3 * delta;
+      }
     } else {
       this.stagnationCounter++;
       this.improvementHistory.push(0);
       // When not improving, increase step size to explore more
-      this.stepScale = Math.min(0.3, this.stepScale * 1.05);
+      this.stepScale = Math.min(0.4, this.stepScale * 1.08);
+
+      // Decay momentum when not improving
+      for (let d = 0; d < this.dim; d++) {
+        this.momentum[d] *= 0.5;
+      }
     }
 
     // Keep only recent improvement history
@@ -1404,8 +1570,6 @@ class GoldenGradient {
     }
 
     // Move to chosen position
-    const previousPos = [...this.current];
-    const previousValue = this.currentValue;
     this.current = chosen.pos;
     this.currentValue = chosen.value;
     this.history.push(Math.min(chosen.value, this.bestValue));  // Track best-so-far
