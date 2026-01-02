@@ -894,6 +894,16 @@ class GoldenGradient {
     this.stepScale = 0.1;             // Current step scale
     this.improvementHistory = [];     // Track recent improvements
     this.iterCount = 0;               // Total iterations
+
+    // =======================================================================
+    // AHARONOV-BOHM INSPIRED: Topological Phase Accumulation
+    // Just as particles acquire phase from potentials (not fields),
+    // we accumulate "phase" from the search path topology
+    // =======================================================================
+    this.pathHistory = [];            // Track visited positions
+    this.phaseAccumulator = 0;        // Accumulated topological phase
+    this.windingNumber = 0;           // Counts cycles around regions
+    this.potentialField = new Map();  // Learned potential landscape
   }
 
   initialize() {
@@ -985,6 +995,117 @@ class GoldenGradient {
   }
 
   // ===========================================================================
+  // AHARONOV-BOHM METHODS: Topological phase computation
+  // ===========================================================================
+
+  // Discretize position to a grid cell for potential field storage
+  positionToGridKey(pos) {
+    return pos.map((x, d) => {
+      const [lo, hi] = this.bounds[d];
+      const normalized = (x - lo) / (hi - lo);
+      return Math.floor(normalized * 10);  // 10 bins per dimension
+    }).join(',');
+  }
+
+  // Update learned potential field (like the vector potential A in AB effect)
+  updatePotentialField(pos, value) {
+    const key = this.positionToGridKey(pos);
+    if (!this.potentialField.has(key)) {
+      this.potentialField.set(key, { sum: 0, count: 0 });
+    }
+    const cell = this.potentialField.get(key);
+    cell.sum += value;
+    cell.count++;
+  }
+
+  // Get interpolated potential at a position (like A field lookup)
+  getPotential(pos) {
+    const key = this.positionToGridKey(pos);
+    const cell = this.potentialField.get(key);
+    if (!cell || cell.count === 0) return null;
+    return cell.sum / cell.count;
+  }
+
+  // Compute "phase" accumulated along path between two positions
+  // Inspired by: phase = integral of A·dl along path
+  computePathPhase(fromPos, toPos, fromValue, toValue) {
+    // Phase accumulates based on:
+    // 1. The "curl" (circulation) in the potential field
+    // 2. Changes in objective value (like gauge potential)
+
+    const displacement = toPos.map((t, d) => t - fromPos[d]);
+    const distance = Math.sqrt(displacement.reduce((s, x) => s + x*x, 0));
+
+    if (distance < 1e-10) return 0;
+
+    // Phase contribution from value change (analogous to electric potential)
+    const valueDelta = (toValue - fromValue) / (Math.abs(fromValue) + 1);
+
+    // Phase contribution from path direction relative to golden ratio
+    // (analogous to magnetic vector potential A)
+    const directionPhase = displacement.reduce((sum, dx, d) => {
+      const [lo, hi] = this.bounds[d];
+      const normalized = dx / (hi - lo);
+      // Golden angle contribution: 2π/φ² ≈ 137.5° in radians
+      return sum + normalized * (2 * Math.PI / (PHI * PHI));
+    }, 0);
+
+    return valueDelta * 0.5 + directionPhase * 0.5;
+  }
+
+  // Detect winding (cycles around regions) - key AB insight
+  // When we complete a cycle, we've "enclosed" something
+  detectWinding(pos) {
+    if (this.pathHistory.length < 5) return 0;
+
+    // Check if current position is close to an earlier position
+    // (indicates we've completed a loop)
+    for (let i = 0; i < this.pathHistory.length - 3; i++) {
+      const oldPos = this.pathHistory[i].pos;
+      const dist = Math.sqrt(pos.reduce((s, x, d) =>
+        s + Math.pow(x - oldPos[d], 2), 0));
+
+      const avgRange = this.bounds.reduce((s, [lo, hi]) => s + (hi - lo), 0) / this.dim;
+
+      if (dist < avgRange * 0.1) {
+        // We've returned close to a previous position - completed a cycle
+        // The "enclosed flux" is approximated by the improvement over the cycle
+        const cycleStart = this.pathHistory[i].value;
+        const cycleEnd = this.currentValue;
+        return cycleStart - cycleEnd;  // Positive if we improved during cycle
+      }
+    }
+    return 0;
+  }
+
+  // Compute phase-adjusted probability (AB-inspired selection bias)
+  getPhaseAdjustedProbability(baseProb, candidatePos) {
+    // If we've accumulated positive phase (improving cycles),
+    // bias toward unexplored directions
+    // If negative phase (stuck in cycles), bias toward exploitation
+
+    const potential = this.getPotential(candidatePos);
+    let phaseBonus = 0;
+
+    if (potential !== null && this.bestValue < Infinity) {
+      // Prefer regions with lower learned potential (better expected value)
+      const potentialAdvantage = (this.currentValue - potential) /
+                                  (Math.abs(this.currentValue) + 1);
+      phaseBonus += potentialAdvantage * 0.1;
+    }
+
+    // Winding bonus: if we've been cycling productively, continue exploring
+    // If cycling unproductively, try to break out
+    if (this.windingNumber > 0) {
+      phaseBonus += 0.05;  // Productive cycles → keep exploring
+    } else if (this.windingNumber < -2) {
+      phaseBonus -= 0.1;   // Stuck in unproductive cycles → penalize similar moves
+    }
+
+    return Math.max(0, Math.min(1, baseProb + phaseBonus));
+  }
+
+  // ===========================================================================
   // STEP: Explore candidates bidirectionally with epsilon-greedy exploration
   // ===========================================================================
   step(func) {
@@ -1025,13 +1146,16 @@ class GoldenGradient {
           const stateKey = this.buildStateKey(freqState, wassersteinPrior, crossDists);
           const prob = this.getStateProbability(stateKey);
 
+          // Apply AB-inspired phase adjustment
+          const phaseAdjustedProb = this.getPhaseAdjustedProbability(prob, pos);
+
           candidates.push({
             crossSection: null,
             move: { dim: 0, dir, label: `1d_${dir > 0 ? '+' : '-'}_${stepScale}` },
             pos,
             freqState,
             stateKey,
-            prob
+            prob: phaseAdjustedProb
           });
         }
       }
@@ -1072,13 +1196,16 @@ class GoldenGradient {
               const stateKey = this.buildStateKey(freqState, wassersteinPrior, crossDists);
               const prob = this.getStateProbability(stateKey);
 
+              // Apply AB-inspired phase adjustment to probability
+              const phaseAdjustedProb = this.getPhaseAdjustedProbability(prob, pos);
+
               candidates.push({
                 crossSection: [i, j],
                 move: { ...move, stepSize },
                 pos,
                 freqState,
                 stateKey,
-                prob
+                prob: phaseAdjustedProb
               });
             }
           }
@@ -1172,6 +1299,8 @@ class GoldenGradient {
     }
 
     // Move to chosen position
+    const previousPos = [...this.current];
+    const previousValue = this.currentValue;
     this.current = chosen.pos;
     this.currentValue = chosen.value;
     this.history.push(Math.min(chosen.value, this.bestValue));  // Track best-so-far
@@ -1179,6 +1308,37 @@ class GoldenGradient {
     if (chosen.value < this.bestValue) {
       this.bestValue = chosen.value;
       this.best = [...chosen.pos];
+    }
+
+    // ===========================================================================
+    // AHARONOV-BOHM UPDATES: Track path, phase, and potential field
+    // ===========================================================================
+
+    // Update potential field with observed value (like learning the A field)
+    this.updatePotentialField(chosen.pos, chosen.value);
+
+    // Compute phase accumulated on this step
+    const stepPhase = this.computePathPhase(
+      previousPos, chosen.pos, previousValue, chosen.value
+    );
+    this.phaseAccumulator += stepPhase;
+
+    // Detect if we've completed a cycle (winding)
+    const windingContribution = this.detectWinding(chosen.pos);
+    if (windingContribution !== 0) {
+      this.windingNumber += windingContribution > 0 ? 1 : -1;
+      // Reset phase accumulator after completing a cycle (like gauge transform)
+      this.phaseAccumulator = this.phaseAccumulator * 0.5;
+    }
+
+    // Update path history (keep bounded to avoid memory explosion)
+    this.pathHistory.push({
+      pos: [...chosen.pos],
+      value: chosen.value,
+      phase: this.phaseAccumulator
+    });
+    if (this.pathHistory.length > 50) {
+      this.pathHistory.shift();  // Sliding window
     }
 
     return chosen.value;
