@@ -868,60 +868,184 @@ class GoldenGradient {
     this.dim = dim;
     this.bounds = bounds;
     this.history = [];
-    this.stateMemory = new Map();
     this.best = null;
     this.bestValue = Infinity;
+
+    // =======================================================================
+    // HYPERCUBE TOPOLOGY
+    // Each dimension = GSS frequency distribution (wavelength)
+    // N dimensions = N-dimensional hypercube
+    // C(N,2) cross-sections = decision points between dimension pairs
+    // Power comes from multidimensionality, not history length
+    // =======================================================================
+
+    // Only need prior iteration for Wasserstein distance
+    this.priorLayer = null;
+
+    // State memory: frequency state + cross-section distances → probability
+    this.stateMemory = new Map();
   }
 
   initialize() {
-    // Start at center
     this.current = this.bounds.map(([lo, hi]) => (lo + hi) / 2);
+    this.currentValue = Infinity;
   }
 
+  // ===========================================================================
+  // GSS FREQUENCY STATE
+  // Full continuous position [0,1] per dimension - the complete wavelength state
+  // ===========================================================================
+  positionToFrequencyState(pos) {
+    return pos.map((x, d) => {
+      const [lo, hi] = this.bounds[d];
+      return (x - lo) / (hi - lo);
+    });
+  }
+
+  // Discretize for state key: 3 partitions based on golden ratio
+  // 0 = [0, 0.382), 1 = [0.382, 0.618), 2 = [0.618, 1.0]
+  discretizeFreq(f) {
+    if (f < LO) return '0';
+    if (f < HI) return '1';
+    return '2';
+  }
+
+  // ===========================================================================
+  // CROSS-SECTION DISTANCES
+  // All C(N,2) pairs of dimensions - wavelength intersection decision points
+  // 4D → 6 pairs, 5D → 10 pairs, etc.
+  // ===========================================================================
+  computeCrossSectionDistances(freqState) {
+    const distances = [];
+    for (let i = 0; i < this.dim; i++) {
+      for (let j = i + 1; j < this.dim; j++) {
+        distances.push(Math.abs(freqState[i] - freqState[j]));
+      }
+    }
+    return distances;
+  }
+
+  // ===========================================================================
+  // WASSERSTEIN FROM PRIOR
+  // Distance from prior iteration's frequency state (last layer only)
+  // ===========================================================================
+  wassersteinFromPrior(freqState) {
+    if (!this.priorLayer) return 0;
+
+    let sum = 0;
+    for (let d = 0; d < this.dim; d++) {
+      sum += Math.abs(freqState[d] - this.priorLayer.freqState[d]);
+    }
+    return sum / this.dim;
+  }
+
+  // ===========================================================================
+  // STATE KEY
+  // Full frequency state + prior distance + cross-section signature
+  // ===========================================================================
+  buildStateKey(freqState, wassersteinPrior, crossSectionDists) {
+    const discretizeW = (w) => {
+      if (w < 0.1) return '0';
+      if (w < 0.25) return '1';
+      if (w < 0.5) return '2';
+      return '3';
+    };
+
+    const freqStr = freqState.map(f => this.discretizeFreq(f)).join('');
+    const priorW = discretizeW(wassersteinPrior);
+    const crossW = crossSectionDists.map(discretizeW).join('');
+
+    return `${freqStr}|${priorW}|${crossW}`;
+  }
+
+  // Laplace-smoothed success probability
+  getStateProbability(stateKey) {
+    const state = this.stateMemory.get(stateKey);
+    if (!state) return 0.5; // First iteration blind
+    return (state.successes + 1) / (state.successes + state.failures + 2);
+  }
+
+  updateState(stateKey, improved) {
+    if (!this.stateMemory.has(stateKey)) {
+      this.stateMemory.set(stateKey, { successes: 0, failures: 0 });
+    }
+    const state = this.stateMemory.get(stateKey);
+    if (improved) state.successes++;
+    else state.failures++;
+  }
+
+  // ===========================================================================
+  // STEP: Find THE ONE highest probability long tail across all cross-sections
+  // ===========================================================================
   step(func) {
     if (!this.current) this.initialize();
 
-    const candidates = [];
+    const currentFreq = this.positionToFrequencyState(this.current);
 
-    // For each dimension, try golden ratio splits
-    for (let d = 0; d < this.dim; d++) {
-      const [lo, hi] = this.bounds[d];
-      const range = hi - lo;
+    // Examine each cross-section (dimension pair) for its long tail
+    // C(N,2) cross-sections, each has ONE long tail with its own probability
+    const longTails = [];
 
-      // High side (0.618)
-      const xHi = [...this.current];
-      xHi[d] = this.current[d] + range * HI * 0.1;
-      xHi[d] = Math.max(lo, Math.min(hi, xHi[d]));
-      candidates.push(xHi);
+    for (let i = 0; i < this.dim; i++) {
+      for (let j = i + 1; j < this.dim; j++) {
+        // Long tail = dimension currently at higher frequency position
+        // (the larger partition in this cross-section)
+        const longDim = currentFreq[i] >= currentFreq[j] ? i : j;
 
-      // Low side (0.382)
-      const xLo = [...this.current];
-      xLo[d] = this.current[d] - range * LO * 0.1;
-      xLo[d] = Math.max(lo, Math.min(hi, xLo[d]));
-      candidates.push(xLo);
-    }
+        // Generate move extending the long tail
+        const pos = [...this.current];
+        const [lo, hi] = this.bounds[longDim];
+        const range = hi - lo;
+        pos[longDim] = Math.min(hi, Math.max(lo,
+          this.current[longDim] + range * HI * 0.1));
 
-    // Evaluate candidates
-    let bestCandidate = this.current;
-    let bestCandidateValue = func(this.current);
+        // Compute state for this long tail move
+        const freqState = this.positionToFrequencyState(pos);
+        const crossDists = this.computeCrossSectionDistances(freqState);
+        const wassersteinPrior = this.wassersteinFromPrior(freqState);
+        const stateKey = this.buildStateKey(freqState, wassersteinPrior, crossDists);
+        const prob = this.getStateProbability(stateKey);
 
-    for (const cand of candidates) {
-      const val = func(cand);
-      if (val < bestCandidateValue) {
-        bestCandidateValue = val;
-        bestCandidate = cand;
+        longTails.push({
+          crossSection: [i, j],
+          longDim,
+          pos,
+          freqState,
+          stateKey,
+          prob
+        });
       }
     }
 
-    this.current = bestCandidate;
-    this.history.push(bestCandidateValue);
+    // Select THE ONE highest probability long tail
+    longTails.sort((a, b) => b.prob - a.prob);
+    const chosen = longTails[0];
 
-    if (bestCandidateValue < this.bestValue) {
-      this.bestValue = bestCandidateValue;
-      this.best = [...bestCandidate];
+    // Evaluate the chosen position
+    chosen.value = func(chosen.pos);
+
+    // Record current as prior for next iteration
+    this.priorLayer = {
+      position: [...this.current],
+      value: this.currentValue,
+      freqState: currentFreq
+    };
+
+    // Update state memory based on outcome
+    const improved = chosen.value < this.currentValue;
+    this.updateState(chosen.stateKey, improved);
+
+    // Move to chosen position
+    this.current = chosen.pos;
+    this.currentValue = chosen.value;
+    this.history.push(chosen.value);
+
+    if (chosen.value < this.bestValue) {
+      this.bestValue = chosen.value;
+      this.best = [...chosen.pos];
     }
 
-    return bestCandidateValue;
+    return chosen.value;
   }
 }
 
