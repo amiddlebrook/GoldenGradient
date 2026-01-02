@@ -306,21 +306,22 @@
     Four‑Dimensional Hypercube Representation and Wasserstein Metrics
   </h3>
   <p>
-    To understand decision‑making in truly multidimensional Golden State Spaces (GSS), consider a <em>4D hypercube</em>
-    where each axis represents a distinct frequency layer.  In this representation, every point in the hypercube
-    corresponds to a unique combination of states across four dimensions—for instance, (L,S,L,S) indicates "long"
-    decisions on dimensions 1 and 3, and "short" decisions on dimensions 2 and 4.  Each such point carries a
-    probability mass derived from historical observations, forming a discrete probability distribution over the
-    hypercube vertices.
+    To understand decision‑making in truly multidimensional settings, consider a <em>4D hypercube</em>
+    where each axis represents a distinct frequency layer.  The <strong>Golden State Space (GSS)</strong> for each
+    layer is the frequency distribution itself—a golden‑ratio distribution where the center holds the most probability
+    mass.  In this representation, every point in the hypercube corresponds to a unique combination of states across
+    four dimensions—for instance, (L,S,L,S) indicates "long" decisions on dimensions 1 and 3, and "short" decisions
+    on dimensions 2 and 4.  Each such point carries a probability mass derived from historical observations.
   </p>
   <p>
-    The <strong>Wasserstein distance</strong> measures the minimum "transport cost" required to reshape one probability
-    distribution into another.  In the Golden Gradient context, we compute the Wasserstein distance between the
-    <em>long‑tail peak</em> (the cluster of high‑probability states associated with large improvements) and the
-    <em>short‑tail peak</em> (states yielding modest or negative outcomes).  This distance quantifies how far apart
-    the two regimes are in the 4D state space.  A large Wasserstein distance indicates that productive long‑tail
-    states occupy a distinct region of the hypercube, making them easier to target deliberately.  A small distance
-    suggests overlap or ambiguity, prompting more cautious exploration.
+    In higher‑dimensional spaces, dimensional cross‑sections reveal a crucial phenomenon: rather than a single long tail
+    and a single short tail, the distribution exhibits <em>multiple long tails</em> and <em>multiple short tails</em>,
+    each with different probabilities.  This multiplicity is what enables informed choice.  The <strong>Wasserstein
+    distance</strong> measures the minimum "transport cost" required to reshape one probability distribution into another.
+    Here, we compute Wasserstein distances between various long‑tail peaks and short‑tail peaks to identify which
+    specific long tail offers the highest likelihood of success.  A large Wasserstein distance between a particular
+    long‑tail peak and the short‑tail regime indicates that this long tail occupies a distinct, exploitable region of
+    the 4D state space.  A small distance suggests overlap or ambiguity, prompting more cautious exploration.
   </p>
   <p>
     At <em>cross‑sectional intersection points</em>—where multiple GSS from different frequency layers meet—the
