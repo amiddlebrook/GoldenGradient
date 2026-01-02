@@ -868,60 +868,190 @@ class GoldenGradient {
     this.dim = dim;
     this.bounds = bounds;
     this.history = [];
-    this.stateMemory = new Map();
     this.best = null;
     this.bestValue = Infinity;
+
+    // Frequency-state memory: maps state keys to {successes, failures, values[]}
+    // State key encodes: tail configuration + discretized Wasserstein distance
+    this.stateMemory = new Map();
+
+    // Layer memory: each iteration's snapshot for Wasserstein computation
+    this.layers = [];
+
+    // Track value distributions per tail (L/S) for each dimension
+    this.tailDistributions = {};
+    for (let d = 0; d < dim; d++) {
+      this.tailDistributions[d] = { L: [], S: [] };
+    }
   }
 
   initialize() {
-    // Start at center
     this.current = this.bounds.map(([lo, hi]) => (lo + hi) / 2);
+    this.currentValue = Infinity;
+  }
+
+  // Compute 1D Wasserstein distance between two sorted value arrays
+  wasserstein(dist1, dist2) {
+    if (dist1.length === 0 || dist2.length === 0) return 0;
+
+    const n = Math.max(dist1.length, dist2.length);
+    const s1 = [...dist1].sort((a, b) => a - b);
+    const s2 = [...dist2].sort((a, b) => a - b);
+
+    // Interpolate to common length
+    const interp = (arr, len) => {
+      if (arr.length === len) return arr;
+      const result = [];
+      for (let i = 0; i < len; i++) {
+        const idx = (i / (len - 1)) * (arr.length - 1);
+        const lo = Math.floor(idx), hi = Math.ceil(idx);
+        const t = idx - lo;
+        result.push(arr[lo] * (1 - t) + arr[Math.min(hi, arr.length - 1)] * t);
+      }
+      return result;
+    };
+
+    const i1 = interp(s1, n), i2 = interp(s2, n);
+    let sum = 0;
+    for (let i = 0; i < n; i++) sum += Math.abs(i1[i] - i2[i]);
+    return sum / n;
+  }
+
+  // Discretize position to tail state per dimension
+  // L = long tail (upper partition, >= golden point)
+  // S = short tail (lower partition, < golden point)
+  positionToTails(pos) {
+    return pos.map((x, d) => {
+      const [lo, hi] = this.bounds[d];
+      const goldenPoint = lo + (hi - lo) * HI;
+      return x >= goldenPoint ? 'L' : 'S';
+    });
+  }
+
+  // Compute Wasserstein distances between L and S tails for each dimension
+  computeTailDistances() {
+    const distances = [];
+    for (let d = 0; d < this.dim; d++) {
+      const { L, S } = this.tailDistributions[d];
+      distances.push(this.wasserstein(L, S));
+    }
+    return distances;
+  }
+
+  // Build state key from tail configuration + Wasserstein signature
+  buildStateKey(tails, wassersteinDists) {
+    // Discretize Wasserstein distances into buckets for state identification
+    const discretize = (w) => {
+      if (w < 0.1) return '0';
+      if (w < 0.5) return '1';
+      if (w < 1.0) return '2';
+      return '3';
+    };
+    const tailStr = tails.join('');
+    const wStr = wassersteinDists.map(discretize).join('');
+    return `${tailStr}:${wStr}`;
+  }
+
+  // Get success probability for a state (Laplace smoothed)
+  getStateProbability(stateKey) {
+    const state = this.stateMemory.get(stateKey);
+    if (!state) return 0.5; // No prior = neutral
+    return (state.successes + 1) / (state.successes + state.failures + 2);
+  }
+
+  // Update state memory with outcome
+  updateState(stateKey, improved, value) {
+    if (!this.stateMemory.has(stateKey)) {
+      this.stateMemory.set(stateKey, { successes: 0, failures: 0, values: [] });
+    }
+    const state = this.stateMemory.get(stateKey);
+    if (improved) {
+      state.successes++;
+    } else {
+      state.failures++;
+    }
+    state.values.push(value);
   }
 
   step(func) {
     if (!this.current) this.initialize();
 
-    const candidates = [];
+    // Compute current Wasserstein distances between tails
+    const tailDists = this.computeTailDistances();
 
-    // For each dimension, try golden ratio splits
+    // Generate candidates: L and S for each dimension
+    const candidates = [];
     for (let d = 0; d < this.dim; d++) {
       const [lo, hi] = this.bounds[d];
       const range = hi - lo;
 
-      // High side (0.618)
-      const xHi = [...this.current];
-      xHi[d] = this.current[d] + range * HI * 0.1;
-      xHi[d] = Math.max(lo, Math.min(hi, xHi[d]));
-      candidates.push(xHi);
+      // Long tail candidate (high side, 0.618 ratio)
+      const xL = [...this.current];
+      xL[d] = this.current[d] + range * HI * 0.1;
+      xL[d] = Math.max(lo, Math.min(hi, xL[d]));
 
-      // Low side (0.382)
-      const xLo = [...this.current];
-      xLo[d] = this.current[d] - range * LO * 0.1;
-      xLo[d] = Math.max(lo, Math.min(hi, xLo[d]));
-      candidates.push(xLo);
+      // Short tail candidate (low side, 0.382 ratio)
+      const xS = [...this.current];
+      xS[d] = this.current[d] - range * LO * 0.1;
+      xS[d] = Math.max(lo, Math.min(hi, xS[d]));
+
+      candidates.push({ pos: xL, dim: d, tail: 'L' });
+      candidates.push({ pos: xS, dim: d, tail: 'S' });
     }
 
-    // Evaluate candidates
-    let bestCandidate = this.current;
-    let bestCandidateValue = func(this.current);
-
-    for (const cand of candidates) {
-      const val = func(cand);
-      if (val < bestCandidateValue) {
-        bestCandidateValue = val;
-        bestCandidate = cand;
-      }
+    // Evaluate all candidates
+    for (const c of candidates) {
+      c.value = func(c.pos);
+      c.tails = this.positionToTails(c.pos);
+      c.stateKey = this.buildStateKey(c.tails, tailDists);
+      c.prob = this.getStateProbability(c.stateKey);
     }
 
-    this.current = bestCandidate;
-    this.history.push(bestCandidateValue);
+    // Select candidate: favor highest probability long tail
+    // Sort by: (1) probability descending, (2) prefer L tail, (3) lower value
+    candidates.sort((a, b) => {
+      // Primary: higher probability wins
+      if (Math.abs(a.prob - b.prob) > 0.01) return b.prob - a.prob;
+      // Secondary: prefer long tail
+      if (a.tail !== b.tail) return a.tail === 'L' ? -1 : 1;
+      // Tertiary: lower objective value wins
+      return a.value - b.value;
+    });
 
-    if (bestCandidateValue < this.bestValue) {
-      this.bestValue = bestCandidateValue;
-      this.best = [...bestCandidate];
+    const chosen = candidates[0];
+
+    // Record layer for future Wasserstein computation
+    this.layers.push({
+      position: [...this.current],
+      value: this.currentValue,
+      tails: this.positionToTails(this.current),
+      tailDists: [...tailDists]
+    });
+
+    // Update tail distributions with the chosen move
+    this.tailDistributions[chosen.dim][chosen.tail].push(chosen.value);
+    // Keep distributions bounded
+    if (this.tailDistributions[chosen.dim][chosen.tail].length > 50) {
+      this.tailDistributions[chosen.dim][chosen.tail].shift();
     }
 
-    return bestCandidateValue;
+    // Determine if this was an improvement
+    const improved = chosen.value < this.currentValue;
+
+    // Update state memory
+    this.updateState(chosen.stateKey, improved, chosen.value);
+
+    // Move to chosen candidate
+    this.current = chosen.pos;
+    this.currentValue = chosen.value;
+    this.history.push(chosen.value);
+
+    if (chosen.value < this.bestValue) {
+      this.bestValue = chosen.value;
+      this.best = [...chosen.pos];
+    }
+
+    return chosen.value;
   }
 }
 
