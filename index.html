@@ -884,6 +884,16 @@ class GoldenGradient {
 
     // State memory: frequency state + cross-section distances → probability
     this.stateMemory = new Map();
+
+    // Exploration parameters
+    this.epsilon = 0.15;              // Probability of random exploration
+    this.stagnationCounter = 0;       // Track iterations without improvement
+    this.stagnationThreshold = 10;    // Restart after this many stagnant iterations
+
+    // Adaptive step size
+    this.stepScale = 0.1;             // Current step scale
+    this.improvementHistory = [];     // Track recent improvements
+    this.iterCount = 0;               // Total iterations
   }
 
   initialize() {
@@ -975,54 +985,153 @@ class GoldenGradient {
   }
 
   // ===========================================================================
-  // STEP: Find THE ONE highest probability long tail across all cross-sections
+  // STEP: Explore candidates bidirectionally with epsilon-greedy exploration
   // ===========================================================================
   step(func) {
     if (!this.current) this.initialize();
 
+    this.iterCount++;
+
+    // Random restart if stagnant
+    if (this.stagnationCounter >= this.stagnationThreshold) {
+      this.current = this.bounds.map(([lo, hi]) => lo + Math.random() * (hi - lo));
+      this.currentValue = func(this.current);
+      this.stagnationCounter = 0;
+      this.stepScale = 0.1;  // Reset step scale after restart
+    }
+
+    // Adaptive step scale based on progress
+    const baseStep = this.stepScale;
+    const stepVariants = [baseStep, baseStep * 0.5, baseStep * 2];
+
     const currentFreq = this.positionToFrequencyState(this.current);
+    const candidates = [];
 
-    // Examine each cross-section (dimension pair) for its long tail
-    // C(N,2) cross-sections, each has ONE long tail with its own probability
-    const longTails = [];
+    // Handle 1D case specially (no cross-sections available)
+    if (this.dim === 1) {
+      // Generate both positive and negative moves with adaptive step sizes
+      const stepSizes = stepVariants;  // Use adaptive step sizes
+      for (const stepScale of stepSizes) {
+        for (const dir of [1, -1]) {
+          const pos = [...this.current];
+          const [lo, hi] = this.bounds[0];
+          const range = hi - lo;
+          pos[0] = Math.min(hi, Math.max(lo,
+            this.current[0] + dir * range * HI * stepScale));
 
-    for (let i = 0; i < this.dim; i++) {
-      for (let j = i + 1; j < this.dim; j++) {
-        // Long tail = dimension currently at higher frequency position
-        // (the larger partition in this cross-section)
-        const longDim = currentFreq[i] >= currentFreq[j] ? i : j;
+          const freqState = this.positionToFrequencyState(pos);
+          const crossDists = [];  // No cross-sections in 1D
+          const wassersteinPrior = this.wassersteinFromPrior(freqState);
+          const stateKey = this.buildStateKey(freqState, wassersteinPrior, crossDists);
+          const prob = this.getStateProbability(stateKey);
 
-        // Generate move extending the long tail
-        const pos = [...this.current];
-        const [lo, hi] = this.bounds[longDim];
-        const range = hi - lo;
-        pos[longDim] = Math.min(hi, Math.max(lo,
-          this.current[longDim] + range * HI * 0.1));
+          candidates.push({
+            crossSection: null,
+            move: { dim: 0, dir, label: `1d_${dir > 0 ? '+' : '-'}_${stepScale}` },
+            pos,
+            freqState,
+            stateKey,
+            prob
+          });
+        }
+      }
+    } else {
+      // Multi-dimensional case: generate candidates for ALL directions
+      // For each cross-section, generate 4 candidates:
+      // 1. Extend long tail (positive direction)
+      // 2. Contract long tail (negative direction)
+      // 3. Extend short tail (positive direction)
+      // 4. Contract short tail (negative direction)
 
-        // Compute state for this long tail move
-        const freqState = this.positionToFrequencyState(pos);
-        const crossDists = this.computeCrossSectionDistances(freqState);
-        const wassersteinPrior = this.wassersteinFromPrior(freqState);
-        const stateKey = this.buildStateKey(freqState, wassersteinPrior, crossDists);
-        const prob = this.getStateProbability(stateKey);
+      for (let i = 0; i < this.dim; i++) {
+        for (let j = i + 1; j < this.dim; j++) {
+          const longDim = currentFreq[i] >= currentFreq[j] ? i : j;
+          const shortDim = longDim === i ? j : i;
 
-        longTails.push({
-          crossSection: [i, j],
-          longDim,
-          pos,
-          freqState,
-          stateKey,
-          prob
-        });
+          // Generate moves for both dimensions in both directions
+          const moves = [
+            { dim: longDim, dir: 1, label: 'long+' },
+            { dim: longDim, dir: -1, label: 'long-' },
+            { dim: shortDim, dir: 1, label: 'short+' },
+            { dim: shortDim, dir: -1, label: 'short-' }
+          ];
+
+          for (const move of moves) {
+            // Try multiple step sizes for each move
+            for (const stepSize of stepVariants) {
+              const pos = [...this.current];
+              const [lo, hi] = this.bounds[move.dim];
+              const range = hi - lo;
+              // Golden-ratio step size in specified direction
+              pos[move.dim] = Math.min(hi, Math.max(lo,
+                this.current[move.dim] + move.dir * range * HI * stepSize));
+
+              const freqState = this.positionToFrequencyState(pos);
+              const crossDists = this.computeCrossSectionDistances(freqState);
+              const wassersteinPrior = this.wassersteinFromPrior(freqState);
+              const stateKey = this.buildStateKey(freqState, wassersteinPrior, crossDists);
+              const prob = this.getStateProbability(stateKey);
+
+              candidates.push({
+                crossSection: [i, j],
+                move: { ...move, stepSize },
+                pos,
+                freqState,
+                stateKey,
+                prob
+              });
+            }
+          }
+        }
       }
     }
 
-    // Select THE ONE highest probability long tail
-    longTails.sort((a, b) => b.prob - a.prob);
-    const chosen = longTails[0];
+    // Also add coordinated multi-dimensional moves toward best known position
+    if (this.best && this.bestValue < this.currentValue) {
+      const pos = this.current.map((x, d) => {
+        const [lo, hi] = this.bounds[d];
+        // Move toward best with golden-ratio fraction
+        return Math.min(hi, Math.max(lo,
+          x + HI * 0.1 * (this.best[d] - x)));
+      });
+      const freqState = this.positionToFrequencyState(pos);
+      const crossDists = this.computeCrossSectionDistances(freqState);
+      const wassersteinPrior = this.wassersteinFromPrior(freqState);
+      const stateKey = this.buildStateKey(freqState, wassersteinPrior, crossDists);
+      const prob = this.getStateProbability(stateKey);
 
-    // Evaluate the chosen position
-    chosen.value = func(chosen.pos);
+      candidates.push({
+        crossSection: 'toward_best',
+        move: { label: 'toward_best' },
+        pos,
+        freqState,
+        stateKey,
+        prob: prob + 0.1  // Slight bonus for moving toward known best
+      });
+    }
+
+    // Sort candidates by probability
+    candidates.sort((a, b) => b.prob - a.prob);
+
+    // Greedy lookahead: evaluate top-K candidates and pick the best
+    // This makes us more competitive with population-based algorithms
+    const lookaheadK = Math.min(5, candidates.length);
+    let chosen;
+
+    if (Math.random() < this.epsilon) {
+      // Random exploration: pick a random candidate
+      chosen = candidates[Math.floor(Math.random() * candidates.length)];
+      chosen.value = func(chosen.pos);
+    } else {
+      // Evaluate top-K candidates and pick the one with best actual value
+      const topK = candidates.slice(0, lookaheadK);
+      for (const candidate of topK) {
+        candidate.value = func(candidate.pos);
+      }
+      // Select the one with best actual function value
+      topK.sort((a, b) => a.value - b.value);
+      chosen = topK[0];
+    }
 
     // Record current as prior for next iteration
     this.priorLayer = {
@@ -1031,14 +1140,41 @@ class GoldenGradient {
       freqState: currentFreq
     };
 
-    // Update state memory based on outcome
+    // Update state memory for the chosen candidate
     const improved = chosen.value < this.currentValue;
     this.updateState(chosen.stateKey, improved);
+
+    // Also update state memory for all other evaluated candidates
+    // This provides more learning signal per iteration
+    for (const candidate of candidates) {
+      if (candidate !== chosen && candidate.value !== undefined) {
+        const candidateImproved = candidate.value < this.currentValue;
+        this.updateState(candidate.stateKey, candidateImproved);
+      }
+    }
+
+    // Track stagnation and adapt step size
+    if (improved) {
+      this.stagnationCounter = 0;
+      this.improvementHistory.push(1);
+      // When improving, slightly reduce step size to converge more precisely
+      this.stepScale = Math.max(0.01, this.stepScale * 0.95);
+    } else {
+      this.stagnationCounter++;
+      this.improvementHistory.push(0);
+      // When not improving, increase step size to explore more
+      this.stepScale = Math.min(0.3, this.stepScale * 1.05);
+    }
+
+    // Keep only recent improvement history
+    if (this.improvementHistory.length > 20) {
+      this.improvementHistory.shift();
+    }
 
     // Move to chosen position
     this.current = chosen.pos;
     this.currentValue = chosen.value;
-    this.history.push(chosen.value);
+    this.history.push(Math.min(chosen.value, this.bestValue));  // Track best-so-far
 
     if (chosen.value < this.bestValue) {
       this.bestValue = chosen.value;
