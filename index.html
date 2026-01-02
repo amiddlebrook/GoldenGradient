@@ -711,6 +711,8 @@ probability, and the greedy selection ensures improvements are retained.  □</d
               <option value="sphere">Sphere Function</option>
               <option value="rosenbrock">Rosenbrock Valley</option>
               <option value="quadratic">Rotated Quadratic</option>
+              <option value="sphereL1">Sphere + L1 (Pareto)</option>
+              <option value="rosenbrockSphere">Rosenbrock + Sphere (Pareto)</option>
             </select>
           </div>
           <button class="btn" onclick="runBenchmark(0)">Run Simulation</button>
@@ -742,6 +744,21 @@ probability, and the greedy selection ensures improvements are retained.  □</d
             <tbody></tbody>
           </table>
         </div>
+
+        <h3>Pareto Frontier (Golden Gradient)</h3>
+        <div class="table-wrap">
+          <table id="pareto-0">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Position</th>
+                <th>Objective Vector</th>
+                <th>Scalar Score</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
       </div>
 
       <!-- Dimension 2: Cumulative 2D Topology -->
@@ -758,6 +775,7 @@ probability, and the greedy selection ensures improvements are retained.  □</d
               <option value="rastrigin">Rastrigin Function</option>
               <option value="ackley">Ackley Function</option>
               <option value="schwefel">Schwefel Function</option>
+              <option value="ackleyRastrigin">Ackley + Rastrigin (Pareto)</option>
             </select>
           </div>
           <button class="btn" onclick="runBenchmark(1)">Run Simulation</button>
@@ -789,6 +807,21 @@ probability, and the greedy selection ensures improvements are retained.  □</d
             <tbody></tbody>
           </table>
         </div>
+
+        <h3>Pareto Frontier (Golden Gradient)</h3>
+        <div class="table-wrap">
+          <table id="pareto-1">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Position</th>
+                <th>Objective Vector</th>
+                <th>Scalar Score</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
       </div>
 
       <!-- Dimension 3: Cumulative 3D Topology -->
@@ -808,6 +841,9 @@ probability, and the greedy selection ensures improvements are retained.  □</d
               <option value="rastrigin">Rastrigin</option>
               <option value="ackley">Ackley</option>
               <option value="schwefel">Schwefel</option>
+              <option value="sphereL1">Sphere + L1 (Pareto)</option>
+              <option value="rosenbrockSphere">Rosenbrock + Sphere (Pareto)</option>
+              <option value="ackleyRastrigin">Ackley + Rastrigin (Pareto)</option>
             </select>
           </div>
           <button class="btn" onclick="runBenchmark(2)">Run Simulation</button>
@@ -838,6 +874,21 @@ probability, and the greedy selection ensures improvements are retained.  □</d
             <tbody></tbody>
           </table>
         </div>
+
+        <h3>Pareto Frontier (Golden Gradient)</h3>
+        <div class="table-wrap">
+          <table id="pareto-2">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Position</th>
+                <th>Objective Vector</th>
+                <th>Scalar Score</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
       </div>
 
       <!-- Dimension 4: Cumulative 4D Topology -->
@@ -857,6 +908,9 @@ probability, and the greedy selection ensures improvements are retained.  □</d
               <option value="rastrigin">Rastrigin</option>
               <option value="ackley">Ackley</option>
               <option value="schwefel">Schwefel</option>
+              <option value="sphereL1">Sphere + L1 (Pareto)</option>
+              <option value="rosenbrockSphere">Rosenbrock + Sphere (Pareto)</option>
+              <option value="ackleyRastrigin">Ackley + Rastrigin (Pareto)</option>
             </select>
           </div>
           <button class="btn" onclick="runBenchmark(3)">Run Simulation</button>
@@ -887,6 +941,21 @@ probability, and the greedy selection ensures improvements are retained.  □</d
             <tbody></tbody>
           </table>
         </div>
+
+        <h3>Pareto Frontier (Golden Gradient)</h3>
+        <div class="table-wrap">
+          <table id="pareto-3">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Position</th>
+                <th>Objective Vector</th>
+                <th>Scalar Score</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
       </div>
 
       <!-- Dimension 5: Cumulative 5D Topology -->
@@ -906,6 +975,9 @@ probability, and the greedy selection ensures improvements are retained.  □</d
               <option value="rastrigin">Rastrigin</option>
               <option value="ackley">Ackley</option>
               <option value="schwefel">Schwefel</option>
+              <option value="sphereL1">Sphere + L1 (Pareto)</option>
+              <option value="rosenbrockSphere">Rosenbrock + Sphere (Pareto)</option>
+              <option value="ackleyRastrigin">Ackley + Rastrigin (Pareto)</option>
             </select>
           </div>
           <button class="btn" onclick="runBenchmark(4)">Run Simulation</button>
@@ -931,6 +1003,21 @@ probability, and the greedy selection ensures improvements are retained.  □</d
                 <th>Recovery Time</th>
                 <th>Drift Detection</th>
                 <th>Adaptability Score</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <h3>Pareto Frontier (Golden Gradient)</h3>
+        <div class="table-wrap">
+          <table id="pareto-4">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Position</th>
+                <th>Objective Vector</th>
+                <th>Scalar Score</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -1050,13 +1137,64 @@ const testFunctions = {
 // This creates topological layers where Dimension N = sum of layers 1 through N
 function makeCumulativeDimensional(baseFunc) {
   return (x) => {
-    let total = 0;
+    let total = null;
     // Each dimension contributes independently as a layer
     for (let d = 0; d < x.length; d++) {
-      total += baseFunc([x[d]]);
+      const layerValue = normalizeObjectiveValue(baseFunc([x[d]]));
+      if (!total) {
+        total = Array(layerValue.length).fill(0);
+      }
+      for (let i = 0; i < layerValue.length; i++) {
+        total[i] += layerValue[i];
+      }
     }
-    return total;
+    if (!total) return 0;
+    return total.length === 1 ? total[0] : total;
   };
+}
+
+function normalizeObjectiveValue(value) {
+  return Array.isArray(value) ? value : [value];
+}
+
+function scalarizeObjectiveValue(value) {
+  const vec = normalizeObjectiveValue(value);
+  const total = vec.reduce((sum, v) => sum + v, 0);
+  return total / vec.length;
+}
+
+function dominates(a, b) {
+  const vecA = normalizeObjectiveValue(a);
+  const vecB = normalizeObjectiveValue(b);
+  if (vecA.length !== vecB.length) return false;
+  let hasStrict = false;
+  for (let i = 0; i < vecA.length; i++) {
+    if (vecA[i] > vecB[i]) return false;
+    if (vecA[i] < vecB[i]) hasStrict = true;
+  }
+  return hasStrict;
+}
+
+const multiObjectiveFunctions = {
+  sphereL1: (x) => [
+    testFunctions.sphere(x),
+    x.reduce((sum, v) => sum + Math.abs(v), 0)
+  ],
+  rosenbrockSphere: (x) => [
+    testFunctions.rosenbrock(x),
+    testFunctions.sphere(x)
+  ],
+  ackleyRastrigin: (x) => [
+    testFunctions.ackley(x),
+    testFunctions.rastrigin(x)
+  ]
+};
+
+function getObjectiveFunction(funcName) {
+  if (multiObjectiveFunctions[funcName]) {
+    return { func: multiObjectiveFunctions[funcName], multiObjective: true };
+  }
+  return { func: testFunctions[funcName], multiObjective: false };
 }
 
 // =============================================================================
@@ -1069,7 +1207,10 @@ class GoldenGradient {
     this.bounds = bounds;
     this.history = [];
     this.best = null;
-    this.bestValue = Infinity;
+    this.bestValue = [Infinity];
+    this.bestValueScalar = Infinity;
+    this.currentValueScalar = Infinity;
+    this.paretoSet = [];
 
     // =======================================================================
     // HYPERCUBE TOPOLOGY
@@ -1114,19 +1255,30 @@ class GoldenGradient {
     // Start at center of search space
     this.current = this.bounds.map(([lo, hi]) => (lo + hi) / 2);
     // CRITICAL: Actually evaluate the initial position (was Infinity before!)
-    this.currentValue = func ? func(this.current) : Infinity;
+    this.currentValue = normalizeObjectiveValue(func ? func(this.current) : Infinity);
+    this.currentValueScalar = scalarizeObjectiveValue(this.currentValue);
     this.best = [...this.current];
-    this.bestValue = this.currentValue;
+    this.bestValue = [...this.currentValue];
+    this.bestValueScalar = this.currentValueScalar;
+    this.updateParetoSet(this.current, this.currentValue);
 
     // Also try a few random initial points and pick the best
     for (let i = 0; i < 5; i++) {
       const randomPos = this.bounds.map(([lo, hi]) => lo + Math.random() * (hi - lo));
-      const randomVal = func ? func(randomPos) : Infinity;
-      if (randomVal < this.bestValue) {
-        this.bestValue = randomVal;
+      const randomVal = normalizeObjectiveValue(func ? func(randomPos) : Infinity);
+      const randomScalar = scalarizeObjectiveValue(randomVal);
+      this.updateParetoSet(randomPos, randomVal);
+      if (randomScalar < this.bestValueScalar) {
+        this.bestValue = [...randomVal];
+        this.bestValueScalar = randomScalar;
         this.best = [...randomPos];
         this.current = [...randomPos];
-        this.currentValue = randomVal;
+        this.currentValue = [...randomVal];
+        this.currentValueScalar = randomScalar;
+      } else if (dominates(randomVal, this.currentValue)) {
+        this.current = [...randomPos];
+        this.currentValue = [...randomVal];
+        this.currentValueScalar = randomScalar;
       }
     }
   }
@@ -1214,6 +1366,52 @@ class GoldenGradient {
     else state.failures++;
   }
 
+  updateParetoSet(pos, value) {
+    const vec = normalizeObjectiveValue(value);
+    for (const entry of this.paretoSet) {
+      if (dominates(entry.value, vec)) {
+        return { added: false };
+      }
+    }
+
+    const nextSet = [];
+
+    for (const entry of this.paretoSet) {
+      if (dominates(vec, entry.value)) {
+        continue;
+      }
+      nextSet.push(entry);
+    }
+
+    nextSet.push({
+      pos: [...pos],
+      value: [...vec],
+      scalar: scalarizeObjectiveValue(vec)
+    });
+    this.paretoSet = nextSet;
+    this.refreshBestFromPareto();
+    return { added: true };
+  }
+
+  refreshBestFromPareto() {
+    if (this.paretoSet.length === 0) return;
+    let bestEntry = this.paretoSet[0];
+    for (const entry of this.paretoSet) {
+      if (entry.scalar < bestEntry.scalar) bestEntry = entry;
+    }
+    this.best = [...bestEntry.pos];
+    this.bestValue = [...bestEntry.value];
+    this.bestValueScalar = bestEntry.scalar;
+  }
+
+  isNondominatedCandidate(value) {
+    const vec = normalizeObjectiveValue(value);
+    for (const entry of this.paretoSet) {
+      if (dominates(entry.value, vec)) return false;
+    }
+    return true;
+  }
+
   // ===========================================================================
   // AHARONOV-BOHM METHODS: Topological phase computation
   // ===========================================================================
@@ -1291,7 +1489,7 @@ class GoldenGradient {
         // We've returned close to a previous position - completed a cycle
         // The "enclosed flux" is approximated by the improvement over the cycle
         const cycleStart = this.pathHistory[i].value;
-        const cycleEnd = this.currentValue;
+        const cycleEnd = this.currentValueScalar;
         return cycleStart - cycleEnd;  // Positive if we improved during cycle
       }
     }
@@ -1307,10 +1505,10 @@ class GoldenGradient {
     const potential = this.getPotential(candidatePos);
     let phaseBonus = 0;
 
-    if (potential !== null && this.bestValue < Infinity) {
+    if (potential !== null && this.bestValueScalar < Infinity) {
       // Prefer regions with lower learned potential (better expected value)
-      const potentialAdvantage = (this.currentValue - potential) /
-                                  (Math.abs(this.currentValue) + 1);
+      const potentialAdvantage = (this.currentValueScalar - potential) /
+                                  (Math.abs(this.currentValueScalar) + 1);
       phaseBonus += potentialAdvantage * 0.1;
     }
 
@@ -1336,7 +1534,9 @@ class GoldenGradient {
     // Random restart if stagnant
     if (this.stagnationCounter >= this.stagnationThreshold) {
       this.current = this.bounds.map(([lo, hi]) => lo + Math.random() * (hi - lo));
-      this.currentValue = func(this.current);
+      this.currentValue = normalizeObjectiveValue(func(this.current));
+      this.currentValueScalar = scalarizeObjectiveValue(this.currentValue);
+      this.updateParetoSet(this.current, this.currentValue);
       this.stagnationCounter = 0;
       this.stepScale = 0.1;  // Reset step scale after restart
     }
@@ -1434,7 +1634,7 @@ class GoldenGradient {
     }
 
     // Also add coordinated multi-dimensional moves toward best known position
-    if (this.best && this.bestValue < this.currentValue) {
+    if (this.best && this.bestValueScalar < this.currentValueScalar) {
       const pos = this.current.map((x, d) => {
         const [lo, hi] = this.bounds[d];
         // Move toward best with golden-ratio fraction
@@ -1504,41 +1704,46 @@ class GoldenGradient {
     if (Math.random() < this.epsilon) {
       // Random exploration: pick a random candidate
       chosen = candidates[Math.floor(Math.random() * candidates.length)];
-      chosen.value = func(chosen.pos);
+      chosen.value = normalizeObjectiveValue(func(chosen.pos));
+      chosen.scalar = scalarizeObjectiveValue(chosen.value);
     } else {
       // Evaluate top-K candidates and pick the one with best actual value
       const topK = candidates.slice(0, lookaheadK);
       for (const candidate of topK) {
-        candidate.value = func(candidate.pos);
+        candidate.value = normalizeObjectiveValue(func(candidate.pos));
+        candidate.scalar = scalarizeObjectiveValue(candidate.value);
       }
       // Select the one with best actual function value
-      topK.sort((a, b) => a.value - b.value);
+      topK.sort((a, b) => a.scalar - b.scalar);
       chosen = topK[0];
     }
 
     // Record current as prior for next iteration
     this.priorLayer = {
       position: [...this.current],
-      value: this.currentValue,
+      value: this.currentValueScalar,
       freqState: currentFreq
     };
 
     // Update state memory for the chosen candidate
-    const improved = chosen.value < this.currentValue;
+    const dominatesCurrent = dominates(chosen.value, this.currentValue);
+    const paretoResult = this.updateParetoSet(chosen.pos, chosen.value);
+    const improved = dominatesCurrent || paretoResult.added;
     this.updateState(chosen.stateKey, improved);
 
     // Also update state memory for all other evaluated candidates
     // This provides more learning signal per iteration
     for (const candidate of candidates) {
       if (candidate !== chosen && candidate.value !== undefined) {
-        const candidateImproved = candidate.value < this.currentValue;
+        const candidateImproved = dominates(candidate.value, this.currentValue)
+          || this.isNondominatedCandidate(candidate.value);
         this.updateState(candidate.stateKey, candidateImproved);
       }
     }
 
     // Track stagnation and adapt step size
     const previousPos = [...this.current];
-    const previousValue = this.currentValue;
+    const previousValue = this.currentValueScalar;
 
     if (improved) {
       this.stagnationCounter = 0;
@@ -1571,24 +1776,20 @@ class GoldenGradient {
 
     // Move to chosen position
     this.current = chosen.pos;
-    this.currentValue = chosen.value;
-    this.history.push(Math.min(chosen.value, this.bestValue));  // Track best-so-far
-
-    if (chosen.value < this.bestValue) {
-      this.bestValue = chosen.value;
-      this.best = [...chosen.pos];
-    }
+    this.currentValue = [...chosen.value];
+    this.currentValueScalar = chosen.scalar;
+    this.history.push(this.bestValueScalar);  // Track best-so-far
 
     // ===========================================================================
     // AHARONOV-BOHM UPDATES: Track path, phase, and potential field
     // ===========================================================================
 
     // Update potential field with observed value (like learning the A field)
-    this.updatePotentialField(chosen.pos, chosen.value);
+    this.updatePotentialField(chosen.pos, chosen.scalar);
 
     // Compute phase accumulated on this step
     const stepPhase = this.computePathPhase(
-      previousPos, chosen.pos, previousValue, chosen.value
+      previousPos, chosen.pos, previousValue, chosen.scalar
     );
     this.phaseAccumulator += stepPhase;
 
@@ -1603,7 +1804,7 @@ class GoldenGradient {
     // Update path history (keep bounded to avoid memory explosion)
     this.pathHistory.push({
       pos: [...chosen.pos],
-      value: chosen.value,
+      value: chosen.scalar,
       phase: this.phaseAccumulator
     });
     if (this.pathHistory.length > 50) {
@@ -1921,26 +2122,27 @@ function runBenchmark(dimensionIndex) {
 function runUnimodalBenchmark() {
   const funcSelect = document.getElementById('unimodal-function');
   const funcName = funcSelect.value;
-  const baseFunc = testFunctions[funcName];
+  const { func: baseFunc } = getObjectiveFunction(funcName);
   const dim = 1;
   const bounds = Array(dim).fill([-5, 5]);
   const maxIter = 200;
 
   // Dimension 1: Single layer topology
   const func = baseFunc;
+  const scalarFunc = (x) => scalarizeObjectiveValue(func(x));
 
   const algorithms = [
-    { name: 'Golden Gradient', algo: new GoldenGradient(dim, bounds), color: COLORS.gold },
-    { name: 'Nelder-Mead', algo: new NelderMead(dim, bounds), color: COLORS.purple },
-    { name: 'Random Search', algo: new RandomSearch(dim, bounds), color: COLORS.orange },
-    { name: 'PSO', algo: new ParticleSwarm(dim, bounds), color: COLORS.cyan },
-    { name: 'Diff Evolution', algo: new DifferentialEvolution(dim, bounds), color: COLORS.blue },
-    { name: 'Bayesian Opt', algo: new BayesianOpt(dim, bounds), color: COLORS.green }
+    { name: 'Golden Gradient', algo: new GoldenGradient(dim, bounds), color: COLORS.gold, objective: func },
+    { name: 'Nelder-Mead', algo: new NelderMead(dim, bounds), color: COLORS.purple, objective: scalarFunc },
+    { name: 'Random Search', algo: new RandomSearch(dim, bounds), color: COLORS.orange, objective: scalarFunc },
+    { name: 'PSO', algo: new ParticleSwarm(dim, bounds), color: COLORS.cyan, objective: scalarFunc },
+    { name: 'Diff Evolution', algo: new DifferentialEvolution(dim, bounds), color: COLORS.blue, objective: scalarFunc },
+    { name: 'Bayesian Opt', algo: new BayesianOpt(dim, bounds), color: COLORS.green, objective: scalarFunc }
   ];
 
   // Run optimization
   for (let i = 0; i < maxIter; i++) {
-    algorithms.forEach(a => a.algo.step(func));
+    algorithms.forEach(a => a.algo.step(a.objective));
   }
 
   return { algorithms, funcName, maxIter };
@@ -1949,7 +2151,7 @@ function runUnimodalBenchmark() {
 function runMultimodalBenchmark() {
   const funcSelect = document.getElementById('multimodal-function');
   const funcName = funcSelect.value;
-  const baseFunc = testFunctions[funcName];
+  const { func: baseFunc } = getObjectiveFunction(funcName);
   const dim = 2;
   const bounds = funcName === 'schwefel'
     ? Array(dim).fill([-500, 500])
@@ -1958,18 +2160,19 @@ function runMultimodalBenchmark() {
 
   // Dimension 2: Cumulative topology (Dim 1 + Dim 2 layers)
   const func = makeCumulativeDimensional(baseFunc);
+  const scalarFunc = (x) => scalarizeObjectiveValue(func(x));
 
   const algorithms = [
-    { name: 'Golden Gradient', algo: new GoldenGradient(dim, bounds), color: COLORS.gold },
-    { name: 'Nelder-Mead', algo: new NelderMead(dim, bounds), color: COLORS.purple },
-    { name: 'Random Search', algo: new RandomSearch(dim, bounds), color: COLORS.orange },
-    { name: 'PSO', algo: new ParticleSwarm(dim, bounds, 30), color: COLORS.cyan },
-    { name: 'Diff Evolution', algo: new DifferentialEvolution(dim, bounds, 40), color: COLORS.blue },
-    { name: 'Bayesian Opt', algo: new BayesianOpt(dim, bounds), color: COLORS.green }
+    { name: 'Golden Gradient', algo: new GoldenGradient(dim, bounds), color: COLORS.gold, objective: func },
+    { name: 'Nelder-Mead', algo: new NelderMead(dim, bounds), color: COLORS.purple, objective: scalarFunc },
+    { name: 'Random Search', algo: new RandomSearch(dim, bounds), color: COLORS.orange, objective: scalarFunc },
+    { name: 'PSO', algo: new ParticleSwarm(dim, bounds, 30), color: COLORS.cyan, objective: scalarFunc },
+    { name: 'Diff Evolution', algo: new DifferentialEvolution(dim, bounds, 40), color: COLORS.blue, objective: scalarFunc },
+    { name: 'Bayesian Opt', algo: new BayesianOpt(dim, bounds), color: COLORS.green, objective: scalarFunc }
   ];
 
   for (let i = 0; i < maxIter; i++) {
-    algorithms.forEach(a => a.algo.step(func));
+    algorithms.forEach(a => a.algo.step(a.objective));
   }
 
   return { algorithms, funcName, maxIter };
@@ -1978,25 +2181,26 @@ function runMultimodalBenchmark() {
 function runHighDimensionalBenchmark() {
   const funcSelect = document.getElementById('hd-dimensions');
   const funcName = funcSelect.value;
-  const baseFunc = testFunctions[funcName] || testFunctions.sphere;
+  const { func: baseFunc } = getObjectiveFunction(funcName);
   const dim = 3;
   const bounds = Array(dim).fill([-5, 5]);
   const maxIter = 100 + dim * 5;
 
   // Dimension 3: Cumulative topology (Dim 1 + Dim 2 + Dim 3 layers)
   const func = makeCumulativeDimensional(baseFunc);
+  const scalarFunc = (x) => scalarizeObjectiveValue(func(x));
 
   const algorithms = [
-    { name: 'Golden Gradient', algo: new GoldenGradient(dim, bounds), color: COLORS.gold },
-    { name: 'Nelder-Mead', algo: new NelderMead(dim, bounds), color: COLORS.purple },
-    { name: 'Random Search', algo: new RandomSearch(dim, bounds), color: COLORS.orange },
-    { name: 'PSO', algo: new ParticleSwarm(dim, bounds, Math.min(50, 10 + dim)), color: COLORS.cyan },
-    { name: 'Diff Evolution', algo: new DifferentialEvolution(dim, bounds, Math.min(60, 15 + dim)), color: COLORS.blue },
-    { name: 'Bayesian Opt', algo: new BayesianOpt(dim, bounds), color: COLORS.green }
+    { name: 'Golden Gradient', algo: new GoldenGradient(dim, bounds), color: COLORS.gold, objective: func },
+    { name: 'Nelder-Mead', algo: new NelderMead(dim, bounds), color: COLORS.purple, objective: scalarFunc },
+    { name: 'Random Search', algo: new RandomSearch(dim, bounds), color: COLORS.orange, objective: scalarFunc },
+    { name: 'PSO', algo: new ParticleSwarm(dim, bounds, Math.min(50, 10 + dim)), color: COLORS.cyan, objective: scalarFunc },
+    { name: 'Diff Evolution', algo: new DifferentialEvolution(dim, bounds, Math.min(60, 15 + dim)), color: COLORS.blue, objective: scalarFunc },
+    { name: 'Bayesian Opt', algo: new BayesianOpt(dim, bounds), color: COLORS.green, objective: scalarFunc }
   ];
 
   for (let i = 0; i < maxIter; i++) {
-    algorithms.forEach(a => a.algo.step(func));
+    algorithms.forEach(a => a.algo.step(a.objective));
   }
 
   return { algorithms, funcName, dim, maxIter };
@@ -2005,7 +2209,7 @@ function runHighDimensionalBenchmark() {
 function runNoisyBenchmark() {
   const funcSelect = document.getElementById('noise-level');
   const funcName = funcSelect.value;
-  const baseFunc = testFunctions[funcName] || testFunctions.sphere;
+  const { func: baseFunc } = getObjectiveFunction(funcName);
 
   const dim = 4;
   const bounds = Array(dim).fill([-5, 5]);
@@ -2013,18 +2217,19 @@ function runNoisyBenchmark() {
 
   // Dimension 4: Cumulative topology (Dim 1 + 2 + 3 + 4 layers)
   const func = makeCumulativeDimensional(baseFunc);
+  const scalarFunc = (x) => scalarizeObjectiveValue(func(x));
 
   const algorithms = [
-    { name: 'Golden Gradient', algo: new GoldenGradient(dim, bounds), color: COLORS.gold },
-    { name: 'Nelder-Mead', algo: new NelderMead(dim, bounds), color: COLORS.purple },
-    { name: 'Random Search', algo: new RandomSearch(dim, bounds), color: COLORS.orange },
-    { name: 'PSO', algo: new ParticleSwarm(dim, bounds, Math.min(50, 10 + dim)), color: COLORS.cyan },
-    { name: 'Diff Evolution', algo: new DifferentialEvolution(dim, bounds, Math.min(60, 15 + dim)), color: COLORS.blue },
-    { name: 'Bayesian Opt', algo: new BayesianOpt(dim, bounds), color: COLORS.green }
+    { name: 'Golden Gradient', algo: new GoldenGradient(dim, bounds), color: COLORS.gold, objective: func },
+    { name: 'Nelder-Mead', algo: new NelderMead(dim, bounds), color: COLORS.purple, objective: scalarFunc },
+    { name: 'Random Search', algo: new RandomSearch(dim, bounds), color: COLORS.orange, objective: scalarFunc },
+    { name: 'PSO', algo: new ParticleSwarm(dim, bounds, Math.min(50, 10 + dim)), color: COLORS.cyan, objective: scalarFunc },
+    { name: 'Diff Evolution', algo: new DifferentialEvolution(dim, bounds, Math.min(60, 15 + dim)), color: COLORS.blue, objective: scalarFunc },
+    { name: 'Bayesian Opt', algo: new BayesianOpt(dim, bounds), color: COLORS.green, objective: scalarFunc }
   ];
 
   for (let i = 0; i < maxIter; i++) {
-    algorithms.forEach(a => a.algo.step(func));
+    algorithms.forEach(a => a.algo.step(a.objective));
   }
 
   return { algorithms, funcName, dim, maxIter };
@@ -2033,7 +2238,7 @@ function runNoisyBenchmark() {
 function runDynamicBenchmark() {
   const funcSelect = document.getElementById('dynamic-type');
   const funcName = funcSelect.value;
-  const baseFunc = testFunctions[funcName] || testFunctions.sphere;
+  const { func: baseFunc } = getObjectiveFunction(funcName);
 
   const dim = 5;
   const bounds = Array(dim).fill([-5, 5]);
@@ -2041,18 +2246,19 @@ function runDynamicBenchmark() {
 
   // Dimension 5: Cumulative topology (Dim 1 + 2 + 3 + 4 + 5 layers)
   const func = makeCumulativeDimensional(baseFunc);
+  const scalarFunc = (x) => scalarizeObjectiveValue(func(x));
 
   const algorithms = [
-    { name: 'Golden Gradient', algo: new GoldenGradient(dim, bounds), color: COLORS.gold },
-    { name: 'Nelder-Mead', algo: new NelderMead(dim, bounds), color: COLORS.purple },
-    { name: 'Random Search', algo: new RandomSearch(dim, bounds), color: COLORS.orange },
-    { name: 'PSO', algo: new ParticleSwarm(dim, bounds, Math.min(50, 10 + dim)), color: COLORS.cyan },
-    { name: 'Diff Evolution', algo: new DifferentialEvolution(dim, bounds, Math.min(60, 15 + dim)), color: COLORS.blue },
-    { name: 'Bayesian Opt', algo: new BayesianOpt(dim, bounds), color: COLORS.green }
+    { name: 'Golden Gradient', algo: new GoldenGradient(dim, bounds), color: COLORS.gold, objective: func },
+    { name: 'Nelder-Mead', algo: new NelderMead(dim, bounds), color: COLORS.purple, objective: scalarFunc },
+    { name: 'Random Search', algo: new RandomSearch(dim, bounds), color: COLORS.orange, objective: scalarFunc },
+    { name: 'PSO', algo: new ParticleSwarm(dim, bounds, Math.min(50, 10 + dim)), color: COLORS.cyan, objective: scalarFunc },
+    { name: 'Diff Evolution', algo: new DifferentialEvolution(dim, bounds, Math.min(60, 15 + dim)), color: COLORS.blue, objective: scalarFunc },
+    { name: 'Bayesian Opt', algo: new BayesianOpt(dim, bounds), color: COLORS.green, objective: scalarFunc }
   ];
 
   for (let i = 0; i < maxIter; i++) {
-    algorithms.forEach(a => a.algo.step(func));
+    algorithms.forEach(a => a.algo.step(a.objective));
   }
 
   return { algorithms, funcName, dim, maxIter };
@@ -2079,11 +2285,24 @@ function getShift(iter, maxIter, type) {
 function renderBenchmark(dimensionIndex, results) {
   const canvas = document.getElementById(`chart-${dimensionIndex}`);
   const table = document.getElementById(`table-${dimensionIndex}`);
+  const paretoTable = document.getElementById(`pareto-${dimensionIndex}`);
   const metricsDiv = document.getElementById(`metrics-${dimensionIndex}`);
 
   drawChart(canvas, results);
   populateTable(table, results);
+  populateParetoSet(paretoTable, results);
   populateMetrics(metricsDiv, results);
+}
+
+function getAlgoBestScalar(algo) {
+  if (typeof algo.bestValueScalar === 'number') return algo.bestValueScalar;
+  if (algo.bestValue !== undefined) return scalarizeObjectiveValue(algo.bestValue);
+  return Infinity;
+}
+
+function formatVector(values) {
+  const vec = normalizeObjectiveValue(values);
+  return `[${vec.map(v => v.toFixed(4)).join(', ')}]`;
 }
 
 function drawChart(canvas, results) {
@@ -2213,7 +2432,7 @@ function populateTable(table, results) {
   results.algorithms.forEach(a => {
     const row = tbody.insertRow();
     const history = a.algo.history;
-    const bestVal = a.algo.bestValue;
+    const bestVal = getAlgoBestScalar(a.algo);
     const meanVal = history.reduce((sum, v) => sum + v, 0) / history.length;
 
     // Calculate std dev
@@ -2235,23 +2454,48 @@ function populateTable(table, results) {
   });
 }
 
+function populateParetoSet(table, results) {
+  const tbody = table.querySelector('tbody');
+  tbody.innerHTML = '';
+
+  const golden = results.algorithms.find(a => a.name === 'Golden Gradient');
+  const pareto = golden && golden.algo.paretoSet ? golden.algo.paretoSet : [];
+
+  if (!pareto || pareto.length === 0) {
+    const row = tbody.insertRow();
+    row.innerHTML = `<td colspan="4">No Pareto data recorded.</td>`;
+    return;
+  }
+
+  const sorted = [...pareto].sort((a, b) => a.scalar - b.scalar).slice(0, 12);
+  sorted.forEach((entry, idx) => {
+    const row = tbody.insertRow();
+    row.innerHTML = `
+      <td>${idx + 1}</td>
+      <td>${formatVector(entry.pos)}</td>
+      <td>${formatVector(entry.value)}</td>
+      <td>${entry.scalar.toExponential(4)}</td>
+    `;
+  });
+}
+
 function populateMetrics(metricsDiv, results) {
   metricsDiv.innerHTML = '';
 
   const bestAlgo = results.algorithms.reduce((best, curr) =>
-    curr.algo.bestValue < best.algo.bestValue ? curr : best
+    getAlgoBestScalar(curr.algo) < getAlgoBestScalar(best.algo) ? curr : best
   );
 
   const avgIterToConverge = results.algorithms.reduce((sum, a) => {
     const history = a.algo.history;
-    const threshold = a.algo.bestValue * 1.1;
+    const threshold = getAlgoBestScalar(a.algo) * 1.1;
     const convergeIter = history.findIndex(v => v <= threshold);
     return sum + (convergeIter >= 0 ? convergeIter : history.length);
   }, 0) / results.algorithms.length;
 
   const metrics = [
     { label: 'Best Algorithm', value: bestAlgo.name },
-    { label: 'Best Value Found', value: bestAlgo.algo.bestValue.toExponential(3) },
+    { label: 'Best Value Found', value: getAlgoBestScalar(bestAlgo.algo).toExponential(3) },
     { label: 'Avg Convergence', value: `${Math.round(avgIterToConverge)} iter` },
     { label: 'Total Evaluations', value: results.maxIter * results.algorithms.length }
   ];
@@ -2284,6 +2528,7 @@ function resetBenchmark(dimensionIndex) {
   document.getElementById(`status-${dimensionIndex}`).innerHTML = '';
   document.getElementById(`metrics-${dimensionIndex}`).innerHTML = '';
   document.getElementById(`table-${dimensionIndex}`).querySelector('tbody').innerHTML = '';
+  document.getElementById(`pareto-${dimensionIndex}`).querySelector('tbody').innerHTML = '';
 
   const canvas = document.getElementById(`chart-${dimensionIndex}`);
   const ctx = canvas.getContext('2d');
