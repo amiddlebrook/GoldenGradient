@@ -415,8 +415,10 @@ p\_\mathrm{drift} = W\_1\bigl(\text{recent state frequencies},\ \text{baseline f
       This frequency‑state approach retains the interval‑reduction optimality of golden‑section
       search while learning from context.  It naturally incorporates additional optimisers
       (CMA‑ES, Nelder–Mead, Bayesian optimisation, Particle Swarm, Differential Evolution) by allowing them to operate as
-      modules that propose candidate points.  Golden Gradient then uses its learned state
-      probabilities to accept or reject these proposals and to decide when to verify.
+      modules that propose candidate points.  At each <code>step()</code>, external proposal generators are called and their
+      candidate positions are immediately clamped to the active bounds.  These external candidates then pass through the
+      same frequency‑state key construction, state‑probability lookup, and Aharonov‑Bohm phase adjustment as native moves,
+      with a source label attached for debugging.
     </p>
   </section>
 
@@ -633,15 +635,19 @@ where Δxₖ = xₖ₊₁ - xₖ, with parameters α = 0.8 (decay), β = 0.3 (ac
 
 <strong>Definition 8 (Candidate Set).</strong> At iteration k, the candidate set 𝒦ₖ ⊂ Ω is:
 
-    𝒦ₖ = 𝒦ᶜʳᵒˢˢ ∪ 𝒦ᵇᵉˢᵗ ∪ 𝒦ᵐᵒᵐ ∪ 𝒦ʳⁿᵈ
+    𝒦ₖ = 𝒦ᶜʳᵒˢˢ ∪ 𝒦ᵇᵉˢᵗ ∪ 𝒦ᵐᵒᵐ ∪ 𝒦ʳⁿᵈ ∪ 𝒦ᵉˣᵗ
 
 where:
     𝒦ᶜʳᵒˢˢ   = {xₖ + σ·η·φ⁻¹·Δbₐ·eₐ : (i,j) ∈ ℰₙ, σ ∈ {-1,+1}, η ∈ {η₀, η₀/2, 2η₀}}
     𝒦ᵇᵉˢᵗ    = {xₖ + 0.2·φ⁻¹·(x* - xₖ)},  where x* = argmin_{t≤k} f(xₜ)
     𝒦ᵐᵒᵐ     = {xₖ + diag(b-a)·μₖ}
     𝒦ʳⁿᵈ     = {ξ},  ξ ~ Uniform(Ω)
+    𝒦ᵉˣᵗ     = { clamp(gᵢ(ℂₖ), bounds) : gᵢ ∈ 𝒢 }
 
 with |𝒦ᶜʳᵒˢˢ| = 4·|ℰₙ|·3 = 12n(n-1) for n ≥ 2, adaptive step η₀ ∈ [0.02, 0.4].
+External proposals gᵢ are normalized to the hyper-rectangle bounds by clamping each coordinate into [aᵢ, bᵢ] before
+frequency-state computation. Every candidate in 𝒦ₖ, including 𝒦ᵉˣᵗ, is passed through the same state key lookup,
+state probability rₛ, and phase-adjusted probability p' pipeline, with its source label preserved for debugging.
 
 
 <strong>Algorithm 1 (ε-Greedy Selection with Lookahead).</strong>
@@ -1064,9 +1070,12 @@ function makeCumulativeDimensional(baseFunc) {
 // =============================================================================
 
 class GoldenGradient {
-  constructor(dim, bounds) {
+  constructor(dim, bounds, proposalGenerators = []) {
     this.dim = dim;
     this.bounds = bounds;
+    this.proposalGenerators = Array.isArray(proposalGenerators)
+      ? proposalGenerators.filter((fn) => typeof fn === 'function')
+      : [];
     this.history = [];
     this.best = null;
     this.bestValue = Infinity;
@@ -1348,6 +1357,29 @@ class GoldenGradient {
     const currentFreq = this.positionToFrequencyState(this.current);
     const candidates = [];
 
+    const addCandidate = ({ pos, crossSection, move, source, extraProb = 0 }) => {
+      const normalizedPos = pos.map((x, d) => {
+        const [lo, hi] = this.bounds[d];
+        return Math.min(hi, Math.max(lo, x));
+      });
+      const freqState = this.positionToFrequencyState(normalizedPos);
+      const crossDists = this.computeCrossSectionDistances(freqState);
+      const wassersteinPrior = this.wassersteinFromPrior(freqState);
+      const stateKey = this.buildStateKey(freqState, wassersteinPrior, crossDists);
+      const prob = this.getStateProbability(stateKey);
+      const phaseAdjustedProb = this.getPhaseAdjustedProbability(prob, normalizedPos);
+
+      candidates.push({
+        crossSection,
+        move,
+        source,
+        pos: normalizedPos,
+        freqState,
+        stateKey,
+        prob: phaseAdjustedProb + extraProb
+      });
+    };
+
     // Handle 1D case specially (no cross-sections available)
     if (this.dim === 1) {
       // Generate both positive and negative moves with adaptive step sizes
@@ -1360,22 +1392,11 @@ class GoldenGradient {
           pos[0] = Math.min(hi, Math.max(lo,
             this.current[0] + dir * range * HI * stepScale));
 
-          const freqState = this.positionToFrequencyState(pos);
-          const crossDists = [];  // No cross-sections in 1D
-          const wassersteinPrior = this.wassersteinFromPrior(freqState);
-          const stateKey = this.buildStateKey(freqState, wassersteinPrior, crossDists);
-          const prob = this.getStateProbability(stateKey);
-
-          // Apply AB-inspired phase adjustment
-          const phaseAdjustedProb = this.getPhaseAdjustedProbability(prob, pos);
-
-          candidates.push({
+          addCandidate({
             crossSection: null,
             move: { dim: 0, dir, label: `1d_${dir > 0 ? '+' : '-'}_${stepScale}` },
             pos,
-            freqState,
-            stateKey,
-            prob: phaseAdjustedProb
+            source: 'internal:1d'
           });
         }
       }
@@ -1410,22 +1431,11 @@ class GoldenGradient {
               pos[move.dim] = Math.min(hi, Math.max(lo,
                 this.current[move.dim] + move.dir * range * HI * stepSize));
 
-              const freqState = this.positionToFrequencyState(pos);
-              const crossDists = this.computeCrossSectionDistances(freqState);
-              const wassersteinPrior = this.wassersteinFromPrior(freqState);
-              const stateKey = this.buildStateKey(freqState, wassersteinPrior, crossDists);
-              const prob = this.getStateProbability(stateKey);
-
-              // Apply AB-inspired phase adjustment to probability
-              const phaseAdjustedProb = this.getPhaseAdjustedProbability(prob, pos);
-
-              candidates.push({
+              addCandidate({
                 crossSection: [i, j],
                 move: { ...move, stepSize },
                 pos,
-                freqState,
-                stateKey,
-                prob: phaseAdjustedProb
+                source: 'internal:cross'
               });
             }
           }
@@ -1441,19 +1451,12 @@ class GoldenGradient {
         return Math.min(hi, Math.max(lo,
           x + HI * 0.2 * (this.best[d] - x)));  // More aggressive toward best
       });
-      const freqState = this.positionToFrequencyState(pos);
-      const crossDists = this.computeCrossSectionDistances(freqState);
-      const wassersteinPrior = this.wassersteinFromPrior(freqState);
-      const stateKey = this.buildStateKey(freqState, wassersteinPrior, crossDists);
-      const prob = this.getStateProbability(stateKey);
-
-      candidates.push({
+      addCandidate({
         crossSection: 'toward_best',
         move: { label: 'toward_best' },
         pos,
-        freqState,
-        stateKey,
-        prob: prob + 0.15  // Strong bonus for moving toward known best
+        source: 'internal:toward_best',
+        extraProb: 0.15  // Strong bonus for moving toward known best
       });
     }
 
@@ -1463,35 +1466,56 @@ class GoldenGradient {
         const [lo, hi] = this.bounds[d];
         return Math.min(hi, Math.max(lo, x + this.momentum[d] * (hi - lo)));
       });
-      const freqState = this.positionToFrequencyState(pos);
-      const crossDists = this.computeCrossSectionDistances(freqState);
-      const wassersteinPrior = this.wassersteinFromPrior(freqState);
-      const stateKey = this.buildStateKey(freqState, wassersteinPrior, crossDists);
-      const prob = this.getStateProbability(stateKey);
-
-      candidates.push({
+      addCandidate({
         crossSection: 'momentum',
         move: { label: 'momentum' },
         pos,
-        freqState,
-        stateKey,
-        prob: prob + 0.05
+        source: 'internal:momentum',
+        extraProb: 0.05
+      });
+    }
+
+    // Add external proposals from optional generators
+    if (this.proposalGenerators.length > 0) {
+      const proposalContext = {
+        current: [...this.current],
+        best: this.best ? [...this.best] : null,
+        bounds: this.bounds,
+        dim: this.dim,
+        iteration: this.iterCount
+      };
+
+      this.proposalGenerators.forEach((generator, index) => {
+        const label = generator.name ? `external:${generator.name}` : `external:proposal_${index + 1}`;
+        const generated = generator(proposalContext);
+        if (!generated) return;
+
+        const proposals = Array.isArray(generated) && typeof generated[0] === 'number'
+          ? [generated]
+          : generated;
+
+        if (!Array.isArray(proposals)) return;
+
+        proposals.forEach((pos) => {
+          if (!Array.isArray(pos) || pos.length !== this.dim) return;
+          addCandidate({
+            crossSection: 'external',
+            move: { label },
+            pos,
+            source: label
+          });
+        });
       });
     }
 
     // Add pure random candidate for exploration
     const randomPos = this.bounds.map(([lo, hi]) => lo + Math.random() * (hi - lo));
-    const randomFreqState = this.positionToFrequencyState(randomPos);
-    const randomCrossDists = this.computeCrossSectionDistances(randomFreqState);
-    const randomWasserstein = this.wassersteinFromPrior(randomFreqState);
-    const randomStateKey = this.buildStateKey(randomFreqState, randomWasserstein, randomCrossDists);
-    candidates.push({
+    addCandidate({
       crossSection: 'random',
       move: { label: 'random' },
       pos: randomPos,
-      freqState: randomFreqState,
-      stateKey: randomStateKey,
-      prob: 0.3  // Decent probability for exploration
+      source: 'internal:random',
+      extraProb: 0.3  // Decent probability for exploration
     });
 
     // Sort candidates by probability
