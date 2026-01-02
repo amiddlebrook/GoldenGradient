@@ -420,6 +420,76 @@ p\_\mathrm{drift} = W\_1\bigl(\text{recent state frequencies},\ \text{baseline f
     </p>
   </section>
 
+  <section>
+    <h2>Metaheuristic Positioning</h2>
+    <p>
+      Golden Gradient sits between deterministic interval methods and population‑based metaheuristics.
+      It preserves golden‑section optimality for unimodal slices while <em>delegating exploration</em> to
+      external proposal modules (CMA‑ES, Nelder–Mead, Bayesian optimisation, Particle Swarm, Differential Evolution),
+      then adjudicates their candidates using the learned frequency‑state policy.
+    </p>
+    <ul>
+      <li><strong>Proposal modules</strong> generate candidate points (search diversity and exploration).</li>
+      <li><strong>Frequency‑state gate</strong> accepts, flips, or verifies proposals based on r<sub>s</sub>.</li>
+      <li><strong>Verification hooks</strong> re‑sample discarded regions when drift is detected.</li>
+    </ul>
+    <div class="math-block">x\_\mathrm{cand} \sim \mathcal{M}\_\mathrm{proposal}(\Omega)
+
+a(x\_\mathrm{cand}) = \mathbb{I}[r\_s \ge 0.5]\ \lor\ \mathbb{I}[\text{verify}(s)]
+
+x\_{t+1} = \arg\min\_{x \in \{x\_\mathrm{cand}, x\_\mathrm{verify}\}} f(x)</div>
+    <p>
+      This positioning allows Golden Gradient to remain sample‑efficient on smooth objectives while still
+      leveraging broader exploration when the proposal modules detect non‑convex structure.
+    </p>
+  </section>
+
+  <section>
+    <h2>Multi‑Objective Variants</h2>
+    <p>
+      Multi‑objective objectives are handled through either scalarization or Pareto‑based selection.
+      Scalarization compresses multiple criteria into a single target, while the Pareto‑based path
+      retains a <em>Pareto set</em> of non‑dominated proposals for downstream MCDA selection.
+    </p>
+    <ul>
+      <li><strong>Scalarization</strong>: weighted sums or Chebyshev metrics to reuse single‑objective updates.</li>
+      <li><strong>Pareto path</strong>: maintain a Pareto set hook and filter dominated proposals.</li>
+      <li><strong>Hybrid</strong>: alternate scalarization weights while keeping a running Pareto archive.</li>
+    </ul>
+    <div class="math-block">f\_\lambda(x) = \sum\_{k=1}^{K} \lambda\_k f\_k(x), \qquad \sum\_k \lambda\_k = 1
+
+f\_\infty(x) = \max\_k \lambda\_k |f\_k(x) - z^\*_{k}|
+
+\mathcal{P} = \{x : \nexists y \text{ such that } f(y) \preceq f(x)\}</div>
+    <p>
+      The Pareto set hook stores non‑dominated proposals emitted by the proposal modules, enabling later
+      MCDA scoring without discarding trade‑off structure.
+    </p>
+  </section>
+
+  <section>
+    <h2>MCDA Selection Strategies</h2>
+    <p>
+      When multiple objectives are active, the system applies MCDA scoring to choose among candidates
+      in the Pareto set. The MCDA hook is deliberately modular so new scoring rules can be added
+      without altering proposal generation.
+    </p>
+    <ul>
+      <li><strong>Weighted utility</strong>: aggregate normalized criteria into a single score.</li>
+      <li><strong>Outranking</strong>: pairwise comparisons to rank Pareto alternatives.</li>
+      <li><strong>Reference point</strong>: select candidates closest to a target aspiration vector.</li>
+    </ul>
+    <div class="math-block">u(x) = \sum\_{k=1}^{K} w\_k \cdot \hat{f}\_k(x)
+
+s(x) = \alpha \cdot u(x) + (1-\alpha) \cdot d(x, z^\*)
+
+x^\* = \arg\max\_{x \in \mathcal{P}} s(x)</div>
+    <p>
+      MCDA scoring consumes the Pareto set hook and produces the final accepted candidate, which then
+      feeds back into the frequency‑state update for the next iteration.
+    </p>
+  </section>
+
 <section>
   <h2>Multi‑Dimensional Applications</h2>
   <p>
