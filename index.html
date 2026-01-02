@@ -1214,7 +1214,7 @@ function runUnimodalBenchmark() {
   const funcSelect = document.getElementById('unimodal-function');
   const funcName = funcSelect.value;
   const func = testFunctions[funcName];
-  const dim = 5;
+  const dim = 1;
   const bounds = Array(dim).fill([-5, 5]);
   const maxIter = 200;
 
@@ -1239,7 +1239,7 @@ function runMultimodalBenchmark() {
   const funcSelect = document.getElementById('multimodal-function');
   const funcName = funcSelect.value;
   const func = testFunctions[funcName];
-  const dim = 5;
+  const dim = 2;
   const bounds = funcName === 'schwefel'
     ? Array(dim).fill([-500, 500])
     : Array(dim).fill([-5, 5]);
@@ -1290,7 +1290,7 @@ function runNoisyBenchmark() {
   const baseFunc = testFunctions.sphere;
   const func = (x) => baseFunc(x) + (Math.random() - 0.5) * 2 * noiseLevel * Math.sqrt(x.length);
 
-  const dim = 5;
+  const dim = 4;
   const bounds = Array(dim).fill([-5, 5]);
   const maxIter = 250;
 
