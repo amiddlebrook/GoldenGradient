@@ -975,55 +975,63 @@ class GoldenGradient {
   }
 
   // ===========================================================================
-  // STEP: Navigate hypercube, select purely by highest probability
+  // STEP: Find THE ONE highest probability long tail across all cross-sections
   // ===========================================================================
   step(func) {
     if (!this.current) this.initialize();
 
-    // Generate candidates: golden ratio steps per dimension
-    const candidates = [];
-    for (let d = 0; d < this.dim; d++) {
-      const [lo, hi] = this.bounds[d];
-      const range = hi - lo;
+    const currentFreq = this.positionToFrequencyState(this.current);
 
-      // Upper step (phi ratio)
-      const xUp = [...this.current];
-      xUp[d] = Math.min(hi, Math.max(lo, this.current[d] + range * HI * 0.1));
+    // Examine each cross-section (dimension pair) for its long tail
+    // C(N,2) cross-sections, each has ONE long tail with its own probability
+    const longTails = [];
 
-      // Lower step (phi ratio)
-      const xDown = [...this.current];
-      xDown[d] = Math.min(hi, Math.max(lo, this.current[d] - range * LO * 0.1));
+    for (let i = 0; i < this.dim; i++) {
+      for (let j = i + 1; j < this.dim; j++) {
+        // Long tail = dimension currently at higher frequency position
+        // (the larger partition in this cross-section)
+        const longDim = currentFreq[i] >= currentFreq[j] ? i : j;
 
-      candidates.push({ pos: xUp, dim: d });
-      candidates.push({ pos: xDown, dim: d });
+        // Generate move extending the long tail
+        const pos = [...this.current];
+        const [lo, hi] = this.bounds[longDim];
+        const range = hi - lo;
+        pos[longDim] = Math.min(hi, Math.max(lo,
+          this.current[longDim] + range * HI * 0.1));
+
+        // Compute state for this long tail move
+        const freqState = this.positionToFrequencyState(pos);
+        const crossDists = this.computeCrossSectionDistances(freqState);
+        const wassersteinPrior = this.wassersteinFromPrior(freqState);
+        const stateKey = this.buildStateKey(freqState, wassersteinPrior, crossDists);
+        const prob = this.getStateProbability(stateKey);
+
+        longTails.push({
+          crossSection: [i, j],
+          longDim,
+          pos,
+          freqState,
+          stateKey,
+          prob
+        });
+      }
     }
 
-    // Evaluate each candidate in hypercube context
-    for (const c of candidates) {
-      c.value = func(c.pos);
-      c.freqState = this.positionToFrequencyState(c.pos);
-      c.crossDists = this.computeCrossSectionDistances(c.freqState);
-      c.wassersteinPrior = this.wassersteinFromPrior(c.freqState);
-      c.stateKey = this.buildStateKey(c.freqState, c.wassersteinPrior, c.crossDists);
-      c.prob = this.getStateProbability(c.stateKey);
-    }
+    // Select THE ONE highest probability long tail
+    longTails.sort((a, b) => b.prob - a.prob);
+    const chosen = longTails[0];
 
-    // Select purely by probability, value as tiebreaker
-    candidates.sort((a, b) => {
-      if (Math.abs(a.prob - b.prob) > 0.001) return b.prob - a.prob;
-      return a.value - b.value;
-    });
-
-    const chosen = candidates[0];
+    // Evaluate the chosen position
+    chosen.value = func(chosen.pos);
 
     // Record current as prior for next iteration
     this.priorLayer = {
       position: [...this.current],
       value: this.currentValue,
-      freqState: this.positionToFrequencyState(this.current)
+      freqState: currentFreq
     };
 
-    // Update state memory
+    // Update state memory based on outcome
     const improved = chosen.value < this.currentValue;
     this.updateState(chosen.stateKey, improved);
 
