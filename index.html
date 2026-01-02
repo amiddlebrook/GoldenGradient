@@ -481,28 +481,28 @@ p\_\mathrm{drift} = W\_1\bigl(\text{recent state frequencies},\ \text{baseline f
     <div class="tab-container">
       <div class="tab-buttons">
         <button class="tab-btn active" onclick="switchTab(0)">
-          📊 Dimension 1: Unimodal Optimization
+          📊 Dimension 1: 1D Base Layer
         </button>
         <button class="tab-btn" onclick="switchTab(1)">
-          🌄 Dimension 2: Multi-modal Functions
+          🌄 Dimension 2: 2D Cumulative
         </button>
         <button class="tab-btn" onclick="switchTab(2)">
-          📈 Dimension 3: High-Dimensional Scalability
+          📈 Dimension 3: 3D Cumulative
         </button>
         <button class="tab-btn" onclick="switchTab(3)">
-          🎲 Dimension 4: Noisy Optimization
+          🎲 Dimension 4: 4D Cumulative
         </button>
         <button class="tab-btn" onclick="switchTab(4)">
-          🔄 Dimension 5: Non-Stationary Dynamics
+          🔄 Dimension 5: 5D Cumulative
         </button>
       </div>
 
-      <!-- Dimension 1: Unimodal -->
+      <!-- Dimension 1: Base Layer -->
       <div class="tab-content active" id="tab-0">
-        <h3>Unimodal Optimization</h3>
+        <h3>1D Base Layer</h3>
         <p>
-          Tests performance on smooth, convex functions with a single global optimum. These functions evaluate
-          the basic convergence properties and exploitation capabilities of each algorithm.
+          Evaluates algorithms in 1-dimensional space. This forms the base layer that will be
+          cumulatively layered with additional dimensions in higher-dimensional topologies.
         </p>
 
         <div class="controls">
@@ -544,12 +544,12 @@ p\_\mathrm{drift} = W\_1\bigl(\text{recent state frequencies},\ \text{baseline f
         </div>
       </div>
 
-      <!-- Dimension 2: Multi-modal -->
+      <!-- Dimension 2: Cumulative 2D Topology -->
       <div class="tab-content" id="tab-1">
-        <h3>Multi-modal Optimization</h3>
+        <h3>2D Cumulative Topology</h3>
         <p>
-          Tests performance on functions with many local optima, evaluating exploration vs exploitation balance
-          and the ability to escape local minima.
+          Evaluates algorithms in a 2-dimensional cumulative topology where each dimension layer
+          contributes independently. Built from dimensions 1+2 layered together.
         </p>
 
         <div class="controls">
@@ -591,23 +591,23 @@ p\_\mathrm{drift} = W\_1\bigl(\text{recent state frequencies},\ \text{baseline f
         </div>
       </div>
 
-      <!-- Dimension 3: High-Dimensional -->
+      <!-- Dimension 3: Cumulative 3D Topology -->
       <div class="tab-content" id="tab-2">
-        <h3>High-Dimensional Scalability</h3>
+        <h3>3D Cumulative Topology</h3>
         <p>
-          Evaluates how algorithms scale from 2D to 50D, testing the curse of dimensionality and
-          computational efficiency in large search spaces.
+          Evaluates algorithms in a 3-dimensional cumulative topology where each dimension layer
+          contributes independently. Built from dimensions 1+2+3 layered together.
         </p>
 
         <div class="controls">
           <div class="select-wrapper">
             <select id="hd-dimensions">
-              <option value="2">2 Dimensions</option>
-              <option value="3" selected>3 Dimensions</option>
-              <option value="5">5 Dimensions</option>
-              <option value="10">10 Dimensions</option>
-              <option value="20">20 Dimensions</option>
-              <option value="50">50 Dimensions</option>
+              <option value="sphere" selected>Sphere</option>
+              <option value="rosenbrock">Rosenbrock</option>
+              <option value="quadratic">Quadratic</option>
+              <option value="rastrigin">Rastrigin</option>
+              <option value="ackley">Ackley</option>
+              <option value="schwefel">Schwefel</option>
             </select>
           </div>
           <button class="btn" onclick="runBenchmark(2)">Run Simulation</button>
@@ -640,21 +640,23 @@ p\_\mathrm{drift} = W\_1\bigl(\text{recent state frequencies},\ \text{baseline f
         </div>
       </div>
 
-      <!-- Dimension 4: Noisy -->
+      <!-- Dimension 4: Cumulative 4D Topology -->
       <div class="tab-content" id="tab-3">
-        <h3>Noisy Optimization</h3>
+        <h3>4D Cumulative Topology</h3>
         <p>
-          Tests robustness to measurement noise and stochastic function evaluations, simulating
-          real-world scenarios where objective values are corrupted by noise.
+          Evaluates algorithms in a 4-dimensional cumulative topology where each dimension layer
+          contributes independently. Built from dimensions 1+2+3+4 layered together.
         </p>
 
         <div class="controls">
           <div class="select-wrapper">
             <select id="noise-level">
-              <option value="0.01">Low Noise (σ=0.01)</option>
-              <option value="0.1">Medium Noise (σ=0.1)</option>
-              <option value="0.5">High Noise (σ=0.5)</option>
-              <option value="1.0">Extreme Noise (σ=1.0)</option>
+              <option value="sphere" selected>Sphere</option>
+              <option value="rosenbrock">Rosenbrock</option>
+              <option value="quadratic">Quadratic</option>
+              <option value="rastrigin">Rastrigin</option>
+              <option value="ackley">Ackley</option>
+              <option value="schwefel">Schwefel</option>
             </select>
           </div>
           <button class="btn" onclick="runBenchmark(3)">Run Simulation</button>
@@ -687,20 +689,23 @@ p\_\mathrm{drift} = W\_1\bigl(\text{recent state frequencies},\ \text{baseline f
         </div>
       </div>
 
-      <!-- Dimension 5: Non-Stationary -->
+      <!-- Dimension 5: Cumulative 5D Topology -->
       <div class="tab-content" id="tab-4">
-        <h3>Non-Stationary & Dynamic Optimization</h3>
+        <h3>5D Cumulative Topology</h3>
         <p>
-          Tests tracking performance on functions with shifting optima and changing landscapes,
-          evaluating adaptability and drift detection capabilities.
+          Evaluates algorithms in a 5-dimensional cumulative topology where each dimension layer
+          contributes independently. Built from dimensions 1+2+3+4+5 layered together.
         </p>
 
         <div class="controls">
           <div class="select-wrapper">
             <select id="dynamic-type">
-              <option value="linear">Linear Drift</option>
-              <option value="periodic">Periodic Oscillation</option>
-              <option value="sudden">Sudden Jumps</option>
+              <option value="sphere" selected>Sphere</option>
+              <option value="rosenbrock">Rosenbrock</option>
+              <option value="quadratic">Quadratic</option>
+              <option value="rastrigin">Rastrigin</option>
+              <option value="ackley">Ackley</option>
+              <option value="schwefel">Schwefel</option>
             </select>
           </div>
           <button class="btn" onclick="runBenchmark(4)">Run Simulation</button>
@@ -840,6 +845,19 @@ const testFunctions = {
     return 418.9829 * x.length + sum;
   }
 };
+
+// Cumulative dimensional wrapper - each dimension layer contributes independently
+// This creates topological layers where Dimension N = sum of layers 1 through N
+function makeCumulativeDimensional(baseFunc) {
+  return (x) => {
+    let total = 0;
+    // Each dimension contributes independently as a layer
+    for (let d = 0; d < x.length; d++) {
+      total += baseFunc([x[d]]);
+    }
+    return total;
+  };
+}
 
 // =============================================================================
 // OPTIMIZATION ALGORITHMS
@@ -1214,10 +1232,13 @@ function runBenchmark(dimensionIndex) {
 function runUnimodalBenchmark() {
   const funcSelect = document.getElementById('unimodal-function');
   const funcName = funcSelect.value;
-  const func = testFunctions[funcName];
+  const baseFunc = testFunctions[funcName];
   const dim = 1;
   const bounds = Array(dim).fill([-5, 5]);
   const maxIter = 200;
+
+  // Dimension 1: Single layer topology
+  const func = baseFunc;
 
   const algorithms = [
     { name: 'Golden Gradient', algo: new GoldenGradient(dim, bounds), color: COLORS.gold },
@@ -1239,12 +1260,15 @@ function runUnimodalBenchmark() {
 function runMultimodalBenchmark() {
   const funcSelect = document.getElementById('multimodal-function');
   const funcName = funcSelect.value;
-  const func = testFunctions[funcName];
+  const baseFunc = testFunctions[funcName];
   const dim = 2;
   const bounds = funcName === 'schwefel'
     ? Array(dim).fill([-500, 500])
     : Array(dim).fill([-5, 5]);
   const maxIter = 300;
+
+  // Dimension 2: Cumulative topology (Dim 1 + Dim 2 layers)
+  const func = makeCumulativeDimensional(baseFunc);
 
   const algorithms = [
     { name: 'Golden Gradient', algo: new GoldenGradient(dim, bounds), color: COLORS.gold },
@@ -1263,11 +1287,15 @@ function runMultimodalBenchmark() {
 }
 
 function runHighDimensionalBenchmark() {
-  const dimSelect = document.getElementById('hd-dimensions');
-  const dim = parseInt(dimSelect.value);
-  const func = testFunctions.sphere;
+  const funcSelect = document.getElementById('hd-dimensions');
+  const funcName = funcSelect.value;
+  const baseFunc = testFunctions[funcName] || testFunctions.sphere;
+  const dim = 3;
   const bounds = Array(dim).fill([-5, 5]);
   const maxIter = 100 + dim * 5;
+
+  // Dimension 3: Cumulative topology (Dim 1 + Dim 2 + Dim 3 layers)
+  const func = makeCumulativeDimensional(baseFunc);
 
   const algorithms = [
     { name: 'Golden Gradient', algo: new GoldenGradient(dim, bounds), color: COLORS.gold },
@@ -1282,25 +1310,27 @@ function runHighDimensionalBenchmark() {
     algorithms.forEach(a => a.algo.step(func));
   }
 
-  return { algorithms, dim, maxIter };
+  return { algorithms, funcName, dim, maxIter };
 }
 
 function runNoisyBenchmark() {
-  const noiseSelect = document.getElementById('noise-level');
-  const noiseLevel = parseFloat(noiseSelect.value);
-  const baseFunc = testFunctions.sphere;
-  const func = (x) => baseFunc(x) + (Math.random() - 0.5) * 2 * noiseLevel * Math.sqrt(x.length);
+  const funcSelect = document.getElementById('noise-level');
+  const funcName = funcSelect.value;
+  const baseFunc = testFunctions[funcName] || testFunctions.sphere;
 
   const dim = 4;
   const bounds = Array(dim).fill([-5, 5]);
-  const maxIter = 250;
+  const maxIter = 100 + dim * 5;
+
+  // Dimension 4: Cumulative topology (Dim 1 + 2 + 3 + 4 layers)
+  const func = makeCumulativeDimensional(baseFunc);
 
   const algorithms = [
     { name: 'Golden Gradient', algo: new GoldenGradient(dim, bounds), color: COLORS.gold },
     { name: 'Nelder-Mead', algo: new NelderMead(dim, bounds), color: COLORS.purple },
     { name: 'Random Search', algo: new RandomSearch(dim, bounds), color: COLORS.orange },
-    { name: 'PSO', algo: new ParticleSwarm(dim, bounds, 25), color: COLORS.cyan },
-    { name: 'Diff Evolution', algo: new DifferentialEvolution(dim, bounds, 35), color: COLORS.blue },
+    { name: 'PSO', algo: new ParticleSwarm(dim, bounds, Math.min(50, 10 + dim)), color: COLORS.cyan },
+    { name: 'Diff Evolution', algo: new DifferentialEvolution(dim, bounds, Math.min(60, 15 + dim)), color: COLORS.blue },
     { name: 'Bayesian Opt', algo: new BayesianOpt(dim, bounds), color: COLORS.green }
   ];
 
@@ -1308,35 +1338,35 @@ function runNoisyBenchmark() {
     algorithms.forEach(a => a.algo.step(func));
   }
 
-  return { algorithms, noiseLevel, maxIter };
+  return { algorithms, funcName, dim, maxIter };
 }
 
 function runDynamicBenchmark() {
-  const typeSelect = document.getElementById('dynamic-type');
-  const dynamicType = typeSelect.value;
+  const funcSelect = document.getElementById('dynamic-type');
+  const funcName = funcSelect.value;
+  const baseFunc = testFunctions[funcName] || testFunctions.sphere;
+
   const dim = 5;
   const bounds = Array(dim).fill([-5, 5]);
-  const maxIter = 300;
+  const maxIter = 100 + dim * 5;
+
+  // Dimension 5: Cumulative topology (Dim 1 + 2 + 3 + 4 + 5 layers)
+  const func = makeCumulativeDimensional(baseFunc);
 
   const algorithms = [
     { name: 'Golden Gradient', algo: new GoldenGradient(dim, bounds), color: COLORS.gold },
     { name: 'Nelder-Mead', algo: new NelderMead(dim, bounds), color: COLORS.purple },
     { name: 'Random Search', algo: new RandomSearch(dim, bounds), color: COLORS.orange },
-    { name: 'PSO', algo: new ParticleSwarm(dim, bounds, 25), color: COLORS.cyan },
-    { name: 'Diff Evolution', algo: new DifferentialEvolution(dim, bounds, 35), color: COLORS.blue },
+    { name: 'PSO', algo: new ParticleSwarm(dim, bounds, Math.min(50, 10 + dim)), color: COLORS.cyan },
+    { name: 'Diff Evolution', algo: new DifferentialEvolution(dim, bounds, Math.min(60, 15 + dim)), color: COLORS.blue },
     { name: 'Bayesian Opt', algo: new BayesianOpt(dim, bounds), color: COLORS.green }
   ];
 
   for (let i = 0; i < maxIter; i++) {
-    const shift = getShift(i, maxIter, dynamicType);
-    const func = (x) => {
-      const shifted = x.map((val, idx) => val - shift[idx]);
-      return testFunctions.sphere(shifted);
-    };
     algorithms.forEach(a => a.algo.step(func));
   }
 
-  return { algorithms, dynamicType, maxIter };
+  return { algorithms, funcName, dim, maxIter };
 }
 
 function getShift(iter, maxIter, type) {
