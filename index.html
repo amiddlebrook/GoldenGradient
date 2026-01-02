@@ -871,18 +871,24 @@ class GoldenGradient {
     this.best = null;
     this.bestValue = Infinity;
 
-    // Frequency-state memory: maps state keys to {successes, failures, values[]}
-    // State key encodes: tail configuration + discretized Wasserstein distance
-    this.stateMemory = new Map();
+    // =======================================================================
+    // HYPERCUBE TOPOLOGY
+    // Each dimension is a GSS frequency distribution (wavelength)
+    // dim dimensions = dim-dimensional hypercube
+    // Each iteration = a point in this hypercube
+    // Layers stack to build the full topology
+    // =======================================================================
 
-    // Layer memory: each iteration's snapshot for Wasserstein computation
+    // Layer memory: each iteration captures a position in the hypercube
     this.layers = [];
 
-    // Track value distributions per tail (L/S) for each dimension
-    this.tailDistributions = {};
-    for (let d = 0; d < dim; d++) {
-      this.tailDistributions[d] = { L: [], S: [] };
-    }
+    // Cell distributions: for each hypercube cell, track observed values
+    // Key = cell address (e.g., "LLS"), Value = [observed values]
+    this.cellDistributions = new Map();
+
+    // State memory: state = cell + Wasserstein distances
+    // Tracks success/failure for probability estimation
+    this.stateMemory = new Map();
   }
 
   initialize() {
@@ -890,17 +896,25 @@ class GoldenGradient {
     this.currentValue = Infinity;
   }
 
-  // Compute 1D Wasserstein distance between two sorted value arrays
+  // ===========================================================================
+  // WASSERSTEIN DISTANCE
+  // Measures distance between distributions - used for:
+  // 1. Distance between dimensional layers (wavelength intersections)
+  // 2. Distance from prior iteration (point-to-point in hypercube)
+  // ===========================================================================
   wasserstein(dist1, dist2) {
     if (dist1.length === 0 || dist2.length === 0) return 0;
+    if (dist1.length === 1 && dist2.length === 1) {
+      return Math.abs(dist1[0] - dist2[0]);
+    }
 
-    const n = Math.max(dist1.length, dist2.length);
     const s1 = [...dist1].sort((a, b) => a - b);
     const s2 = [...dist2].sort((a, b) => a - b);
+    const n = Math.max(s1.length, s2.length);
 
-    // Interpolate to common length
     const interp = (arr, len) => {
       if (arr.length === len) return arr;
+      if (arr.length === 1) return Array(len).fill(arr[0]);
       const result = [];
       for (let i = 0; i < len; i++) {
         const idx = (i / (len - 1)) * (arr.length - 1);
@@ -917,131 +931,168 @@ class GoldenGradient {
     return sum / n;
   }
 
-  // Discretize position to tail state per dimension
-  // L = long tail (upper partition, >= golden point)
-  // S = short tail (lower partition, < golden point)
-  positionToTails(pos) {
+  // ===========================================================================
+  // HYPERCUBE CELL ADDRESSING
+  // Position → cell based on GSS partitioning per dimension
+  // L = long tail (0.618 partition), S = short tail (0.382 partition)
+  // ===========================================================================
+  positionToCell(pos) {
     return pos.map((x, d) => {
       const [lo, hi] = this.bounds[d];
-      const goldenPoint = lo + (hi - lo) * HI;
-      return x >= goldenPoint ? 'L' : 'S';
+      const normalized = (x - lo) / (hi - lo);
+      return normalized < HI ? 'L' : 'S';
     });
   }
 
-  // Compute Wasserstein distances between L and S tails for each dimension
-  computeTailDistances() {
+  cellKey(cell) {
+    return cell.join('');
+  }
+
+  // ===========================================================================
+  // INTER-LAYER WASSERSTEIN DISTANCES
+  // Compute distances BETWEEN dimensional layers of the hypercube
+  // This captures the "wavelength intersection" signature
+  // Each pair of dimensions has a characteristic distance
+  // ===========================================================================
+  computeInterLayerDistances() {
+    if (this.layers.length < 2) return Array(this.dim).fill(0);
+
     const distances = [];
     for (let d = 0; d < this.dim; d++) {
-      const { L, S } = this.tailDistributions[d];
-      distances.push(this.wasserstein(L, S));
+      // Values observed along dimension d across all layers
+      const thisDimValues = this.layers.map(l => l.position[d]);
+      // Values along next dimension (wraps around)
+      const nextDimValues = this.layers.map(l => l.position[(d + 1) % this.dim]);
+      distances.push(this.wasserstein(thisDimValues, nextDimValues));
     }
     return distances;
   }
 
-  // Build state key from tail configuration + Wasserstein signature
-  buildStateKey(tails, wassersteinDists) {
-    // Discretize Wasserstein distances into buckets for state identification
-    const discretize = (w) => {
-      if (w < 0.1) return '0';
-      if (w < 0.5) return '1';
-      if (w < 1.0) return '2';
-      return '3';
-    };
-    const tailStr = tails.join('');
-    const wStr = wassersteinDists.map(discretize).join('');
-    return `${tailStr}:${wStr}`;
+  // ===========================================================================
+  // POINT-TO-POINT WASSERSTEIN
+  // Distance from current position to prior iteration's position
+  // Every point in hypercube has implied distance from prior state
+  // ===========================================================================
+  wassersteinFromPrior(candidateCell, candidateValue) {
+    if (this.layers.length === 0) return 0;
+
+    const priorLayer = this.layers[this.layers.length - 1];
+    const priorCellKey = this.cellKey(priorLayer.cell);
+    const candCellKey = this.cellKey(candidateCell);
+
+    // Get value distributions for both cells
+    const priorDist = this.cellDistributions.get(priorCellKey) || [priorLayer.value];
+    const candDist = this.cellDistributions.get(candCellKey) || [];
+    const candDistWithNew = candDist.length > 0 ? candDist : [candidateValue];
+
+    return this.wasserstein(priorDist, candDistWithNew);
   }
 
-  // Get success probability for a state (Laplace smoothed)
+  // ===========================================================================
+  // STATE KEY CONSTRUCTION
+  // State = hypercube cell + Wasserstein from prior + inter-layer signature
+  // This captures BOTH position AND distance relationships
+  // ===========================================================================
+  buildStateKey(cell, wassersteinFromPrior, interLayerDists) {
+    const discretize = (w) => {
+      if (w < 0.01) return '0';
+      if (w < 0.1) return '1';
+      if (w < 1.0) return '2';
+      if (w < 10.0) return '3';
+      return '4';
+    };
+
+    const cellStr = this.cellKey(cell);
+    const priorW = discretize(wassersteinFromPrior);
+    const interW = interLayerDists.map(discretize).join('');
+
+    return `${cellStr}|${priorW}|${interW}`;
+  }
+
+  // Laplace-smoothed success probability
   getStateProbability(stateKey) {
     const state = this.stateMemory.get(stateKey);
-    if (!state) return 0.5; // No prior = neutral
+    if (!state) return 0.5; // First iteration is blind
     return (state.successes + 1) / (state.successes + state.failures + 2);
   }
 
-  // Update state memory with outcome
-  updateState(stateKey, improved, value) {
+  updateState(stateKey, improved) {
     if (!this.stateMemory.has(stateKey)) {
-      this.stateMemory.set(stateKey, { successes: 0, failures: 0, values: [] });
+      this.stateMemory.set(stateKey, { successes: 0, failures: 0 });
     }
     const state = this.stateMemory.get(stateKey);
-    if (improved) {
-      state.successes++;
-    } else {
-      state.failures++;
-    }
-    state.values.push(value);
+    if (improved) state.successes++;
+    else state.failures++;
   }
 
+  // ===========================================================================
+  // STEP: Navigate the hypercube, selecting highest probability long tail
+  // ===========================================================================
   step(func) {
     if (!this.current) this.initialize();
 
-    // Compute current Wasserstein distances between tails
-    const tailDists = this.computeTailDistances();
+    // Compute inter-layer Wasserstein (wavelength intersection signature)
+    const interLayerDists = this.computeInterLayerDistances();
 
-    // Generate candidates: L and S for each dimension
+    // Generate L and S candidates per dimension
     const candidates = [];
     for (let d = 0; d < this.dim; d++) {
       const [lo, hi] = this.bounds[d];
       const range = hi - lo;
 
-      // Long tail candidate (high side, 0.618 ratio)
+      // Long tail: golden ratio step toward upper partition
       const xL = [...this.current];
-      xL[d] = this.current[d] + range * HI * 0.1;
-      xL[d] = Math.max(lo, Math.min(hi, xL[d]));
+      xL[d] = Math.min(hi, Math.max(lo, this.current[d] + range * HI * 0.1));
 
-      // Short tail candidate (low side, 0.382 ratio)
+      // Short tail: golden ratio step toward lower partition
       const xS = [...this.current];
-      xS[d] = this.current[d] - range * LO * 0.1;
-      xS[d] = Math.max(lo, Math.min(hi, xS[d]));
+      xS[d] = Math.min(hi, Math.max(lo, this.current[d] - range * LO * 0.1));
 
       candidates.push({ pos: xL, dim: d, tail: 'L' });
       candidates.push({ pos: xS, dim: d, tail: 'S' });
     }
 
-    // Evaluate all candidates
+    // Evaluate each candidate in hypercube context
     for (const c of candidates) {
       c.value = func(c.pos);
-      c.tails = this.positionToTails(c.pos);
-      c.stateKey = this.buildStateKey(c.tails, tailDists);
+      c.cell = this.positionToCell(c.pos);
+      c.wassersteinPrior = this.wassersteinFromPrior(c.cell, c.value);
+      c.stateKey = this.buildStateKey(c.cell, c.wassersteinPrior, interLayerDists);
       c.prob = this.getStateProbability(c.stateKey);
     }
 
-    // Select candidate: favor highest probability long tail
-    // Sort by: (1) probability descending, (2) prefer L tail, (3) lower value
+    // Select: highest probability, favoring long tail
     candidates.sort((a, b) => {
-      // Primary: higher probability wins
       if (Math.abs(a.prob - b.prob) > 0.01) return b.prob - a.prob;
-      // Secondary: prefer long tail
       if (a.tail !== b.tail) return a.tail === 'L' ? -1 : 1;
-      // Tertiary: lower objective value wins
       return a.value - b.value;
     });
 
     const chosen = candidates[0];
 
-    // Record layer for future Wasserstein computation
+    // Record this iteration as a layer (point in hypercube)
     this.layers.push({
       position: [...this.current],
       value: this.currentValue,
-      tails: this.positionToTails(this.current),
-      tailDists: [...tailDists]
+      cell: this.positionToCell(this.current),
+      iteration: this.layers.length
     });
 
-    // Update tail distributions with the chosen move
-    this.tailDistributions[chosen.dim][chosen.tail].push(chosen.value);
-    // Keep distributions bounded
-    if (this.tailDistributions[chosen.dim][chosen.tail].length > 50) {
-      this.tailDistributions[chosen.dim][chosen.tail].shift();
+    // Update cell distribution with observed value
+    const chosenCellKey = this.cellKey(chosen.cell);
+    if (!this.cellDistributions.has(chosenCellKey)) {
+      this.cellDistributions.set(chosenCellKey, []);
     }
-
-    // Determine if this was an improvement
-    const improved = chosen.value < this.currentValue;
+    const cellDist = this.cellDistributions.get(chosenCellKey);
+    cellDist.push(chosen.value);
+    // Bound distribution size
+    if (cellDist.length > 100) cellDist.shift();
 
     // Update state memory
-    this.updateState(chosen.stateKey, improved, chosen.value);
+    const improved = chosen.value < this.currentValue;
+    this.updateState(chosen.stateKey, improved);
 
-    // Move to chosen candidate
+    // Move to chosen position
     this.current = chosen.pos;
     this.currentValue = chosen.value;
     this.history.push(chosen.value);
