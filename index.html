@@ -170,6 +170,34 @@
         margin: 1rem 0;
         flex-wrap: wrap;
     }
+    .weight-controls {
+        background: var(--bg-elevated);
+        border: 1px solid rgba(212,175,55,0.2);
+        padding: 1rem;
+        border-radius: 8px;
+    }
+    .weight-panel {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 0.75rem 1.25rem;
+        width: 100%;
+    }
+    .weight-row {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+    }
+    .weight-row label {
+        display: flex;
+        justify-content: space-between;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+    .weight-row input[type="range"] {
+        width: 100%;
+    }
     .btn {
         background: linear-gradient(135deg, var(--gold-dark), var(--gold));
         color: var(--bg-deep);
@@ -415,8 +443,80 @@ p\_\mathrm{drift} = W\_1\bigl(\text{recent state frequencies},\ \text{baseline f
       This frequency‑state approach retains the interval‑reduction optimality of golden‑section
       search while learning from context.  It naturally incorporates additional optimisers
       (CMA‑ES, Nelder–Mead, Bayesian optimisation, Particle Swarm, Differential Evolution) by allowing them to operate as
-      modules that propose candidate points.  Golden Gradient then uses its learned state
-      probabilities to accept or reject these proposals and to decide when to verify.
+      modules that propose candidate points.  At each <code>step()</code>, external proposal generators are called and their
+      candidate positions are immediately clamped to the active bounds.  These external candidates then pass through the
+      same frequency‑state key construction, state‑probability lookup, and Aharonov‑Bohm phase adjustment as native moves,
+      with a source label attached for debugging.
+    </p>
+  </section>
+
+  <section>
+    <h2>Metaheuristic Positioning</h2>
+    <p>
+      Golden Gradient sits between deterministic interval methods and population‑based metaheuristics.
+      It preserves golden‑section optimality for unimodal slices while <em>delegating exploration</em> to
+      external proposal modules (CMA‑ES, Nelder–Mead, Bayesian optimisation, Particle Swarm, Differential Evolution),
+      then adjudicates their candidates using the learned frequency‑state policy.
+    </p>
+    <ul>
+      <li><strong>Proposal modules</strong> generate candidate points (search diversity and exploration).</li>
+      <li><strong>Frequency‑state gate</strong> accepts, flips, or verifies proposals based on r<sub>s</sub>.</li>
+      <li><strong>Verification hooks</strong> re‑sample discarded regions when drift is detected.</li>
+    </ul>
+    <div class="math-block">x\_\mathrm{cand} \sim \mathcal{M}\_\mathrm{proposal}(\Omega)
+
+a(x\_\mathrm{cand}) = \mathbb{I}[r\_s \ge 0.5]\ \lor\ \mathbb{I}[\text{verify}(s)]
+
+x\_{t+1} = \arg\min\_{x \in \{x\_\mathrm{cand}, x\_\mathrm{verify}\}} f(x)</div>
+    <p>
+      This positioning allows Golden Gradient to remain sample‑efficient on smooth objectives while still
+      leveraging broader exploration when the proposal modules detect non‑convex structure.
+    </p>
+  </section>
+
+  <section>
+    <h2>Multi‑Objective Variants</h2>
+    <p>
+      Multi‑objective objectives are handled through either scalarization or Pareto‑based selection.
+      Scalarization compresses multiple criteria into a single target, while the Pareto‑based path
+      retains a <em>Pareto set</em> of non‑dominated proposals for downstream MCDA selection.
+    </p>
+    <ul>
+      <li><strong>Scalarization</strong>: weighted sums or Chebyshev metrics to reuse single‑objective updates.</li>
+      <li><strong>Pareto path</strong>: maintain a Pareto set hook and filter dominated proposals.</li>
+      <li><strong>Hybrid</strong>: alternate scalarization weights while keeping a running Pareto archive.</li>
+    </ul>
+    <div class="math-block">f\_\lambda(x) = \sum\_{k=1}^{K} \lambda\_k f\_k(x), \qquad \sum\_k \lambda\_k = 1
+
+f\_\infty(x) = \max\_k \lambda\_k |f\_k(x) - z^\*_{k}|
+
+\mathcal{P} = \{x : \nexists y \text{ such that } f(y) \preceq f(x)\}</div>
+    <p>
+      The Pareto set hook stores non‑dominated proposals emitted by the proposal modules, enabling later
+      MCDA scoring without discarding trade‑off structure.
+    </p>
+  </section>
+
+  <section>
+    <h2>MCDA Selection Strategies</h2>
+    <p>
+      When multiple objectives are active, the system applies MCDA scoring to choose among candidates
+      in the Pareto set. The MCDA hook is deliberately modular so new scoring rules can be added
+      without altering proposal generation.
+    </p>
+    <ul>
+      <li><strong>Weighted utility</strong>: aggregate normalized criteria into a single score.</li>
+      <li><strong>Outranking</strong>: pairwise comparisons to rank Pareto alternatives.</li>
+      <li><strong>Reference point</strong>: select candidates closest to a target aspiration vector.</li>
+    </ul>
+    <div class="math-block">u(x) = \sum\_{k=1}^{K} w\_k \cdot \hat{f}\_k(x)
+
+s(x) = \alpha \cdot u(x) + (1-\alpha) \cdot d(x, z^\*)
+
+x^\* = \arg\max\_{x \in \mathcal{P}} s(x)</div>
+    <p>
+      MCDA scoring consumes the Pareto set hook and produces the final accepted candidate, which then
+      feeds back into the frequency‑state update for the next iteration.
     </p>
   </section>
 
@@ -633,27 +733,31 @@ where Δxₖ = xₖ₊₁ - xₖ, with parameters α = 0.8 (decay), β = 0.3 (ac
 
 <strong>Definition 8 (Candidate Set).</strong> At iteration k, the candidate set 𝒦ₖ ⊂ Ω is:
 
-    𝒦ₖ = 𝒦ᶜʳᵒˢˢ ∪ 𝒦ᵇᵉˢᵗ ∪ 𝒦ᵐᵒᵐ ∪ 𝒦ʳⁿᵈ
+    𝒦ₖ = 𝒦ᶜʳᵒˢˢ ∪ 𝒦ᵇᵉˢᵗ ∪ 𝒦ᵐᵒᵐ ∪ 𝒦ʳⁿᵈ ∪ 𝒦ᵉˣᵗ
 
 where:
     𝒦ᶜʳᵒˢˢ   = {xₖ + σ·η·φ⁻¹·Δbₐ·eₐ : (i,j) ∈ ℰₙ, σ ∈ {-1,+1}, η ∈ {η₀, η₀/2, 2η₀}}
     𝒦ᵇᵉˢᵗ    = {xₖ + 0.2·φ⁻¹·(x* - xₖ)},  where x* = argmin_{t≤k} f(xₜ)
     𝒦ᵐᵒᵐ     = {xₖ + diag(b-a)·μₖ}
     𝒦ʳⁿᵈ     = {ξ},  ξ ~ Uniform(Ω)
+    𝒦ᵉˣᵗ     = { clamp(gᵢ(ℂₖ), bounds) : gᵢ ∈ 𝒢 }
 
 with |𝒦ᶜʳᵒˢˢ| = 4·|ℰₙ|·3 = 12n(n-1) for n ≥ 2, adaptive step η₀ ∈ [0.02, 0.4].
+External proposals gᵢ are normalized to the hyper-rectangle bounds by clamping each coordinate into [aᵢ, bᵢ] before
+frequency-state computation. Every candidate in 𝒦ₖ, including 𝒦ᵉˣᵗ, is passed through the same state key lookup,
+state probability rₛ, and phase-adjusted probability p' pipeline, with its source label preserved for debugging.
 
 
-<strong>Algorithm 1 (ε-Greedy Selection with Lookahead).</strong>
+<strong>Algorithm 1 (ε-Greedy MCDA Selection).</strong>
 
-    Input: Candidate set 𝒦ₖ, phase-adjusted probabilities {p'(x)}_{x∈𝒦ₖ}, exploration rate ε
+    Input: Candidate set 𝒦ₖ, phase-adjusted probabilities {p'(x)}_{x∈𝒦ₖ}, weights w, exploration rate ε
     Output: Selected candidate x*
 
-    1. With probability ε: return x ~ Uniform(𝒦ₖ)
-    2. Sort 𝒦ₖ by descending p'
-    3. Let 𝒦' = top-K elements of 𝒦ₖ, where K = min(10, |𝒦ₖ|)
-    4. Evaluate f(x) for all x ∈ 𝒦'
-    5. Return x* = argmin_{x∈𝒦'} f(x)
+    1. Evaluate f(x) for all x ∈ 𝒦ₖ
+    2. Compute criteria: p'(x), Δf(x), step penalty, novelty, momentum alignment
+    3. Normalize criteria and score S(x) = Σᵢ wᵢ · cᵢ(x)
+    4. With probability ε: return x ~ Uniform(𝒦ₖ)
+    5. Return x* = argmax_{x∈𝒦ₖ} S(x)
 
 
 <strong>Theorem 2 (Almost Sure Convergence).</strong> Let {xₖ}_{k≥0} be the sequence generated by
@@ -668,6 +772,21 @@ where f* = min_{x∈Ω} f(x).
 <em>Proof sketch.</em> The random restart mechanism ensures Ω is visited infinitely often.
 Combined with ε-greedy exploration, every neighborhood of f* is sampled with positive
 probability, and the greedy selection ensures improvements are retained.  □</div>
+
+  <h3>MCDA Weighting Defaults</h3>
+  <p>
+    Candidate selection uses a multi-criteria decision analysis (MCDA) score that blends state
+    probability, predicted improvement, step size penalties, novelty, and momentum alignment. The
+    defaults are chosen to balance exploitation (probability + improvement) with gentle exploration
+    (novelty + momentum) while discouraging overly aggressive jumps.
+  </p>
+  <ul>
+    <li><strong>State probability (0.30):</strong> prioritises learned high-success states.</li>
+    <li><strong>Predicted improvement (0.30):</strong> rewards candidates that estimate stronger objective drops.</li>
+    <li><strong>Step size penalty (0.15):</strong> tempers large moves to maintain stability.</li>
+    <li><strong>Novelty bonus (0.15):</strong> favours candidates distant from the recent path history.</li>
+    <li><strong>Momentum alignment (0.10):</strong> encourages moves consistent with successful recent direction.</li>
+  </ul>
 </section>
 
   <section>
@@ -695,6 +814,53 @@ probability, and the greedy selection ensures improvements are retained.  □</d
         <button class="tab-btn" onclick="switchTab(4)">
           🔄 Dimension 5: 5D Cumulative
         </button>
+      </div>
+
+      <div class="controls weight-controls">
+        <div style="width:100%;">
+          <strong>MCDA Weighting (Golden Gradient)</strong>
+          <p style="margin:0.35rem 0 0.75rem 0;color:var(--text-secondary);font-size:0.85rem;">
+            Tune how candidate ranking balances state probability, predicted improvement, step size penalties,
+            novelty, and momentum alignment.
+          </p>
+          <div class="weight-panel">
+            <div class="weight-row">
+              <label>
+                State probability
+                <span class="weight-value" data-weight-value="stateProb"></span>
+              </label>
+              <input type="range" min="0" max="1" step="0.05" value="0.3" data-weight="stateProb">
+            </div>
+            <div class="weight-row">
+              <label>
+                Predicted improvement
+                <span class="weight-value" data-weight-value="improvement"></span>
+              </label>
+              <input type="range" min="0" max="1" step="0.05" value="0.3" data-weight="improvement">
+            </div>
+            <div class="weight-row">
+              <label>
+                Step size penalty
+                <span class="weight-value" data-weight-value="stepPenalty"></span>
+              </label>
+              <input type="range" min="0" max="1" step="0.05" value="0.15" data-weight="stepPenalty">
+            </div>
+            <div class="weight-row">
+              <label>
+                Novelty bonus
+                <span class="weight-value" data-weight-value="novelty"></span>
+              </label>
+              <input type="range" min="0" max="1" step="0.05" value="0.15" data-weight="novelty">
+            </div>
+            <div class="weight-row">
+              <label>
+                Momentum alignment
+                <span class="weight-value" data-weight-value="momentum"></span>
+              </label>
+              <input type="range" min="0" max="1" step="0.05" value="0.1" data-weight="momentum">
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Dimension 1: Base Layer -->
@@ -1063,6 +1229,14 @@ const benchmarkState = Array(5).fill(null).map(() => ({
   results: null
 }));
 
+const mcdaWeights = {
+  stateProb: 0.3,
+  improvement: 0.3,
+  stepPenalty: 0.15,
+  novelty: 0.15,
+  momentum: 0.1
+};
+
 // =============================================================================
 // TAB MANAGEMENT
 // =============================================================================
@@ -1074,6 +1248,29 @@ function switchTab(index) {
   document.querySelectorAll('.tab-content').forEach((content, i) => {
     content.classList.toggle('active', i === index);
   });
+}
+
+function updateWeightDisplays() {
+  document.querySelectorAll('[data-weight-value]').forEach((el) => {
+    const key = el.dataset.weightValue;
+    if (mcdaWeights[key] !== undefined) {
+      el.textContent = mcdaWeights[key].toFixed(2);
+    }
+  });
+}
+
+function setupWeightControls() {
+  document.querySelectorAll('input[data-weight]').forEach((input) => {
+    const key = input.dataset.weight;
+    if (mcdaWeights[key] !== undefined) {
+      input.value = mcdaWeights[key];
+    }
+    input.addEventListener('input', () => {
+      mcdaWeights[key] = parseFloat(input.value);
+      updateWeightDisplays();
+    });
+  });
+  updateWeightDisplays();
 }
 
 // =============================================================================
@@ -1202,9 +1399,12 @@ function getObjectiveFunction(funcName) {
 // =============================================================================
 
 class GoldenGradient {
-  constructor(dim, bounds) {
+  constructor(dim, bounds, proposalGenerators = []) {
     this.dim = dim;
     this.bounds = bounds;
+    this.proposalGenerators = Array.isArray(proposalGenerators)
+      ? proposalGenerators.filter((fn) => typeof fn === 'function')
+      : [];
     this.history = [];
     this.best = null;
     this.bestValue = [Infinity];
@@ -1523,6 +1723,108 @@ class GoldenGradient {
     return Math.max(0, Math.min(1, baseProb + phaseBonus));
   }
 
+  normalizeMetric(value, min, max) {
+    if (!isFinite(value)) return 0.5;
+    if (max === min) return 0.5;
+    const normalized = (value - min) / (max - min);
+    return Math.max(0, Math.min(1, normalized));
+  }
+
+  computeCandidateMetrics(candidate) {
+    const deltas = candidate.pos.map((x, d) => x - this.current[d]);
+    const normalizedDeltas = deltas.map((dx, d) => {
+      const [lo, hi] = this.bounds[d];
+      const range = hi - lo;
+      return range === 0 ? 0 : dx / range;
+    });
+    const stepDistance = Math.sqrt(normalizedDeltas.reduce((sum, dx) => sum + dx * dx, 0))
+      / Math.sqrt(this.dim);
+
+    const improvement = this.currentValue - candidate.value;
+
+    let novelty = 1;
+    if (this.pathHistory.length > 0) {
+      novelty = this.pathHistory.reduce((minDist, entry) => {
+        const dist = Math.sqrt(entry.pos.reduce((sum, x, d) => {
+          const [lo, hi] = this.bounds[d];
+          const range = hi - lo;
+          const delta = range === 0 ? 0 : (candidate.pos[d] - x) / range;
+          return sum + delta * delta;
+        }, 0)) / Math.sqrt(this.dim);
+        return Math.min(minDist, dist);
+      }, Infinity);
+    }
+
+    let momentumAlignment = 0.5;
+    const momentumMagnitude = Math.sqrt(this.momentum.reduce((sum, m) => sum + m * m, 0));
+    const deltaMagnitude = Math.sqrt(normalizedDeltas.reduce((sum, dx) => sum + dx * dx, 0));
+    if (momentumMagnitude > 1e-6 && deltaMagnitude > 1e-6) {
+      const dot = normalizedDeltas.reduce((sum, dx, d) => sum + dx * this.momentum[d], 0);
+      const alignment = dot / (momentumMagnitude * deltaMagnitude);
+      momentumAlignment = Math.max(0, Math.min(1, (alignment + 1) / 2));
+    }
+
+    return {
+      prob: candidate.prob,
+      improvement,
+      stepDistance,
+      novelty,
+      momentumAlignment
+    };
+  }
+
+  computeMetricRanges(candidates) {
+    const ranges = {
+      prob: { min: Infinity, max: -Infinity },
+      improvement: { min: Infinity, max: -Infinity },
+      stepDistance: { min: Infinity, max: -Infinity },
+      novelty: { min: Infinity, max: -Infinity },
+      momentumAlignment: { min: Infinity, max: -Infinity }
+    };
+
+    candidates.forEach((candidate) => {
+      Object.keys(ranges).forEach((key) => {
+        const value = candidate.metrics[key];
+        ranges[key].min = Math.min(ranges[key].min, value);
+        ranges[key].max = Math.max(ranges[key].max, value);
+      });
+    });
+
+    return ranges;
+  }
+
+  scoreCandidate(candidate, weights, ranges) {
+    const probScore = this.normalizeMetric(candidate.metrics.prob, ranges.prob.min, ranges.prob.max);
+    const improvementScore = this.normalizeMetric(
+      candidate.metrics.improvement,
+      ranges.improvement.min,
+      ranges.improvement.max
+    );
+    const stepScore = 1 - this.normalizeMetric(
+      candidate.metrics.stepDistance,
+      ranges.stepDistance.min,
+      ranges.stepDistance.max
+    );
+    const noveltyScore = this.normalizeMetric(
+      candidate.metrics.novelty,
+      ranges.novelty.min,
+      ranges.novelty.max
+    );
+    const momentumScore = this.normalizeMetric(
+      candidate.metrics.momentumAlignment,
+      ranges.momentumAlignment.min,
+      ranges.momentumAlignment.max
+    );
+
+    return (
+      weights.stateProb * probScore
+      + weights.improvement * improvementScore
+      + weights.stepPenalty * stepScore
+      + weights.novelty * noveltyScore
+      + weights.momentum * momentumScore
+    );
+  }
+
   // ===========================================================================
   // STEP: Explore candidates bidirectionally with epsilon-greedy exploration
   // ===========================================================================
@@ -1548,6 +1850,29 @@ class GoldenGradient {
     const currentFreq = this.positionToFrequencyState(this.current);
     const candidates = [];
 
+    const addCandidate = ({ pos, crossSection, move, source, extraProb = 0 }) => {
+      const normalizedPos = pos.map((x, d) => {
+        const [lo, hi] = this.bounds[d];
+        return Math.min(hi, Math.max(lo, x));
+      });
+      const freqState = this.positionToFrequencyState(normalizedPos);
+      const crossDists = this.computeCrossSectionDistances(freqState);
+      const wassersteinPrior = this.wassersteinFromPrior(freqState);
+      const stateKey = this.buildStateKey(freqState, wassersteinPrior, crossDists);
+      const prob = this.getStateProbability(stateKey);
+      const phaseAdjustedProb = this.getPhaseAdjustedProbability(prob, normalizedPos);
+
+      candidates.push({
+        crossSection,
+        move,
+        source,
+        pos: normalizedPos,
+        freqState,
+        stateKey,
+        prob: phaseAdjustedProb + extraProb
+      });
+    };
+
     // Handle 1D case specially (no cross-sections available)
     if (this.dim === 1) {
       // Generate both positive and negative moves with adaptive step sizes
@@ -1560,22 +1885,11 @@ class GoldenGradient {
           pos[0] = Math.min(hi, Math.max(lo,
             this.current[0] + dir * range * HI * stepScale));
 
-          const freqState = this.positionToFrequencyState(pos);
-          const crossDists = [];  // No cross-sections in 1D
-          const wassersteinPrior = this.wassersteinFromPrior(freqState);
-          const stateKey = this.buildStateKey(freqState, wassersteinPrior, crossDists);
-          const prob = this.getStateProbability(stateKey);
-
-          // Apply AB-inspired phase adjustment
-          const phaseAdjustedProb = this.getPhaseAdjustedProbability(prob, pos);
-
-          candidates.push({
+          addCandidate({
             crossSection: null,
             move: { dim: 0, dir, label: `1d_${dir > 0 ? '+' : '-'}_${stepScale}` },
             pos,
-            freqState,
-            stateKey,
-            prob: phaseAdjustedProb
+            source: 'internal:1d'
           });
         }
       }
@@ -1610,22 +1924,11 @@ class GoldenGradient {
               pos[move.dim] = Math.min(hi, Math.max(lo,
                 this.current[move.dim] + move.dir * range * HI * stepSize));
 
-              const freqState = this.positionToFrequencyState(pos);
-              const crossDists = this.computeCrossSectionDistances(freqState);
-              const wassersteinPrior = this.wassersteinFromPrior(freqState);
-              const stateKey = this.buildStateKey(freqState, wassersteinPrior, crossDists);
-              const prob = this.getStateProbability(stateKey);
-
-              // Apply AB-inspired phase adjustment to probability
-              const phaseAdjustedProb = this.getPhaseAdjustedProbability(prob, pos);
-
-              candidates.push({
+              addCandidate({
                 crossSection: [i, j],
                 move: { ...move, stepSize },
                 pos,
-                freqState,
-                stateKey,
-                prob: phaseAdjustedProb
+                source: 'internal:cross'
               });
             }
           }
@@ -1641,19 +1944,12 @@ class GoldenGradient {
         return Math.min(hi, Math.max(lo,
           x + HI * 0.2 * (this.best[d] - x)));  // More aggressive toward best
       });
-      const freqState = this.positionToFrequencyState(pos);
-      const crossDists = this.computeCrossSectionDistances(freqState);
-      const wassersteinPrior = this.wassersteinFromPrior(freqState);
-      const stateKey = this.buildStateKey(freqState, wassersteinPrior, crossDists);
-      const prob = this.getStateProbability(stateKey);
-
-      candidates.push({
+      addCandidate({
         crossSection: 'toward_best',
         move: { label: 'toward_best' },
         pos,
-        freqState,
-        stateKey,
-        prob: prob + 0.15  // Strong bonus for moving toward known best
+        source: 'internal:toward_best',
+        extraProb: 0.15  // Strong bonus for moving toward known best
       });
     }
 
@@ -1663,59 +1959,77 @@ class GoldenGradient {
         const [lo, hi] = this.bounds[d];
         return Math.min(hi, Math.max(lo, x + this.momentum[d] * (hi - lo)));
       });
-      const freqState = this.positionToFrequencyState(pos);
-      const crossDists = this.computeCrossSectionDistances(freqState);
-      const wassersteinPrior = this.wassersteinFromPrior(freqState);
-      const stateKey = this.buildStateKey(freqState, wassersteinPrior, crossDists);
-      const prob = this.getStateProbability(stateKey);
-
-      candidates.push({
+      addCandidate({
         crossSection: 'momentum',
         move: { label: 'momentum' },
         pos,
-        freqState,
-        stateKey,
-        prob: prob + 0.05
+        source: 'internal:momentum',
+        extraProb: 0.05
+      });
+    }
+
+    // Add external proposals from optional generators
+    if (this.proposalGenerators.length > 0) {
+      const proposalContext = {
+        current: [...this.current],
+        best: this.best ? [...this.best] : null,
+        bounds: this.bounds,
+        dim: this.dim,
+        iteration: this.iterCount
+      };
+
+      this.proposalGenerators.forEach((generator, index) => {
+        const label = generator.name ? `external:${generator.name}` : `external:proposal_${index + 1}`;
+        const generated = generator(proposalContext);
+        if (!generated) return;
+
+        const proposals = Array.isArray(generated) && typeof generated[0] === 'number'
+          ? [generated]
+          : generated;
+
+        if (!Array.isArray(proposals)) return;
+
+        proposals.forEach((pos) => {
+          if (!Array.isArray(pos) || pos.length !== this.dim) return;
+          addCandidate({
+            crossSection: 'external',
+            move: { label },
+            pos,
+            source: label
+          });
+        });
       });
     }
 
     // Add pure random candidate for exploration
     const randomPos = this.bounds.map(([lo, hi]) => lo + Math.random() * (hi - lo));
-    const randomFreqState = this.positionToFrequencyState(randomPos);
-    const randomCrossDists = this.computeCrossSectionDistances(randomFreqState);
-    const randomWasserstein = this.wassersteinFromPrior(randomFreqState);
-    const randomStateKey = this.buildStateKey(randomFreqState, randomWasserstein, randomCrossDists);
-    candidates.push({
+    addCandidate({
       crossSection: 'random',
       move: { label: 'random' },
       pos: randomPos,
-      freqState: randomFreqState,
-      stateKey: randomStateKey,
-      prob: 0.3  // Decent probability for exploration
+      source: 'internal:random',
+      extraProb: 0.3  // Decent probability for exploration
     });
 
-    // Sort candidates by probability
-    candidates.sort((a, b) => b.prob - a.prob);
+    // Evaluate all candidates for MCDA ranking
+    candidates.forEach((candidate) => {
+      candidate.value = func(candidate.pos);
+      candidate.metrics = this.computeCandidateMetrics(candidate);
+    });
 
-    // Greedy lookahead: evaluate MORE candidates for better selection
-    const lookaheadK = Math.min(10, candidates.length);  // Increased from 5 to 10
+    const metricRanges = this.computeMetricRanges(candidates);
+    candidates.forEach((candidate) => {
+      candidate.score = this.scoreCandidate(candidate, mcdaWeights, metricRanges);
+    });
+
     let chosen;
-
     if (Math.random() < this.epsilon) {
       // Random exploration: pick a random candidate
       chosen = candidates[Math.floor(Math.random() * candidates.length)];
-      chosen.value = normalizeObjectiveValue(func(chosen.pos));
-      chosen.scalar = scalarizeObjectiveValue(chosen.value);
     } else {
-      // Evaluate top-K candidates and pick the one with best actual value
-      const topK = candidates.slice(0, lookaheadK);
-      for (const candidate of topK) {
-        candidate.value = normalizeObjectiveValue(func(candidate.pos));
-        candidate.scalar = scalarizeObjectiveValue(candidate.value);
-      }
-      // Select the one with best actual function value
-      topK.sort((a, b) => a.scalar - b.scalar);
-      chosen = topK[0];
+      // MCDA ranking: pick the highest-scoring candidate
+      candidates.sort((a, b) => b.score - a.score);
+      chosen = candidates[0];
     }
 
     // Record current as prior for next iteration
@@ -1734,9 +2048,8 @@ class GoldenGradient {
     // Also update state memory for all other evaluated candidates
     // This provides more learning signal per iteration
     for (const candidate of candidates) {
-      if (candidate !== chosen && candidate.value !== undefined) {
-        const candidateImproved = dominates(candidate.value, this.currentValue)
-          || this.isNondominatedCandidate(candidate.value);
+      if (candidate !== chosen) {
+        const candidateImproved = candidate.value < this.currentValue;
         this.updateState(candidate.stateKey, candidateImproved);
       }
     }
@@ -2537,6 +2850,7 @@ function resetBenchmark(dimensionIndex) {
 
 // Initialize on load
 window.addEventListener('load', () => {
+  setupWeightControls();
   console.log('Golden Gradient Benchmark Suite initialized');
 });
 </script>
