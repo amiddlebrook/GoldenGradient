@@ -1740,7 +1740,7 @@ class GoldenGradient {
     const stepDistance = Math.sqrt(normalizedDeltas.reduce((sum, dx) => sum + dx * dx, 0))
       / Math.sqrt(this.dim);
 
-    const improvement = this.currentValue - candidate.value;
+    const improvement = this.currentValueScalar - candidate.scalar;
 
     let novelty = 1;
     if (this.pathHistory.length > 0) {
@@ -2013,7 +2013,8 @@ class GoldenGradient {
 
     // Evaluate all candidates for MCDA ranking
     candidates.forEach((candidate) => {
-      candidate.value = func(candidate.pos);
+      candidate.value = normalizeObjectiveValue(func(candidate.pos));
+      candidate.scalar = scalarizeObjectiveValue(candidate.value);
       candidate.metrics = this.computeCandidateMetrics(candidate);
     });
 
@@ -2049,7 +2050,7 @@ class GoldenGradient {
     // This provides more learning signal per iteration
     for (const candidate of candidates) {
       if (candidate !== chosen) {
-        const candidateImproved = candidate.value < this.currentValue;
+        const candidateImproved = candidate.scalar < this.currentValueScalar;
         this.updateState(candidate.stateKey, candidateImproved);
       }
     }
