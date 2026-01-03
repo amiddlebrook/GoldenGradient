@@ -479,6 +479,88 @@ p\_\mathrm{drift} = W\_1\bigl(\text{recent state frequencies},\ \text{baseline f
   </section>
 
   <section>
+    <h2>Theoretical Perspectives on GoldenGradient through Measure Theory and Duality</h2>
+    <h3>Introduction</h3>
+    <p>
+      GoldenGradient can be reframed as a probabilistic decision process that evolves over a structured
+      state space.  Measure theory offers a clean vocabulary for describing how state frequencies,
+      update rules, and drift detection behave under uncertainty.
+    </p>
+
+    <h3>Algorithm Overview</h3>
+    <p>
+      The algorithm maintains a history of frequency‑state outcomes and updates its policy based on
+      observed success rates.  Each iteration chooses a golden‑ratio cut, optionally flips direction,
+      and performs verification checks when drift is detected.
+    </p>
+    <ul>
+      <li><strong>State tracking</strong>: encode recent frequency decisions into discrete states.</li>
+      <li><strong>Bayesian updates</strong>: update success likelihoods for each state.</li>
+      <li><strong>Drift sensing</strong>: compare recent vs. baseline distributions.</li>
+    </ul>
+
+    <h3>Measure‑Theoretic Framing</h3>
+    <p>
+      The frequency‑state space can be treated as a measurable space (𝒮, 𝔽), where 𝒮 collects all
+      discrete states and 𝔽 is the σ‑algebra over those states.  Each iteration induces a probability
+      measure μ over 𝒮, capturing how often the algorithm visits each state.
+    </p>
+    <ul>
+      <li><strong>State space</strong>: 𝒮 as the set of all frequency‑state labels.</li>
+      <li><strong>σ‑algebra</strong>: 𝔽 as all subsets of 𝒮 (discrete measurable structure).</li>
+      <li><strong>Measure</strong>: μ(A) as the empirical mass of states in A.</li>
+    </ul>
+
+    <h3>Probability &amp; Integration</h3>
+    <p>
+      Success probabilities are updated with a Beta prior and a Laplace‑smoothed posterior mean, so
+      integration over μ becomes a simple weighted average of state outcomes.
+    </p>
+    <ul>
+      <li><strong>Prior/posterior</strong>: Beta(1,1) updated by successes a<sub>s</sub> and failures b<sub>s</sub>.</li>
+      <li><strong>Estimator</strong>: r<sub>s</sub> = (a<sub>s</sub> + 1)/(a<sub>s</sub> + b<sub>s</sub> + 2).</li>
+      <li><strong>Expected utility</strong>: integrate rewards over μ to choose accept/flip actions.</li>
+    </ul>
+
+    <h3>Wasserstein Distance</h3>
+    <p>
+      Drift detection compares recent and historical measures using the 1‑Wasserstein distance,
+      highlighting transport cost between two frequency distributions.  Large distances trigger
+      verification actions and additional sampling.
+    </p>
+    <ul>
+      <li><strong>Recent measure</strong>: μ<sub>recent</sub> from a sliding window of states.</li>
+      <li><strong>Baseline</strong>: μ<sub>base</sub> from long‑run frequencies.</li>
+      <li><strong>Signal</strong>: W<sub>1</sub>(μ<sub>recent</sub>, μ<sub>base</sub>) as drift magnitude.</li>
+    </ul>
+
+    <h3>Duality &amp; Representation</h3>
+    <p>
+      Riesz representation links linear functionals on continuous functions over 𝒮 to measures,
+      providing a principled way to interpret score functions as integrals.  This viewpoint aligns
+      with MDP duality, where value functions and occupation measures describe the same policy in
+      primal and dual forms.
+    </p>
+    <ul>
+      <li><strong>Riesz</strong>: scoring functionals correspond to integration against μ.</li>
+      <li><strong>MDP duality</strong>: value‑function updates ↔ state‑action occupancy measures.</li>
+      <li><strong>Policy view</strong>: accept/flip rules encode a dual feasible measure.</li>
+    </ul>
+
+    <h3>Computational Implications</h3>
+    <p>
+      The measure‑theoretic framing clarifies why small updates remain stable and why Wasserstein
+      drift detection is robust to noisy transitions.  It also motivates efficient summaries of μ,
+      such as bucketed histograms and sparse state visitation.
+    </p>
+    <ul>
+      <li><strong>Stable updates</strong>: Beta/Laplace smoothing dampens volatility.</li>
+      <li><strong>Fast drift checks</strong>: compute W<sub>1</sub> on coarse buckets.</li>
+      <li><strong>Scalable storage</strong>: sparse state tables approximate measures.</li>
+    </ul>
+  </section>
+
+  <section>
     <h2>Metaheuristic Positioning</h2>
     <p>
       Golden Gradient sits between deterministic interval methods and population‑based metaheuristics.
