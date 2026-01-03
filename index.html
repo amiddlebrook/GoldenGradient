@@ -2693,10 +2693,12 @@ function runNoisyBenchmark() {
 
   // Dimension 4: Cumulative topology (Dim 1 + 2 + 3 + 4 layers)
   const func = makeCumulativeDimensional(baseFunc);
-  const scalarFunc = (x) => scalarizeObjectiveValue(func(x));
+  const noiseConfig = { stdDev: 0.1 };
+  const noisyFunc = (x) => addGaussianNoise(func(x), noiseConfig.stdDev);
+  const scalarFunc = (x) => scalarizeObjectiveValue(noisyFunc(x));
 
   const algorithms = [
-    { name: 'Golden Gradient', algo: new GoldenGradient(dim, bounds), color: COLORS.gold, objective: func },
+    { name: 'Golden Gradient', algo: new GoldenGradient(dim, bounds), color: COLORS.gold, objective: noisyFunc },
     { name: 'Nelder-Mead', algo: new NelderMead(dim, bounds), color: COLORS.purple, objective: scalarFunc },
     { name: 'Random Search', algo: new RandomSearch(dim, bounds), color: COLORS.orange, objective: scalarFunc },
     { name: 'PSO', algo: new ParticleSwarm(dim, bounds, Math.min(50, 10 + dim)), color: COLORS.cyan, objective: scalarFunc },
@@ -2719,13 +2721,16 @@ function runDynamicBenchmark() {
   const dim = 5;
   const bounds = Array(dim).fill([-5, 5]);
   const maxIter = 100 + dim * 5;
+  const shiftType = 'periodic';
+  let shift = getShift(0, maxIter, shiftType);
 
   // Dimension 5: Cumulative topology (Dim 1 + 2 + 3 + 4 + 5 layers)
   const func = makeCumulativeDimensional(baseFunc);
-  const scalarFunc = (x) => scalarizeObjectiveValue(func(x));
+  const shiftedFunc = (x) => func(x.map((value, index) => value + shift[index]));
+  const scalarFunc = (x) => scalarizeObjectiveValue(shiftedFunc(x));
 
   const algorithms = [
-    { name: 'Golden Gradient', algo: new GoldenGradient(dim, bounds), color: COLORS.gold, objective: func },
+    { name: 'Golden Gradient', algo: new GoldenGradient(dim, bounds), color: COLORS.gold, objective: shiftedFunc },
     { name: 'Nelder-Mead', algo: new NelderMead(dim, bounds), color: COLORS.purple, objective: scalarFunc },
     { name: 'Random Search', algo: new RandomSearch(dim, bounds), color: COLORS.orange, objective: scalarFunc },
     { name: 'PSO', algo: new ParticleSwarm(dim, bounds, Math.min(50, 10 + dim)), color: COLORS.cyan, objective: scalarFunc },
@@ -2734,6 +2739,7 @@ function runDynamicBenchmark() {
   ];
 
   for (let i = 0; i < maxIter; i++) {
+    shift = getShift(i, maxIter, shiftType);
     algorithms.forEach(a => a.algo.step(a.objective));
   }
 
@@ -2752,6 +2758,20 @@ function getShift(iter, maxIter, type) {
     default:
       return Array(dim).fill(0);
   }
+}
+
+function addGaussianNoise(value, stdDev) {
+  if (Array.isArray(value)) {
+    return value.map(component => component + gaussianNoise(stdDev));
+  }
+  return value + gaussianNoise(stdDev);
+}
+
+function gaussianNoise(stdDev) {
+  const u1 = Math.random();
+  const u2 = Math.random();
+  const standardNormal = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+  return standardNormal * stdDev;
 }
 
 // =============================================================================
