@@ -2013,8 +2013,10 @@ class GoldenGradient {
 
     // Evaluate all candidates for MCDA ranking
     candidates.forEach((candidate) => {
-      candidate.value = normalizeObjectiveValue(func(candidate.pos));
-      candidate.scalar = scalarizeObjectiveValue(candidate.value);
+      candidate.value = func(candidate.pos);
+      const valueVec = normalizeObjectiveValue(candidate.value);
+      candidate.value = valueVec;
+      candidate.scalar = scalarizeObjectiveValue(valueVec);
       candidate.metrics = this.computeCandidateMetrics(candidate);
     });
 
