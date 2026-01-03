@@ -4,6 +4,7 @@
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <title>Unified Golden‑Ratio Decision Systems – Comprehensive Benchmarks</title>
+    <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <style>
     /* Colour palette adapted from the original Golden Gradient v2 */
     :root {
@@ -378,6 +379,33 @@
       corresponding error covariance approaching φ.  This implies that optimal linear fusion
       weights between prior estimate and new measurement follow the golden ratio.  In linear–
       quadratic control and inventory smoothing, φ arises as the optimal adjustment factor.
+    </p>
+  </section>
+
+  <section>
+    <h2>Theoretical Snapshot</h2>
+    <p>
+      We anchor the golden‑ratio dynamics with \( \varphi = \frac{1 + \sqrt{5}}{2} \), and its reciprocal
+      \( \varphi^{-1} \approx 0.618 \). Each state \( s \) maintains a Laplace‑smoothed success rate
+      \( r_s = \frac{a_s + 1}{a_s + b_s + 2} \), which determines whether we follow or flip the nominal
+      golden‑section move.
+    </p>
+    <p>
+      The canonical step update for a bounded one‑dimensional slice uses a signed direction
+      \( \sigma_t \in \{-1, +1\} \) and adaptive scale \( \eta_t \):
+    </p>
+    <p>
+      \[
+      x_{t+1} = x_t + \sigma_t \, \varphi^{-1} (b-a) \, \eta_t
+      \]
+    </p>
+    <p>
+      To detect regime changes, we compare recent and baseline state frequencies with a Wasserstein distance:
+    </p>
+    <p>
+      \[
+      p_{\mathrm{drift}} = W_1(\text{recent}, \text{baseline})
+      \]
     </p>
   </section>
 
