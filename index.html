@@ -1492,6 +1492,16 @@ function scalarizeObjectiveValue(value) {
   return total / vec.length;
 }
 
+function mulberry32(seed) {
+  let t = seed >>> 0;
+  return () => {
+    t += 0x6D2B79F5;
+    let r = Math.imul(t ^ (t >>> 15), 1 | t);
+    r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 function dominates(a, b) {
   const vecA = normalizeObjectiveValue(a);
   const vecB = normalizeObjectiveValue(b);
@@ -1531,12 +1541,16 @@ function getObjectiveFunction(funcName) {
 // =============================================================================
 
 class GoldenGradient {
-  constructor(dim, bounds, proposalGenerators = []) {
+  constructor(dim, bounds, proposalGenerators = [], options = {}) {
     this.dim = dim;
     this.bounds = bounds;
     this.proposalGenerators = Array.isArray(proposalGenerators)
       ? proposalGenerators.filter((fn) => typeof fn === 'function')
       : [];
+    this.startStrategy = options.startStrategy || 'random';
+    this.startCandidates = options.startCandidates ?? 5;
+    this.includeCenterStart = options.includeCenterStart ?? true;
+    this.startSeed = options.startSeed ?? 104729;
     this.history = [];
     this.best = null;
     this.bestValue = [Infinity];
@@ -1584,35 +1598,49 @@ class GoldenGradient {
   }
 
   initialize(func) {
-    // Start at center of search space
-    this.current = this.bounds.map(([lo, hi]) => (lo + hi) / 2);
-    // CRITICAL: Actually evaluate the initial position (was Infinity before!)
-    this.currentValue = normalizeObjectiveValue(func ? func(this.current) : Infinity);
-    this.currentValueScalar = scalarizeObjectiveValue(this.currentValue);
-    this.best = [...this.current];
-    this.bestValue = [...this.currentValue];
-    this.bestValueScalar = this.currentValueScalar;
-    this.updateParetoSet(this.current, this.currentValue);
+    const rng = this.startStrategy === 'deterministic'
+      ? mulberry32(this.startSeed)
+      : Math.random;
 
-    // Also try a few random initial points and pick the best
-    for (let i = 0; i < 5; i++) {
-      const randomPos = this.bounds.map(([lo, hi]) => lo + Math.random() * (hi - lo));
-      const randomVal = normalizeObjectiveValue(func ? func(randomPos) : Infinity);
-      const randomScalar = scalarizeObjectiveValue(randomVal);
-      this.updateParetoSet(randomPos, randomVal);
-      if (randomScalar < this.bestValueScalar) {
-        this.bestValue = [...randomVal];
-        this.bestValueScalar = randomScalar;
-        this.best = [...randomPos];
-        this.current = [...randomPos];
-        this.currentValue = [...randomVal];
-        this.currentValueScalar = randomScalar;
-      } else if (dominates(randomVal, this.currentValue)) {
-        this.current = [...randomPos];
-        this.currentValue = [...randomVal];
-        this.currentValueScalar = randomScalar;
-      }
+    const candidates = [];
+    if (this.includeCenterStart) {
+      candidates.push(this.bounds.map(([lo, hi]) => (lo + hi) / 2));
     }
+
+    for (let i = 0; i < this.startCandidates; i++) {
+      candidates.push(this.bounds.map(([lo, hi]) => lo + rng() * (hi - lo)));
+    }
+
+    if (!candidates.length) {
+      candidates.push(this.bounds.map(([lo, hi]) => (lo + hi) / 2));
+    }
+
+    let bestScalar = Infinity;
+    let bestCandidates = [];
+
+    candidates.forEach((candidate) => {
+      const value = normalizeObjectiveValue(func ? func(candidate) : Infinity);
+      const scalar = scalarizeObjectiveValue(value);
+      this.updateParetoSet(candidate, value);
+
+      if (scalar < bestScalar) {
+        bestScalar = scalar;
+        bestCandidates = [{ position: candidate, value, scalar }];
+      } else if (scalar === bestScalar) {
+        bestCandidates.push({ position: candidate, value, scalar });
+      }
+    });
+
+    const selected = bestCandidates.length === 1
+      ? bestCandidates[0]
+      : bestCandidates[Math.floor(rng() * bestCandidates.length)];
+
+    this.current = [...selected.position];
+    this.currentValue = [...selected.value];
+    this.currentValueScalar = selected.scalar;
+    this.best = [...selected.position];
+    this.bestValue = [...selected.value];
+    this.bestValueScalar = selected.scalar;
   }
 
   // ===========================================================================
